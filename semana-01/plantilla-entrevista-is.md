@@ -2,9 +2,9 @@
 
 ## Información del equipo
 
-**Nombre del equipo:**Imkler
+**Nombre del equipo:** Imkler
 
-**Integrantes:**Juan Borja, Samuel Camargo, Fatima Castro, Hernan Mundell
+**Integrantes:** Juan Borja, Samuel Camargo, Fatima Castro, Hernan Mundell
 
 ---
 
@@ -70,13 +70,13 @@ Finalmente, sobre herramientas de gestión, repasó su uso de Slack, Discord, Go
 
 ## Frases clave
 
-> *"Mi primer instinto es ver si tiene sentido. Una buena forma de hacer dinero es a partir de invenciones que innovan."*
+> Mi primer instinto es ver si tiene sentido. Una buena forma de hacer dinero es a partir de invenciones que innovan.
 
-> *"Siento que LinkedIn es muy formal a la hora de entablar una conversación. Se exageran mucho las propias habilidades. Ser más informal y transparente desde el inicio es mucho más claro."*
+> Siento que LinkedIn es muy formal a la hora de entablar una conversación. Se exageran mucho las propias habilidades. Ser más informal y transparente desde el inicio es mucho más claro.
 
-> *"Es necesario [el trabajo interdisciplinario] porque uno como sistemas muchas veces no tiene conocimiento del problema de negocio que tienen los interesados."*
+> Es necesario [el trabajo interdisciplinario] porque uno como sistemas muchas veces no tiene conocimiento del problema de negocio que tienen los interesados.
 
-> *"Slack es una porquería porque si no pagas no te deja ver los mensajes de hace 90 días."*
+> Slack es una porquería porque si no pagas no te deja ver los mensajes de hace 90 días.
 
 ---
 
