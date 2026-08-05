@@ -2,9 +2,13 @@
 
 ## Información del equipo
 
-**Nombre del equipo:**
+**Nombre del equipo: Imker**
 
 **Integrantes:**
+- Juan Borja
+- Samuel Camargo
+- Fatima Castro
+- Hernán Mundell 
 
 ---
 
@@ -12,19 +16,21 @@
 
 ### Entrevistas a usuarios potenciales
 
-**Cantidad de personas entrevistadas:**
+**Cantidad de personas entrevistadas: 3**
 
 **Tipo de usuarios consultados:**
+- 1 emprendedor
+- 2 consumidores 
 
 ---
 
 ### Historia de innovación
 
-**Nombre de la iniciativa, empresa o proyecto consultado:**
+**Nombre de la iniciativa, empresa o proyecto consultado:** Mayasis S.A.S.
 
-**Persona entrevistada:**
+**Persona entrevistada:** Tatiana de la Hoz
 
-**Rol de la persona:**
+**Rol de la persona:** Cofundadora
 
 ---
 
@@ -32,11 +38,11 @@
 
 Antes de realizar las entrevistas y conocer la historia de innovación, ¿qué creía el equipo sobre el problema?
 
--
+- El equipo consideraba que la dificultad para conectar con emprendimientos de estudiantes de otras carreras se debía principalmente a la falta de espacios o canales formales de networking entre facultades.
 
--
+- El equipo piensa que el centro de apoyo a emprendedores de la universidad tiene poca visibilidad institucional, por lo que la mayoría de los estudiantes desconoce su existencia o los servicios que ofrece.
 
--
+- Se piensa que esta desconexión limita las oportunidades de colaboración interdisciplinaria, dejando a los emprendimientos aislados dentro de sus propias carreras en lugar de beneficiarse de perspectivas distintas.
 
 ---
 
