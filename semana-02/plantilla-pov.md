@@ -59,11 +59,11 @@ Buscamos resolver el networking a la hora de conformar equipos de trabajo, facil
 
 La solución que diseñemos debería:
 
-1.
+1. Mostrar en el perfil de cada usuario al menos historial verificable de proyectos y una calificación promedio de colaboraciones previas, de modo que un estudiante pueda evaluar a un posible colaborador en menos de 2 minutos sin salir de la plataforma.
 
-2.
+2. Permitir filtrar y encontrar un colaborador potencial por carrera y habilidad específica en máximo 3 pasos (por ejemplo: buscar → filtrar por habilidad/carrera → ver perfil), reduciendo el tiempo de búsqueda frente a alternativas actuales como LinkedIn o el networking informal.
 
-3.
+3. Garantizar que los perfiles activos representen una proporción alta y medible de la base de usuarios (por ejemplo, ≥80% de perfiles con actividad o actualización en los últimos 30 días), para evitar el problema de usuarios ausentes o inactivos que mencionaron los entrevistados.
 
 ---
 
@@ -71,8 +71,8 @@ La solución que diseñemos debería:
 
 ¿Qué aspectos quedan por fuera en esta primera etapa?
 
-- 
+- La gestión completa de proyectos una vez formado el equipo (tareas, cronogramas, entregables): el problema prioritario es encontrar colaboradores confiables, no reemplazar herramientas como Trello o Jira.
 
-- 
+- La resolución de fondo del problema de coordinación de horarios entre estudiantes con distintas cargas académicas: es una necesidad real, pero secundaria frente al problema de confianza que decidimos priorizar.
 
-- 
+- Expandir la plataforma más allá de la comunidad universitaria (por ejemplo, abrir a profesionales externos o emprendedores fuera de Uninorte): el foco inicial debe mantenerse en estudiantes de la propia universidad para controlar la calidad y confiabilidad de los perfiles.
