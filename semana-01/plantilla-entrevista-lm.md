@@ -24,7 +24,7 @@
 
 ¿Por qué decidieron entrevistar a esta persona?
 
-Este estudiante, además de ser una persona ajena a la carrera de sistemas y computación ha sido estudiante destacado en la rama de ingenierías e incluso ha sido destacado por la propia intitución por excelencia academica, cosa que lo hizo muy atractivo para la entrevista.
+Este estudiante, además de ser una persona ajena a la carrera de sistemas y computación ha sido estudiante destacado en la rama de ingenierías e incluso ha sido destacado por la propia institución por excelencia academica, cosa que lo hizo muy atractivo para la entrevista.
 
 ¿Qué esperan aprender de esta entrevista?
 
