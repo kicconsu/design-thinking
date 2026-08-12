@@ -32,7 +32,7 @@
 
 **¿Qué observamos?**
 
-Tanto los estudiantes entrevistados como la historia de innovación recalcan la importancia absoluta de conocer profundamente el entorno y verificar que tan viable es una idea antes de empezar de programar o ejecutar cualquier cosa.
+Tanto los estudiantes entrevistados como la historia de innovación recalcan la importancia absoluta de conocer profundamente el entorno y verificar que tan viable es una idea antes de empezar de programar o ejecutar cualquier proyecto.
 
 **¿Por qué importa?**
 
@@ -46,7 +46,7 @@ La dificultad y desconfianza al momento de formar equipos de trabajo y encomenda
 
 **¿Por qué importa?**
 
-Es muy casual ver casos en los que este tipo de colaboraciones genera incertidumbre, de forma que requiere validaciones o referencias previas.
+Es muy común ver casos en los que este tipo de colaboraciones genera incertidumbre, de forma que requiere validaciones o referencias previas.
 
 ### Hallazgo 3
 
