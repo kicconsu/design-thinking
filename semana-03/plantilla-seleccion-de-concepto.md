@@ -22,29 +22,11 @@ Registren los flujos que el equipo decidió trabajar esta semana.
 
 ### Flujo 2
 
-**Nombre del flujo:**
+**Nombre del flujo:** Revisar colaboradores potenciales y aceptarlos o rechazarlos
 
-**¿Por qué merece prioridad?**
+**¿Por qué merece prioridad?** Porque este flujo ha de responder a la necesidad de los dueños de proyectos de medir la confiabilidad de algún potencial colaborador.
 
-**¿Qué pasaría si este flujo no funciona bien?**
-
-### Flujo 3
-
-**Nombre del flujo:**
-
-**¿Por qué merece prioridad?**
-
-**¿Qué pasaría si este flujo no funciona bien?**
-
-### Flujo 4
-
-**Nombre del flujo:**
-
-**¿Por qué merece prioridad?**
-
-**¿Qué pasaría si este flujo no funciona bien?**
-
-> Si el equipo solo trabaja 2 o 3 flujos, puede dejar vacío el último.
+**¿Qué pasaría si este flujo no funciona bien?** No se garantizaría la confianza entre colaboradores, lo cual dificultaría seriamente la colaboración en general. Si es asi, entonces no habría razón para usar el programa.
 
 ---
 
