@@ -60,27 +60,27 @@ Repitan esta estructura para cada flujo priorizado. Si el equipo trabaja solo 2 
 
 **¿Con quién se probó este flujo?**
 
+2 clientes potenciales
+
 **¿Qué reacción generó la versión A?**
 
-- 
-- 
-- 
+- Los usuarios apreciaron el sistema de guardado.
+- Un usuario propuso una manera de ver el detalle del proyecto antes de guardarlo.
+- Consideraron suficiente y ordenado el flujo.
 
 **¿Qué reacción generó la versión B?**
 
-- 
-- 
-- 
+- Los usuarios notaron la facilidad de uso del diseño.
+- Los usuarios dijeron que les hacía falta una vista detallada antes de aplicar.
+- Los usuarios apreciaron el diseño gráfico de las vistas.
 
 ### Versión seleccionada para la semana 4
 
-**Versión elegida:**
+**Versión elegida:** A
 
 **¿Por qué?**
 
-- 
-- 
-- 
+- Consideraron más pertinente el sistema de guardado/pendiente/activo, por encima de la facilidad del uso del sistema.
 
 ---
 
@@ -130,160 +130,24 @@ Como dueño de una idea, el usuario quiere conocer a sus potenciales colaborador
 
 **¿Con quién se probó este flujo?**
 
-**¿Qué reacción generó la versión A?**
-
-- 
-- 
-- 
-
-**¿Qué reacción generó la versión B?**
-
-- 
-- 
-- 
-
-### Versión seleccionada para la semana 4
-
-**Versión elegida:**
-
-**¿Por qué?**
-
-- 
-- 
-- 
-
----
-
-## Flujo 3
-
-**Nombre del flujo:**
-
-**¿Qué quiere lograr el usuario en este flujo?**
-
-### Versión A: paso a paso
-
-1. El usuario...
-2. Luego...
-3. Después...
-4. Finalmente...
-
-### Versión A: pantallas o momentos clave
-
-1.
-2.
-3.
-4.
-
-### Versión B: paso a paso
-
-1. El usuario...
-2. Luego...
-3. Después...
-4. Finalmente...
-
-### Versión B: pantallas o momentos clave
-
-1.
-2.
-3.
-4.
-
-### Evidencia en Figma
-
-**Enlace versión A:**
-
-**Enlace versión B:**
-
-### Resultado de la validación exploratoria
-
-**¿Con quién se probó este flujo?**
+2 Usuarios potenciales.
 
 **¿Qué reacción generó la versión A?**
 
-- 
-- 
-- 
+- Apreciaron la sencillez del flujo.
+- Consideraron pertinente el detalle en el perfil del colaborador potencial
 
 **¿Qué reacción generó la versión B?**
 
-- 
-- 
-- 
+- Apreciaron la sencillez del flujo.
+- Notaron lo util del historial de colaboraciones con el puntaje de co-evaluación adjunto a este.
 
 ### Versión seleccionada para la semana 4
 
-**Versión elegida:**
+**Versión elegida:** B
 
 **¿Por qué?**
 
-- 
-- 
-- 
+- Los usuarios consideraron el formato de historial de colaboraciones como clave para generar confianza en los potenciales colaboradores. Además, el puntaje de co-evaluación también funciona a favor de esto.
 
----
-
-## Flujo 4
-
-**Nombre del flujo:**
-
-**¿Qué quiere lograr el usuario en este flujo?**
-
-### Versión A: paso a paso
-
-1. El usuario...
-2. Luego...
-3. Después...
-4. Finalmente...
-
-### Versión A: pantallas o momentos clave
-
-1.
-2.
-3.
-4.
-
-### Versión B: paso a paso
-
-1. El usuario...
-2. Luego...
-3. Después...
-4. Finalmente...
-
-### Versión B: pantallas o momentos clave
-
-1.
-2.
-3.
-4.
-
-### Evidencia en Figma
-
-**Enlace versión A:**
-
-**Enlace versión B:**
-
-### Resultado de la validación exploratoria
-
-**¿Con quién se probó este flujo?**
-
-**¿Qué reacción generó la versión A?**
-
-- 
-- 
-- 
-
-**¿Qué reacción generó la versión B?**
-
-- 
-- 
-- 
-
-### Versión seleccionada para la semana 4
-
-**Versión elegida:**
-
-**¿Por qué?**
-
-- 
-- 
-- 
+ 
