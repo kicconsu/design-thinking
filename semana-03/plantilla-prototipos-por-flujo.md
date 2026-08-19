@@ -86,23 +86,25 @@ Repitan esta estructura para cada flujo priorizado. Si el equipo trabaja solo 2 
 
 ## Flujo 2
 
-**Nombre del flujo:**
+**Nombre del flujo:** Revisar las solicitudes para unirse a un proyecto propio
 
 **¿Qué quiere lograr el usuario en este flujo?**
 
+Como dueño de una idea, el usuario quiere conocer a sus potenciales colaboradores, complementando sus solicitudes con cualquier otro indicador que le permita tomar una decisión.
+
 ### Versión A: paso a paso
 
-1. El usuario...
-2. Luego...
-3. Después...
-4. Finalmente...
+1. El usuario inicia en el listado de proyectos, donde se indica la cantidad de postulantes que desean participar en cada uno.
+2. Luego selecciona uno de los proyectos, para ver algunos detalles y el listado de solicitantes pendientes.
+3. Después, se accede a una descripción detallada del postulante. Aquí se resume el perfil de la persona, su justificación para formar parte del proyecto y los indicadores que alimentan la decisión del usuario líder. Primero, se resumen métricas que caracterizan la intervención en otros proyectos de la plataforma. Además, se indican factores que ayuden a demostrar confianza más allá de estadísticas, como el aval de docentes, el historial con colaboradores actuales y la disponibilidad horaria.
+4. Finalmente, con la información suministrada el usuario puede tomar una decisión.
 
 ### Versión A: pantallas o momentos clave
 
-1.
-2.
-3.
-4.
+1. Pantalla de listado de proyectos.
+2. Pantalla del proyecto con listado de solicitudes.
+3. Pantalla con detalle del postulante e indicadores de confianza y afinidad.
+4. Sobre esta última pantalla, el usuario toma una decisión.
 
 ### Versión B: paso a paso
 
