@@ -108,17 +108,17 @@ Como dueño de una idea, el usuario quiere conocer a sus potenciales colaborador
 
 ### Versión B: paso a paso
 
-1. El usuario...
-2. Luego...
-3. Después...
-4. Finalmente...
+1. El usuario inicia en una interfaz que muestra la lista de postulantes a proyectos en su perfil así como aquellos que ya están asociados a este en algún proyecto
+2. Luego tiene la opción de entrar al perfil de cada uno y ver tanto el proyecto de interes, la carrera del postulante y/o compañero y el indice de confiabilidad votado.
+3. Después, una vez el usuario ha revisado el perfil propuesto puede tomar la decisión si es una buena opción de aplicación o si va a pasar de ella.
+4. Finalmente cuando haya tomado una decisión puede decidir si añadir al postulante al proyecto o si decidirá pasar de él, o en el caso dado tambien está la opción de eliminar al compañero una vez compartido un proyecto.
 
 ### Versión B: pantallas o momentos clave
 
-1.
-2.
-3.
-4.
+1. Pantalla de listado de postulantes.
+2. Pantalla de listado de colaboradores.
+3. Pantalla con información del postulante y/o colaborador e índice de confianza.
+4. Pantalla con mensaje de verificación antes de decisión final.
 
 ### Evidencia en Figma
 
