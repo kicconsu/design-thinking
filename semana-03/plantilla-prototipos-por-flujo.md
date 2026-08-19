@@ -122,9 +122,9 @@ Como dueño de una idea, el usuario quiere conocer a sus potenciales colaborador
 
 ### Evidencia en Figma
 
-**Enlace versión A:**
+**Enlace versión A:** https://www.figma.com/proto/KHCILMCagFJRea3X6nFMkW/Sin-t%C3%ADtulo--copia---copia-?node-id=7-58&t=5vbJRYGySWaUUtZy-1
 
-**Enlace versión B:**
+**Enlace versión B:** https://www.figma.com/make/VeGbAYtMBf80bQMQQ7m8hq/Solicitud-de-colaboraci%C3%B3n?t=WtneRxE8L35BCmDO-1
 
 ### Resultado de la validación exploratoria
 
