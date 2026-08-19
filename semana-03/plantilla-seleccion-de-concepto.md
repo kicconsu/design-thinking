@@ -94,15 +94,14 @@ Expliquen brevemente:
 
 **¿Qué aprendieron al comparar las dos versiones de este flujo?**
 
-- 
+- Los usuarios valoran el uso de un historial de participaciones para demostrar la confiabilidad de un potencial contribuidor.
 
-- 
+- Los usuarios consideran que el uso de un puntaje de co-evaluación es útil para medir la confiabilidad de un potencial contribuidor. Sin embargo, consideran que el uso de comentarios colocados por otros en los perfiles de los contribuidores podrían prestarse para abusos o mentiras.
 
-- 
+- Los usuarios consideran que un flujo sencillo es suficiente para cumplir el propósito de la confianza.
 
 **¿Qué versión pasa a la semana 4?**
 
-- Versión A
 - Versión B
 
 
@@ -113,29 +112,27 @@ Expliquen brevemente:
 
 ¿Qué flujos y qué versiones pasan a la semana 4?
 
+Flujo 1: Versión A
+Flujo 2: Versión B
+
 ---
 
 ## Razones de la decisión
 
 ¿Por qué estas decisiones parecen las mejores para avanzar después de la validación exploratoria?
 
-- 
-
-- 
-
-- 
-
+- Porque estas parecen responder adecuadamente a las preocupaciones de los potenciales usuarios. Sus comentarios acerca de las versiones de los flujos indican que estos resuelven los problemas planteados desde las entrevistas.
 ---
 
 ## Riesgos que siguen abiertos
 
 ¿Qué cosas siguen sin estar claras y deben validarse mejor en la semana 4?
 
-- 
+- ¿De qué maneras se puede mejorar la usabilidad de los flujos planteados?
 
-- 
+- ¿De qué otras maneras se podría incrementar aún más la confianza en los colaboradores?
 
-- 
+- ¿De que maneras se van a demostrar los aportes individuales de cada miembro de un equipo?
 
 ---
 
@@ -143,8 +140,8 @@ Expliquen brevemente:
 
 Completen las frases:
 
-`Creemos que los usuarios valorarán...`
+Creemos que los usuarios valorarán mantener el orden entre los proyectos interesantes, pendientes, y activos, al momento de buscar proyectos en los cuales colaborar.
 
-`Creemos que los usuarios usarán esta solución porque...`
+Creemos que los usuarios usarán esta solución porque resuelve mucho del tedio que implica colaborar con personas por fuera del circulo cercano propio.
 
-`Sabremos que vamos por buen camino si...`
+Sabremos que vamos por buen camino si los estudiantes se sienten cómodos con la idea de abrir las puertas para que otras personas colaboren en sus proyectos.
