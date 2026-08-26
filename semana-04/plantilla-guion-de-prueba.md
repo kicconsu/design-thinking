@@ -15,7 +15,7 @@
 
 ¿Qué quieren aprender con esta validación?
 
-Se quiere comprobar si el diseño de los flujos actuales responden a las necesidads expuestas por los potenciales consumidores en las semanas anteriores, aún despues de integrar ambos flujos principales en un mismo prototipo.
+Se quiere comprobar si el diseño de los flujos actuales responden a las necesidades expuestas por los potenciales consumidores en las semanas anteriores, aún despues de integrar ambos flujos principales en un mismo prototipo.
 
 ---
 

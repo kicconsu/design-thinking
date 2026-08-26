@@ -71,11 +71,9 @@ Enumeren los elementos que van a construir y cómo se conectan entre sí.
 
 ¿Cómo se conectan entre sí los flujos aprobados?
 
-- 
+- Se conectan mediante la transición fluida desde el rol de buscador/aspirante (descubrir y postularse a proyectos de otros) hacia el rol de creador/gestor (recibir y evaluar postulaciones de terceros en proyectos propios), permitiendo alternar lógicamente entre ambas perspectivas dentro de la misma experiencia de usuario.
 
-- 
-
-- 
+- El punto de encuentro se da en la sección central de proyectos e interacciones, donde el usuario visualiza tanto el estado de sus solicitudes enviadas como la bandeja de entrada de candidatos para sus propias iniciativas.
 
 ---
 
@@ -83,13 +81,11 @@ Enumeren los elementos que van a construir y cómo se conectan entre sí.
 
 ¿Cómo construirán el prototipo integrado?
 
-**Herramienta esperada:** Figma
+- Figma
 
 Si usan algún apoyo adicional, indíquenlo aquí:
 
-- 
-
-- 
+- Componentes de diseño basados en patrones de interfaces populares (como redes sociales o plataformas profesionales) para facilitar la adopción intuitiva.
 
 ---
 
@@ -97,11 +93,9 @@ Si usan algún apoyo adicional, indíquenlo aquí:
 
 ¿Qué creen que sucederá cuando un usuario vea o use este prototipo?
 
-- 
+- Si el usuario navega por el prototipo, comprenderá por su cuenta la dinámica de descubrimiento inspirada en redes sociales y la asociará rápidamente con plataformas de networking.
 
-- 
-
-- 
+- Al observar los indicadores de confianza y el historial de aportes de los perfiles en el flujo de revisión de solicitudes, el usuario sentirá que cuenta con la información suficiente y veraz para tomar la decisión de aceptar o rechazar a un colaborador con confianza.
 
 ---
 
@@ -113,8 +107,8 @@ Peguen aquí el enlace al archivo o prototipo de Figma:
 
 ¿Qué puede recorrer o ver una persona dentro de ese prototipo?
 
-- 
+- El feed principal de descubrimiento de proyectos para explorar ideas de innovación y manifestar interés.
 
-- 
+- El panel de gestión de proyectos para revisar el estado de los guardados, postulaciones pendientes y proyectos cocreados.
 
-- 
+- La vista detallada de los candidatos solicitantes junto con sus indicadores de confianza, habilidades y métricas de historial para realizar la evaluación y tomar la decisión de aceptación o rechazo.
