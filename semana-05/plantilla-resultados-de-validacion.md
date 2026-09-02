@@ -4,9 +4,9 @@
 
 ## Información del equipo
 
-**Nombre del equipo:**
+**Nombre del equipo:** Imker
 
-**Integrantes:**
+**Integrantes:** Juan Borja, Samuel Camargo, Fatima Castro, Hernán Mundell
 
 ---
 
@@ -14,26 +14,22 @@
 
 **Cantidad de personas participantes:**
 
-**Tipo de usuarios consultados:**
+**Tipo de usuarios consultados:** Ingeniero de Sistemas.
 
-**Fecha o fechas de las pruebas:**
+**Fecha o fechas de las pruebas:** 1/09/2026
 
 ---
 
 ## Qué se probó
 
-Describan brevemente la versión del prototipo que mostraron en esta nueva validación.
+En esta validación se mostró una versión ampliada del prototipo, a la que se le añadieron la pestaña de perfil, la pantalla de edición de perfil y una pantalla de confirmación que indica al usuario que su perfil fue actualizado correctamente.
 
 **Enlace al prototipo en Figma:**
 
 ¿Qué cambios importantes incorporaron desde la semana 4?
 
-- 
-
-- 
-
-- 
-
+- Se añadió la pantalla de perfil, donde el usuario puede ver su información personal, como descripción, habilidades e indicadores de confianza. En esta pantalla también encontrará el botón de editar perfil, el cual le permitirá editar su descripción y añadir o quitar habilidades.
+  
 ---
 
 ## Hallazgos principales
@@ -64,9 +60,9 @@ Resuman los 3 aprendizajes más importantes de esta nueva ronda de validación.
 
 ¿En qué partes hubo dudas, errores o confusión?
 
-- 
+- En la pestaña de proyectos uno de los usuarios entrevistados consideró que el botón para cambiar entre proyectos pendientes por respuesta y los proyectos activos no era intuitivo y recomendó que se cambiara a un desplegable o slider con iconos diferentes.
 
-- 
+- Uno de los usuarios entrevistados consideró que no era necesario tener un menú lateral. Llegó a esta conclusión al notar el ícono de tres líneas en la esquina superior izquierda, ya que consideró que todo lo necesario se encuentra en el menú inferior. 
 
 - 
 
@@ -88,7 +84,7 @@ Resuman los 3 aprendizajes más importantes de esta nueva ronda de validación.
 
 Registren frases importantes de los usuarios.
 
->
+> "A excepción del botón en la pestaña de proyectos, el resto de la aplicación es muy intuitiva"
 
 >
 
