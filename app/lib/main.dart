@@ -1,6 +1,7 @@
+import 'package:f_clean_template/core/navigation/ui/viewmodels/navigation_controller.dart';
+import 'package:f_clean_template/core/navigation/ui/views/main_page.dart';
 import 'package:f_clean_template/core/theme.dart';
 import 'package:f_clean_template/core/theme_builder.dart';
-import 'package:f_clean_template/features/projects/project_page.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -24,6 +25,7 @@ void main() async {
 
   registerAuth();
   registerProduct();
+  Get.put(NavigationController());
   runApp(const MyApp());
 }
 
@@ -39,7 +41,7 @@ class MyApp extends StatelessWidget {
       title: 'Imker',
       theme: brightness == Brightness.light ? theme.light() : theme.dark(),
       debugShowCheckedModeBanner: false,
-      home: const ProjectPage(),
+      home: const MainPage(),
     );
   }
 }
