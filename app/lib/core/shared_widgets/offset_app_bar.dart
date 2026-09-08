@@ -1,39 +1,25 @@
 import 'package:flutter/material.dart';
 
-class OffsetAppBar extends StatelessWidget {
-  const new({super.key});
+class OffsetAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const OffsetAppBar({super.key});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-
-        //El espacio justico antes de la app bar
-        Container(
-          height: MediaQuery.sizeOf(context).height*0.025,
-          color: Theme.of(context).colorScheme.primaryContainer,
+    return AppBar(
+      backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+      elevation: 0,
+      title: Text("Imker", style: Theme.of(context).textTheme.headlineLarge),
+      centerTitle: true,
+      toolbarHeight: 40,
+      shape: Border(
+        bottom: BorderSide(
+          color: Theme.of(context).colorScheme.onTertiaryContainer,
+          width: 1,
         ),
-
-        AppBar(
-          backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
-          elevation: 0,
-          title: Text("Imker", style: Theme.of(context).textTheme.headlineLarge),
-          centerTitle: true,
-          toolbarHeight: 40,
-
-          shape: Border(
-            bottom: BorderSide(
-              color: Theme.of(context).colorScheme.onTertiaryContainer,
-              width: 1
-            ),
-            top: BorderSide(
-              color: Theme.of(context).colorScheme.onTertiaryContainer,
-              width: 1
-            )
-          ),
-        )
-
-      ],
+      ),
     );
   }
 }
