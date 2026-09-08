@@ -15,17 +15,21 @@ class MainPage extends StatelessWidget {
     final NavigationController navController = Get.find();
 
     return Obx(
-      () => Scaffold(
-        appBar: OffsetAppBar(),
-        body: IndexedStack(
-          index: navController.currentIndex.value,
-          children: const [DiscoverPage(), ProjectPage(), ProfilePage()],
-        ),
-        bottomNavigationBar: ImkerBottomNavBar(
-          currentIndex: navController.currentIndex.value,
-          onTap: navController.changePage,
-        ),
-      ),
+      () {
+        final cs = Theme.of(context).colorScheme;
+        return Scaffold(
+          backgroundColor: cs.primaryContainer,
+          appBar: OffsetAppBar(),
+          body: IndexedStack(
+            index: navController.currentIndex.value,
+            children: const [DiscoverPage(), ProjectPage(), ProfilePage()],
+          ),
+          bottomNavigationBar: ImkerBottomNavBar(
+            currentIndex: navController.currentIndex.value,
+            onTap: navController.changePage,
+          ),
+        );
+      },
     );
   }
 }

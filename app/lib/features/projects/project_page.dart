@@ -1,4 +1,3 @@
-import 'package:f_clean_template/features/projects/ui/views/project_card.dart';
 import 'package:flutter/material.dart';
 
 class ProjectPage extends StatelessWidget {
@@ -6,9 +5,17 @@ class ProjectPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: const ProjectCard(),
+    final cs = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: cs.primaryContainer,
+      child: Center(
+        child: Text(
+          'proyectos',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: cs.onPrimaryContainer,
+          ),
+        ),
+      ),
     );
   }
 }
