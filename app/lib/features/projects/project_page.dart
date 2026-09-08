@@ -1,4 +1,3 @@
-import 'package:f_clean_template/core/shared_widgets/offset_app_bar.dart';
 import 'package:f_clean_template/features/projects/ui/views/project_card.dart';
 import 'package:flutter/material.dart';
 
@@ -7,12 +6,9 @@ class ProjectPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: OffsetAppBar(),
-      body: Container(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        child: ProjectCard(),
-      ),
+    return Container(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: const ProjectCard(),
     );
   }
 }
