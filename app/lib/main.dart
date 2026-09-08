@@ -1,6 +1,6 @@
 import 'package:f_clean_template/core/theme.dart';
 import 'package:f_clean_template/core/theme_builder.dart';
-import 'package:f_clean_template/features/scroll/ui/view/scrollpage.dart';
+import 'package:f_clean_template/features/projects/project_page.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
       title: 'Imker',
       theme: brightness == Brightness.light ? theme.light() : theme.dark(),
       debugShowCheckedModeBanner: false,
-      home: const ScrollPage(),
+      home: const ProjectPage(),
     );
   }
 }
