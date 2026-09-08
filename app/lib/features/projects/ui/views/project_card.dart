@@ -1,221 +1,221 @@
+import 'package:f_clean_template/features/discover/domain/models/project.dart';
 import 'package:flutter/material.dart';
 
 class ProjectCard extends StatelessWidget {
-  const ProjectCard({super.key});
+  final Project project;
+
+  const ProjectCard({super.key, required this.project});
 
   @override
   Widget build(BuildContext context) {
-    Color cardColor = Theme.of(context).colorScheme.onPrimaryContainer;
-    Color textColor = Theme.of(context).colorScheme.onPrimary;
-    String imageUrl =
-        'https://fultoncountyvetclinic.com/wp-content/uploads/bb-plugin/cache/cat-stretching-panorama-fd4135722bc818a9db1debc7def411a0-4hg3jvxm67az.jpg';
-    String title = 'Kirche: Proyecto de renovacion urbanana y sostenibilidad';
-    String jobs =
-        'Ing. Software - Ing. Ambiental - Ing. Electronica - Ing. Industrial';
-    String skills =
-        '-Modelación\n -Análisis de datos\n -Desarrollo de software\n -Diseño de software';
-    String description =
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return Container(
       decoration: BoxDecoration(
-        color: cardColor,
-        border: Border.all(color: Colors.black),
-      ),
-      margin: EdgeInsets.only(
-        left: MediaQuery.of(context).size.width * 0.05,
-        right: MediaQuery.of(context).size.width * 0.05,
-        top: MediaQuery.of(context).size.height * 0.05,
+        color: cs.onPrimaryContainer,
+        border: Border.all(color: cs.outline),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          //Jobs at top
-          JobsAtTop(jobs: jobs, textColor: textColor),
-          //Divider
-          SizedBox(
-            width: MediaQuery.of(context).size.width * 0.8,
-            child: Divider(color: Colors.black, thickness: 2),
+          // Jobs at top
+          _JobsRow(jobs: project.jobs, textColor: cs.onPrimary, tt: tt),
+          Divider(color: cs.outline, thickness: 1, height: 1),
+          // Image takes remaining vertical space
+          Expanded(
+            flex: 4,
+            child: _ProjectImage(imageUrl: project.imageUrl),
           ),
-          //Image of project
-          ImageOfProject(imageUrl: imageUrl),
-          //Title of the project
-          TitleOfProject(title: title, textColor: textColor),
-          //Divider
-          SizedBox(
-            width: MediaQuery.of(context).size.width * 0.8,
-            child: Divider(color: Colors.black, thickness: 2),
+          Divider(color: cs.outline, thickness: 1, height: 1),
+          // Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Text(
+              project.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tt.titleLarge?.copyWith(color: cs.onPrimary),
+            ),
           ),
-          //Skills required and description in two columns
-          SkillsAndDescription(
-            skills: skills,
-            description: description,
-            textColor: textColor,
+          Divider(color: cs.outline, thickness: 1, height: 1),
+          // Skills and description
+          Expanded(
+            flex: 3,
+            child: _SkillsAndDescription(
+              skills: project.skills,
+              description: project.description,
+              textColor: cs.onPrimary,
+              tt: tt,
+              dividerColor: cs.outline,
+            ),
           ),
-          //Divider
-          SizedBox(
-            width: MediaQuery.of(context).size.width * 0.8,
-            child: Divider(color: Colors.black, thickness: 2),
-          ),
-          //Buttons
-          Buttons(textColor: textColor),
+          Divider(color: cs.outline, thickness: 1, height: 1),
+          // Buttons
+          _ActionButtons(textColor: cs.onPrimary, cs: cs),
         ],
       ),
     );
   }
 }
 
-class Buttons extends StatelessWidget {
-  const Buttons({super.key, required this.textColor});
+// ---------------------------------------------------------------------------
+// Private sub-widgets
+// ---------------------------------------------------------------------------
 
+class _JobsRow extends StatelessWidget {
+  final List<String> jobs;
   final Color textColor;
+  final TextTheme tt;
+
+  const _JobsRow({
+    required this.jobs,
+    required this.textColor,
+    required this.tt,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.8,
-      child: Row(
-        spacing: MediaQuery.of(context).size.width * 0.04,
-        children: [
-          FilledButton.icon(
-            onPressed: () {},
-            style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Colors.black, width: 1),
-              ),
-            ),
-            label: Text("Leer más", style: TextStyle(color: textColor)),
-            icon: Icon(Icons.menu_book),
-          ),
-          Flexible(
-            child: FilledButton.icon(
-              onPressed: () {},
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Colors.black, width: 1),
-                ),
-              ),
-              label: Text(
-                "Estoy interesado!",
-                style: TextStyle(color: textColor),
-              ),
-              icon: Icon(Icons.bookmark),
-            ),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Text(
+        jobs.join(' · '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: tt.labelMedium?.copyWith(color: textColor, letterSpacing: 0.5),
       ),
     );
   }
 }
 
-class SkillsAndDescription extends StatelessWidget {
-  const SkillsAndDescription({
-    super.key,
+
+
+class _ProjectImage extends StatelessWidget {
+  final String imageUrl;
+
+  const _ProjectImage({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const Center(
+        child: Icon(Icons.broken_image_outlined, size: 48),
+      ),
+      loadingBuilder: (_, child, progress) {
+        if (progress == null) return child;
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+}
+
+class _SkillsAndDescription extends StatelessWidget {
+  final List<String> skills;
+  final String description;
+  final Color textColor;
+  final TextTheme tt;
+  final Color dividerColor;
+
+  const _SkillsAndDescription({
     required this.skills,
     required this.description,
     required this.textColor,
+    required this.tt,
+    required this.dividerColor,
   });
-
-  final String skills;
-  final String description;
-  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.all(MediaQuery.of(context).size.height * 0.005),
-      width: MediaQuery.of(context).size.width * 0.8,
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            Text(
-              "Habilidades requeridas:\n" + skills,
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.left,
-              style: TextStyle(color: textColor),
-            ),
-            VerticalDivider(color: Colors.black, thickness: 2),
-            Flexible(
-              child: Text(
-                description,
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.left,
-                style: TextStyle(color: textColor),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Habilidades requeridas',
+                    style: tt.labelSmall?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...skills.map(
+                    (s) => Text(
+                      '· $s',
+                      style: tt.bodySmall?.copyWith(color: textColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          VerticalDivider(color: dividerColor, thickness: 1, width: 1),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                description,
+                style: tt.bodySmall?.copyWith(color: textColor),
+                maxLines: 7,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class TitleOfProject extends StatelessWidget {
-  const TitleOfProject({
-    super.key,
-    required this.title,
-    required this.textColor,
-  });
-
-  final String title;
+class _ActionButtons extends StatelessWidget {
   final Color textColor;
+  final ColorScheme cs;
+
+  const _ActionButtons({required this.textColor, required this.cs});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.all(MediaQuery.of(context).size.height * 0.005),
-      width: MediaQuery.of(context).size.width * 0.8,
-      child: Text(
-        title,
-        textAlign: TextAlign.left,
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
-        textScaler: TextScaler.linear(2),
-        style: TextStyle(color: textColor),
+    final buttonStyle = FilledButton.styleFrom(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(color: Colors.black, width: 1),
       ),
     );
-  }
-}
 
-class ImageOfProject extends StatelessWidget {
-  const ImageOfProject({super.key, required this.imageUrl});
-
-  final String imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.all(MediaQuery.of(context).size.height * 0.005),
-      width: MediaQuery.of(context).size.width * 0.8,
-      height: MediaQuery.of(context).size.height * 0.3,
-      child: Image.network(imageUrl, fit: BoxFit.fill),
-    );
-  }
-}
-
-class JobsAtTop extends StatelessWidget {
-  const JobsAtTop({super.key, required this.jobs, required this.textColor});
-
-  final String jobs;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width * 0.8,
-      margin: EdgeInsets.only(
-        left: MediaQuery.of(context).size.width * 0.04,
-        right: MediaQuery.of(context).size.width * 0.04,
-      ),
-      child: Text(
-        jobs,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: textColor),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          FilledButton.icon(
+            onPressed: () {},
+            style: buttonStyle,
+            icon: const Icon(Icons.menu_book),
+            label: Text('Leer más', style: TextStyle(color: textColor)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () {},
+              style: buttonStyle,
+              icon: const Icon(Icons.bookmark_border),
+              label: Text(
+                '¡Me interesa!',
+                style: TextStyle(color: textColor),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
