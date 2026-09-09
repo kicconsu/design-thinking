@@ -7,6 +7,9 @@ class Project {
   final List<String> jobs;
   final List<String> skills;
   final String description;
+  final List<String> members;
+  final String status;
+  final int applicantsCount;
 
   const Project({
     required this.id,
@@ -15,5 +18,8 @@ class Project {
     required this.jobs,
     required this.skills,
     required this.description,
+    this.members = const [],
+    this.status = 'En Desarrollo',
+    this.applicantsCount = 0,
   });
 }

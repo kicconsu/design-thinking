@@ -17,12 +17,13 @@ class DiscoverPage extends StatelessWidget {
       }
 
       return PageView.builder(
+        scrollDirection: Axis.vertical,
         controller: PageController(viewportFraction: 0.92),
         itemCount: controller.projects.length,
         itemBuilder: (context, index) {
           final project = controller.projects[index];
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: ProjectCard(project: project),
           );
         },

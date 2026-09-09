@@ -1,5 +1,9 @@
+import 'package:f_clean_template/core/navigation/ui/viewmodels/navigation_controller.dart';
 import 'package:f_clean_template/features/discover/domain/models/project.dart';
+import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:f_clean_template/features/projects/ui/views/project_detail_page.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class ProjectCard extends StatelessWidget {
   final Project project;
@@ -52,7 +56,7 @@ class ProjectCard extends StatelessWidget {
           ),
           Divider(color: cs.outline, thickness: 1, height: 1),
           // Buttons
-          _ActionButtons(textColor: cs.onPrimary, cs: cs),
+          _ActionButtons(textColor: cs.onPrimary, cs: cs, project: project),
         ],
       ),
     );
@@ -180,11 +184,42 @@ class _SkillsAndDescription extends StatelessWidget {
 class _ActionButtons extends StatelessWidget {
   final Color textColor;
   final ColorScheme cs;
+  final Project project;
 
-  const _ActionButtons({required this.textColor, required this.cs});
+  const _ActionButtons({
+    required this.textColor,
+    required this.cs,
+    required this.project,
+  });
+
+  void _showSavedNotice(BuildContext context) {
+    Get.snackbar(
+      '¡Proyecto guardado!',
+      "Entra a la pestaña 'Proyectos' para más detalles.",
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: cs.tertiaryContainer,
+      colorText: cs.onTertiaryContainer,
+      icon: Icon(Icons.bookmark, color: cs.onTertiaryContainer),
+      duration: const Duration(seconds: 4),
+      mainButton: TextButton(
+        onPressed: () {
+          Get.closeCurrentSnackbar();
+          Get.find<NavigationController>().changePage(1);
+        },
+        child: Text(
+          'Ir a Proyectos',
+          style: TextStyle(
+            color: cs.onTertiaryContainer,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final projectsController = Get.find<UserProjectsController>();
     final buttonStyle = FilledButton.styleFrom(
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
@@ -197,23 +232,33 @@ class _ActionButtons extends StatelessWidget {
       child: Row(
         children: [
           FilledButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Get.to(() => ProjectDetailPage(project: project));
+            },
             style: buttonStyle,
             icon: const Icon(Icons.menu_book),
             label: Text('Leer más', style: TextStyle(color: textColor)),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: FilledButton.icon(
-              onPressed: () {},
-              style: buttonStyle,
-              icon: const Icon(Icons.bookmark_border),
-              label: Text(
-                '¡Me interesa!',
-                style: TextStyle(color: textColor),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            child: Obx(() {
+              final saved = projectsController.isSaved(project.id);
+              return FilledButton.icon(
+                onPressed: saved
+                    ? null
+                    : () {
+                        projectsController.saveProject(project);
+                        _showSavedNotice(context);
+                      },
+                style: buttonStyle,
+                icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+                label: Text(
+                  saved ? 'Guardado' : '¡Me interesa!',
+                  style: TextStyle(color: textColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }),
           ),
         ],
       ),
