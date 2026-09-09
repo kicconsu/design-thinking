@@ -13,6 +13,7 @@ import 'core/local_preferences_shared.dart';
 
 import 'features/auth/auth_dependencies.dart';
 import 'features/product/product_dependencies.dart';
+import 'features/projects/ui/viewmodels/user_projects_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ void main() async {
   registerAuth();
   registerProduct();
   Get.put(NavigationController());
+  Get.put(UserProjectsController(), permanent: true);
   runApp(const MyApp());
 }
 
