@@ -60,7 +60,9 @@ class ProjectDetailPage extends StatelessWidget {
                     style: tt.bodySmall,
                   ),
                   const SizedBox(height: 6),
-                  ...project.skills.map((s) => Text('• $s', style: tt.bodyMedium)),
+                  ...project.skills.map(
+                    (s) => Text('• $s', style: tt.bodyMedium),
+                  ),
                 ],
               ),
             ),

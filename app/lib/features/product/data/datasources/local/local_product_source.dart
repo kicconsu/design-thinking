@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:f_clean_template/core/i_local_preferences.dart';
+import 'package:f_clean_template/core/preferences/i_local_preferences.dart';
 
 import '../../../domain/models/product.dart';
 import '../i_remote_product_source.dart';

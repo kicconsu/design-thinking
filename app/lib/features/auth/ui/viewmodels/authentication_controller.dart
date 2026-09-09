@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:loggy/loggy.dart';
 
-import '../../../../core/error_message.dart';
+import '../../../../core/utils/error_message.dart';
 
 class AuthenticationController extends GetxController with UiLoggy {
   final IAuthRepository repoAuthentication;

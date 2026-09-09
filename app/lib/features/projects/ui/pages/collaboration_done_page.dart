@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../core/navigation/ui/viewmodels/navigation_controller.dart';
+import '../../../home/ui/viewmodels/home_view_model.dart';
 import '../../../discover/domain/models/project.dart';
 import '../viewmodels/user_projects_controller.dart';
 
@@ -79,7 +79,7 @@ class _CollaborationDonePageState extends State<CollaborationDonePage> {
                   ),
                 ),
                 onPressed: () {
-                  Get.find<NavigationController>().changePage(1);
+                  Get.find<HomeViewModel>().changePage(1);
                   Get.until((route) => route.isFirst);
                 },
                 icon: const Icon(Icons.list_alt_outlined),

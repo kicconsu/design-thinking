@@ -1,7 +1,7 @@
-import 'package:f_clean_template/core/navigation/ui/viewmodels/navigation_controller.dart';
+import 'package:f_clean_template/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:f_clean_template/features/discover/domain/models/project.dart';
 import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
-import 'package:f_clean_template/features/projects/ui/views/project_detail_page.dart';
+import 'package:f_clean_template/features/projects/ui/pages/project_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -27,10 +27,7 @@ class ProjectCard extends StatelessWidget {
           _JobsRow(jobs: project.jobs, textColor: cs.onPrimary, tt: tt),
           Divider(color: cs.outline, thickness: 1, height: 1),
           // Image takes remaining vertical space
-          Expanded(
-            flex: 4,
-            child: _ProjectImage(imageUrl: project.imageUrl),
-          ),
+          Expanded(flex: 4, child: _ProjectImage(imageUrl: project.imageUrl)),
           Divider(color: cs.outline, thickness: 1, height: 1),
           // Title
           Padding(
@@ -92,8 +89,6 @@ class _JobsRow extends StatelessWidget {
   }
 }
 
-
-
 class _ProjectImage extends StatelessWidget {
   final String imageUrl;
 
@@ -103,10 +98,9 @@ class _ProjectImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.network(
       imageUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const Center(
-        child: Icon(Icons.broken_image_outlined, size: 48),
-      ),
+      fit: BoxFit.fill,
+      errorBuilder: (_, __, ___) =>
+          const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
       loadingBuilder: (_, child, progress) {
         if (progress == null) return child;
         return const Center(child: CircularProgressIndicator());
@@ -204,7 +198,7 @@ class _ActionButtons extends StatelessWidget {
       mainButton: TextButton(
         onPressed: () {
           Get.closeCurrentSnackbar();
-          Get.find<NavigationController>().changePage(1);
+          Get.find<HomeViewModel>().changePage(1);
         },
         child: Text(
           'Ir a Proyectos',

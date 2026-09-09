@@ -1,5 +1,5 @@
 import 'package:f_clean_template/features/discover/ui/viewmodels/discover_controller.dart';
-import 'package:f_clean_template/features/projects/ui/views/project_card.dart';
+import 'package:f_clean_template/features/projects/ui/widgets/project_card.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
