@@ -17,21 +17,19 @@ class ProjectCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: cs.onPrimaryContainer,
+        color: cs.secondaryContainer,
         border: Border.all(color: cs.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Jobs at top
-          _JobsRow(jobs: project.jobs, textColor: cs.onPrimary, tt: tt),
-          Divider(color: cs.outline, thickness: 1, height: 1),
+          _JobsRow(jobs: project.jobs, tt: tt),
           // Image takes remaining vertical space
-          Expanded(
-            flex: 4,
+          Container(
+            margin: EdgeInsets.all(5),
             child: _ProjectImage(imageUrl: project.imageUrl),
           ),
-          Divider(color: cs.outline, thickness: 1, height: 1),
           // Title
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -39,7 +37,7 @@ class ProjectCard extends StatelessWidget {
               project.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: tt.titleLarge?.copyWith(color: cs.onPrimary),
+              style: tt.titleLarge?.copyWith(),
             ),
           ),
           Divider(color: cs.outline, thickness: 1, height: 1),
@@ -49,14 +47,13 @@ class ProjectCard extends StatelessWidget {
             child: _SkillsAndDescription(
               skills: project.skills,
               description: project.description,
-              textColor: cs.onPrimary,
               tt: tt,
               dividerColor: cs.outline,
             ),
           ),
           Divider(color: cs.outline, thickness: 1, height: 1),
           // Buttons
-          _ActionButtons(textColor: cs.onPrimary, cs: cs, project: project),
+          _ActionButtons(tt: tt, cs: cs, project: project),
         ],
       ),
     );
@@ -69,14 +66,9 @@ class ProjectCard extends StatelessWidget {
 
 class _JobsRow extends StatelessWidget {
   final List<String> jobs;
-  final Color textColor;
   final TextTheme tt;
 
-  const _JobsRow({
-    required this.jobs,
-    required this.textColor,
-    required this.tt,
-  });
+  const _JobsRow({required this.jobs, required this.tt});
 
   @override
   Widget build(BuildContext context) {
@@ -86,13 +78,11 @@ class _JobsRow extends StatelessWidget {
         jobs.join(' · '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: tt.labelMedium?.copyWith(color: textColor, letterSpacing: 0.5),
+        style: tt.labelMedium?.copyWith(letterSpacing: 0.5),
       ),
     );
   }
 }
-
-
 
 class _ProjectImage extends StatelessWidget {
   final String imageUrl;
@@ -103,10 +93,9 @@ class _ProjectImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.network(
       imageUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const Center(
-        child: Icon(Icons.broken_image_outlined, size: 48),
-      ),
+      fit: BoxFit.fill,
+      errorBuilder: (_, __, ___) =>
+          const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
       loadingBuilder: (_, child, progress) {
         if (progress == null) return child;
         return const Center(child: CircularProgressIndicator());
@@ -118,14 +107,12 @@ class _ProjectImage extends StatelessWidget {
 class _SkillsAndDescription extends StatelessWidget {
   final List<String> skills;
   final String description;
-  final Color textColor;
   final TextTheme tt;
   final Color dividerColor;
 
   const _SkillsAndDescription({
     required this.skills,
     required this.description,
-    required this.textColor,
     required this.tt,
     required this.dividerColor,
   });
@@ -145,7 +132,6 @@ class _SkillsAndDescription extends StatelessWidget {
                   Text(
                     'Habilidades requeridas',
                     style: tt.labelSmall?.copyWith(
-                      color: textColor,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
                     ),
@@ -154,7 +140,7 @@ class _SkillsAndDescription extends StatelessWidget {
                   ...skills.map(
                     (s) => Text(
                       '· $s',
-                      style: tt.bodySmall?.copyWith(color: textColor),
+                      style: tt.bodySmall?.copyWith(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -169,7 +155,7 @@ class _SkillsAndDescription extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               child: Text(
                 description,
-                style: tt.bodySmall?.copyWith(color: textColor),
+                style: tt.bodySmall?.copyWith(),
                 maxLines: 7,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -182,12 +168,12 @@ class _SkillsAndDescription extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  final Color textColor;
   final ColorScheme cs;
   final Project project;
+  final TextTheme tt;
 
   const _ActionButtons({
-    required this.textColor,
+    required this.tt,
     required this.cs,
     required this.project,
   });
@@ -198,7 +184,6 @@ class _ActionButtons extends StatelessWidget {
       "Entra a la pestaña 'Proyectos' para más detalles.",
       snackPosition: SnackPosition.TOP,
       backgroundColor: cs.tertiaryContainer,
-      colorText: cs.onTertiaryContainer,
       icon: Icon(Icons.bookmark, color: cs.onTertiaryContainer),
       duration: const Duration(seconds: 4),
       mainButton: TextButton(
@@ -206,13 +191,7 @@ class _ActionButtons extends StatelessWidget {
           Get.closeCurrentSnackbar();
           Get.find<NavigationController>().changePage(1);
         },
-        child: Text(
-          'Ir a Proyectos',
-          style: TextStyle(
-            color: cs.onTertiaryContainer,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: Text('Ir a Proyectos', style: tt.labelSmall?.copyWith()),
       ),
     );
   }
@@ -237,7 +216,7 @@ class _ActionButtons extends StatelessWidget {
             },
             style: buttonStyle,
             icon: const Icon(Icons.menu_book),
-            label: Text('Leer más', style: TextStyle(color: textColor)),
+            label: Text('Leer más', style: tt.headlineSmall),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -254,7 +233,7 @@ class _ActionButtons extends StatelessWidget {
                 icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
                 label: Text(
                   saved ? 'Guardado' : '¡Me interesa!',
-                  style: TextStyle(color: textColor),
+                  style: tt.headlineSmall,
                   overflow: TextOverflow.ellipsis,
                 ),
               );
