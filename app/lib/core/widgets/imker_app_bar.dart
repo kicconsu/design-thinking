@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class OffsetAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const OffsetAppBar({super.key});
+class ImkerAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const ImkerAppBar({super.key});
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);

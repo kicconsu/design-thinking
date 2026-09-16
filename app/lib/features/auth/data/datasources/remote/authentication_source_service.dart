@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:loggy/loggy.dart';
 import 'package:http/http.dart' as http;
-import '../../../../../core/i_local_preferences.dart';
+
+import '../../../../../core/preferences/i_local_preferences.dart';
 import '../../../domain/models/authentication_user.dart';
 import 'i_authentication_source.dart';
 

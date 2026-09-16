@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../discover/domain/models/project.dart';
-import 'collaboration_done_page.dart';
+import 'package:f_clean_template/features/discover/domain/models/project.dart';
+import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:f_clean_template/features/projects/ui/widgets/confirm_application_dialog.dart';
 
-/// Pantalla "Lilliene-desc" del flujo de Figma: se abre al presionar
-/// "Leer más" desde una tarjeta de Descubrir.
+/// Pantalla de detalle de proyecto: permite ver la descripción completa,
+/// integrantes, habilidades requeridas y postularse al proyecto.
 class ProjectDetailPage extends StatelessWidget {
   final Project project;
 
@@ -15,6 +16,7 @@ class ProjectDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final userProjectsController = Get.find<UserProjectsController>();
 
     return Scaffold(
       backgroundColor: cs.primaryContainer,
@@ -60,24 +62,36 @@ class ProjectDetailPage extends StatelessWidget {
                     style: tt.bodySmall,
                   ),
                   const SizedBox(height: 6),
-                  ...project.skills.map((s) => Text('• $s', style: tt.bodyMedium)),
+                  ...project.skills.map(
+                    (s) => Text('• $s', style: tt.bodyMedium),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+            Obx(() {
+              final isPending = userProjectsController.isApplied(project.id);
+              final isActive = userProjectsController.activeProjects
+                  .any((p) => p.id == project.id);
+
+              // No mostrar el botón si ya es pendiente o colaboración activa
+              if (isPending || isActive) return const SizedBox.shrink();
+
+              return FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
                 ),
-              ),
-              onPressed: () {
-                Get.to(() => CollaborationDonePage(project: project));
-              },
-              icon: const Icon(Icons.volunteer_activism_outlined),
-              label: const Text('¡Quiero colaborar!'),
-            ),
+                onPressed: () => showConfirmApplicationDialog(
+                  context: context,
+                  project: project,
+                ),
+                icon: const Icon(Icons.volunteer_activism_outlined),
+                label: const Text('¡Quiero colaborar!'),
+              );
+            }),
           ],
         ),
       ),
