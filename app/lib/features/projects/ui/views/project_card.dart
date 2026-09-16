@@ -94,7 +94,7 @@ class _ProjectImage extends StatelessWidget {
     return Image.network(
       imageUrl,
       fit: BoxFit.fill,
-      errorBuilder: (_, __, ___) =>
+      errorBuilder: (_, _, _) =>
           const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
       loadingBuilder: (_, child, progress) {
         if (progress == null) return child;

@@ -125,7 +125,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: cs.outline.withOpacity(0.3))),
+        border: Border(bottom: BorderSide(color: cs.outline.withValues(alpha: 0.3))),
       ),
       child: Row(children: [_buildTabItem('Info. básica', 0, cs, tt)]),
     );
