@@ -200,6 +200,7 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final projectsController = Get.find<UserProjectsController>();
     final buttonStyle = FilledButton.styleFrom(
+      backgroundColor: cs.inversePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
         side: BorderSide(color: Colors.black, width: 1),

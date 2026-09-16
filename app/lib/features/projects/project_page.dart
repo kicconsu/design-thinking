@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../discover/domain/models/project.dart';
 import 'ui/viewmodels/user_projects_controller.dart';
+import 'ui/views/create_project.dart';
 
 /// Pestaña "Proyectos": muestra los proyectos que el usuario co-crea y los
 /// que guardó desde Descubrir (pantalla "Collab-Saved" del flujo de Figma).
@@ -15,14 +16,22 @@ class ProjectPage extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return ColoredBox(
-      color: cs.primaryContainer,
+    return Container(
+      margin: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        border: Border.all(color: cs.outline),
+      ),
       child: SafeArea(
         child: Obx(
           () => ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _SectionHeader(title: 'Proyectos Co-creados', icon: Icons.add),
+              _SectionHeader(
+                title: 'Proyectos Co-creados',
+                icon: Icons.add,
+                onTap: () => Get.to(() => const CreateProjectPage()),
+              ),
               if (controller.coCreatedProjects.isEmpty)
                 _EmptyState(text: 'Aún no co-creas ningún proyecto.', tt: tt)
               else
@@ -68,8 +77,9 @@ class ProjectPage extends StatelessWidget {
 class _SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
+  final VoidCallback? onTap;
 
-  const _SectionHeader({required this.title, required this.icon});
+  const _SectionHeader({required this.title, required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -80,12 +90,22 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const Spacer(),
-          Icon(icon, color: cs.onPrimaryContainer),
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: cs.inversePrimary,
+                border: Border.all(color: cs.outline),
+              ),
+              child: Icon(icon, size: 20, color: cs.onSurface),
+            ),
+          ),
         ],
       ),
     );
@@ -149,10 +169,7 @@ class _ProjectTile extends StatelessWidget {
             children: [
               Icon(Icons.people_outline, size: 18, color: cs.onSurfaceVariant),
               const SizedBox(width: 4),
-              Text(
-                '${project.members.length} miembros',
-                style: tt.bodySmall,
-              ),
+              Text('${project.members.length} miembros', style: tt.bodySmall),
               const Spacer(),
               trailing,
             ],
