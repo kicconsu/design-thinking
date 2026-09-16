@@ -3,7 +3,7 @@ import 'package:f_clean_template/core/widgets/imker_bottom_nav_bar.dart';
 import 'package:f_clean_template/core/widgets/imker_app_bar.dart';
 import 'package:f_clean_template/features/discover/ui/pages/discover_page.dart';
 import 'package:f_clean_template/features/profile/pages/profile_page.dart';
-import 'package:f_clean_template/features/projects/project_page.dart';
+import 'package:f_clean_template/features/projects/ui/pages/projects_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -21,7 +21,7 @@ class HomePage extends StatelessWidget {
         appBar: ImkerAppBar(),
         body: IndexedStack(
           index: homeViewModel.currentIndex.value,
-          children: const [DiscoverPage(), ProjectPage(), ProfilePage()],
+          children: const [DiscoverPage(), ProjectsPage(), ProfilePage()],
         ),
         bottomNavigationBar: ImkerBottomNavBar(
           currentIndex: homeViewModel.currentIndex.value,
