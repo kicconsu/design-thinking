@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../discover/domain/models/project.dart';
 import 'ui/viewmodels/user_projects_controller.dart';
 import 'ui/views/create_project.dart';
+import 'ui/views/collaboration_requests_page.dart';
 
 /// Pestaña "Proyectos": muestra los proyectos que el usuario co-crea y los
 /// que guardó desde Descubrir (pantalla "Collab-Saved" del flujo de Figma).
@@ -38,9 +39,13 @@ class ProjectPage extends StatelessWidget {
                 ...controller.coCreatedProjects.map(
                   (project) => _ProjectTile(
                     project: project,
-                    trailing: _Badge(
-                      icon: Icons.bookmark_outline,
-                      label: '${project.applicantsCount} postulados',
+                    trailing: _RequestsButton(
+                      count: controller.pendingApplicantsCount(project.id),
+                      onTap: () {
+                        Get.to(
+                          () => CollaborationRequestsPage(project: project),
+                        );
+                      },
                       cs: cs,
                     ),
                   ),
@@ -180,28 +185,35 @@ class _ProjectTile extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  final IconData icon;
-  final String label;
+class _RequestsButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
   final ColorScheme cs;
 
-  const _Badge({required this.icon, required this.label, required this.cs});
+  const _RequestsButton({
+    required this.count,
+    required this.onTap,
+    required this.cs,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: cs.secondaryContainer),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: cs.onSecondaryContainer),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(color: cs.onSecondaryContainer, fontSize: 12),
-          ),
-        ],
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(color: cs.secondaryContainer),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bookmark_outline, size: 16, color: cs.onSecondaryContainer),
+            const SizedBox(width: 4),
+            Text(
+              '$count solicitud${count == 1 ? '' : 'es'}',
+              style: TextStyle(color: cs.onSecondaryContainer, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }
