@@ -40,7 +40,7 @@ class UserProjectsController extends GetxController {
             'Proyecto de renovación urbana enfocado en la integración de tecnologías sostenibles en edificios históricos.',
         members: ['Pedro Jiménez', 'Alberto Mendoza', 'Juana De Arco'],
         status: 'Activo',
-        applicantsCount: 3,
+        applicantsCount: 1,
       ),
     );
   }

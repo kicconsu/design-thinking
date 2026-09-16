@@ -1,3 +1,6 @@
+import 'package:f_clean_template/features/projects/ui/views/collaboration_requests_page.dart';
+import 'package:f_clean_template/features/projects/ui/views/create_project.dart';
+import 'package:f_clean_template/features/projects/ui/views/requests_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -61,13 +64,7 @@ class CoCreatedProjectsPage extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.add_box_outlined),
                 tooltip: 'Crear nuevo proyecto',
-                onPressed: () {
-                  Get.snackbar(
-                    'Crear proyecto',
-                    'El flujo de creación estará disponible próximamente.',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
+                onPressed: () => Get.to(() => const CreateProjectPage()),
               ),
             ],
           ),
@@ -75,30 +72,7 @@ class CoCreatedProjectsPage extends StatelessWidget {
           ...projects.map(
             (project) => ProjectTile(
               project: project,
-              // NO tiene onTap hacia ProjectDetailPage por requerimiento
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: cs.secondaryContainer),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.bookmark_outline,
-                      size: 16,
-                      color: cs.onSecondaryContainer,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${project.applicantsCount} postulados',
-                      style: TextStyle(
-                        color: cs.onSecondaryContainer,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              trailing: RequestsButton(count: project.applicantsCount, onTap: () => Get.to(() => CollaborationRequestsPage(project: project)), cs: cs),
             ),
           ),
         ],
