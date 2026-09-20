@@ -1,0 +1,134 @@
+@startuml v1
+title Imker - UML v1
+
+hide circle
+skinparam shadowing false
+
+legend right
+Toda tabla del servicio tiene _id y _owner asignados por ROBLE.
+_owner = quién creó la fila.
+Encima de la línea "--" va la PK
+"*" = NOT NULL.
+Llaves con underscore (user_id), atributos en camelCase (createdAt).
+endlegend
+
+' ───────── Entidades ─────────
+entity user_system <<ROBLE>> {
+* id : uuid <<PK>>
+--
+* user_id : uuid
+* email : text
+* name : text
+* createdAt : timestamptz
+* updatedAt : timestamptz
+  extra : jsonb
+  metadata : jsonb
+}
+
+entity profile {
+* _id : uuid <<PK>>
+--
+  _owner : text <<FK user_system>>
+* name : text
+* career : json
+  skills : json
+  profilePicture : varchar
+  description : text
+}
+
+entity project {
+* _id : uuid <<PK>>
+--
+  _owner : text
+* title : text
+* imageUrl : varchar
+* description : text
+* jobs : json
+* skills : json
+* status : open | closed
+}
+
+entity project_saved  {
+* user_id : uuid <<PK, FK>>
+* project_id : uuid <<PK, FK>>
+--
+* createdAt : timestamptz
+}
+
+entity project_join_request {
+* _id : uuid <<PK>>
+--
+* user_id : uuid <<FK>>
+* project_id : uuid <<FK>>
+* status : pending | approved | denied | cancelled
+* createdAt : timestamptz
+* updatedAt : timestamptz
+  reviewed_by : uuid <<FK user_system>>
+  reviewNote : text
+}
+
+entity project_member {
+* user_id : uuid <<PK, FK>>
+* project_id : uuid <<PK, FK>>
+--
+* role : owner | member
+}
+
+entity task {
+* _id : uuid <<PK>>
+--
+* project_id : uuid <<FK>>
+* title : text
+  description : text
+* status : todo | doing | done
+}
+
+entity contribution  {
+* _id : uuid <<PK>>
+--
+* user_id : uuid <<FK>>
+* project_id : uuid <<FK>>
+* task_id : uuid <<FK>>
+* description : text
+* createdAt : timestamptz
+}
+
+' ───────── Relaciones ─────────
+user_system ||--o| profile : "_owner "
+
+user_system ||--o{ project_saved
+project ||--o{ project_saved
+
+user_system ||--o{ project_join_request : solicita
+user_system |o--o{ project_join_request : "revisa"
+project ||--o{ project_join_request
+
+user_system ||--o{ project_member
+project ||--o{ project_member
+
+project ||--o{ task
+
+project_member ||--o{ contribution : "(user_id, project_id)"
+task ||--o{ contribution
+
+' ───────── Notas ─────────
+note bottom of contribution
+BEFORE INSERT OR UPDATE (si es posible):
+  validar que el member y la task
+  sean del mismo proyecto.
+end note
+
+note bottom of project_join_request
+Una sola solicitud pending a la vez
+  por cada (user_id, project_id).
+Las denied/cancelled quedan de historial.
+end note
+
+note bottom of project_member
+PK (user_id, project_id): una membresía
+  por usuario y proyecto.
+Pendiente: qué pasa cuando alguien se va
+(status o left_at).
+end note
+
+@enduml
