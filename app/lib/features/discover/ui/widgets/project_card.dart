@@ -1,7 +1,7 @@
-import 'package:f_clean_template/features/home/ui/viewmodels/home_view_model.dart';
-import 'package:f_clean_template/features/discover/domain/models/project.dart';
-import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
-import 'package:f_clean_template/features/projects/ui/pages/project_detail_page.dart';
+import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
+import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
 
-import '../../domain/models/project.dart';
-import '../../domain/project_failure.dart';
-import '../../domain/repositories/i_project_repository.dart';
+import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/project_failure.dart';
+import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 
 class DiscoverController extends GetxController {
   DiscoverController(this._repository);

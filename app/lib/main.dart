@@ -1,7 +1,7 @@
-import 'package:f_clean_template/features/home/ui/viewmodels/home_view_model.dart';
-import 'package:f_clean_template/features/home/ui/pages/home_page.dart';
-import 'package:f_clean_template/core/theme/theme.dart';
-import 'package:f_clean_template/core/theme/theme_builder.dart';
+import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
+import 'package:imker/features/home/ui/pages/home_page.dart';
+import 'package:imker/core/theme/theme.dart';
+import 'package:imker/core/theme/theme_builder.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -16,6 +16,7 @@ import 'core/roble/roble_config.dart';
 import 'features/auth/auth_dependencies.dart';
 import 'features/discover/discover_dependencies.dart';
 import 'features/product/product_dependencies.dart';
+import 'features/projects/projects_dependencies.dart';
 import 'features/projects/ui/viewmodels/user_projects_controller.dart';
 
 void main() async {
@@ -27,14 +28,19 @@ void main() async {
       : LocalPreferencesSecured();
   Get.put<ILocalPreferences>(preferences, permanent: true);
 
-  final robleClient = RobleClient(
-    baseUrl: RobleConfig.baseUrl,
-    contractId: RobleConfig.contractId,
-  );
-  Get.put(robleClient, permanent: true);
+  // Iniciar cliente de Roble si se tienen las credenciales
+  // De lo contrario, se trabaja con datos mockeados.
+  if (RobleConfig.contractId.isNotEmpty) {
+    final robleClient = RobleClient(
+      baseUrl: RobleConfig.baseUrl,
+      contractId: RobleConfig.contractId,
+    );
+    Get.put(robleClient, permanent: true);
+  }
 
   registerAuth();
   registerProduct();
+  registerProjects();
   registerDiscover();
   Get.put(HomeViewModel());
   Get.put(UserProjectsController(), permanent: true);

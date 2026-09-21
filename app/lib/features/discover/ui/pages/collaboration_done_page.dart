@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:f_clean_template/core/widgets/operation_done_page.dart';
-import 'package:f_clean_template/features/discover/domain/models/project.dart';
-import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/core/widgets/operation_done_page.dart';
+import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
 /// Pantalla "Done!" del flujo de Figma: confirma la postulación del usuario
 /// para colaborar en el proyecto usando el componente reutilizable OperationDonePage.

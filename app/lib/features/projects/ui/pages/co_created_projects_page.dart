@@ -1,11 +1,11 @@
-import 'package:f_clean_template/features/projects/ui/views/collaboration_requests_page.dart';
-import 'package:f_clean_template/features/projects/ui/views/create_project.dart';
-import 'package:f_clean_template/features/projects/ui/views/requests_button.dart';
+import 'package:imker/features/projects/ui/views/collaboration_requests_page.dart';
+import 'package:imker/features/projects/ui/views/create_project.dart';
+import 'package:imker/features/projects/ui/views/requests_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
-import 'package:f_clean_template/features/projects/ui/widgets/project_tile.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/widgets/project_tile.dart';
 
 /// Vista para los proyectos que el usuario co-crea.
 /// Nota: El detalle de proyecto existente está reservado para otras categorías.

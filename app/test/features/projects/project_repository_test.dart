@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:f_clean_template/features/discover/data/datasources/i_project_data_source.dart';
-import 'package:f_clean_template/features/discover/data/datasources/in_memory_project_data_source.dart';
-import 'package:f_clean_template/features/discover/data/repositories/project_repository.dart';
-import 'package:f_clean_template/features/discover/domain/project_failure.dart';
+import 'package:imker/features/projects/data/datasources/i_project_data_source.dart';
+import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
+import 'package:imker/features/projects/data/repositories/project_repository.dart';
+import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:roble/roble.dart';
 
 class _FailingDataSource implements IProjectDataSource {
@@ -14,6 +14,17 @@ class _FailingDataSource implements IProjectDataSource {
 
   @override
   Future<Map<String, dynamic>?> readProjectById(String id) async => throw exception;
+}
+
+class _SingleProjectDataSource implements IProjectDataSource {
+  _SingleProjectDataSource(this.row);
+  final Map<String, dynamic> row;
+
+  @override
+  Future<List<Map<String, dynamic>>> readProjects() async => [row];
+
+  @override
+  Future<Map<String, dynamic>?> readProjectById(String id) async => row;
 }
 
 void main() {
@@ -28,6 +39,44 @@ void main() {
       expect(projects.first.jobs, isNotEmpty);
       expect(projects.first.skills, isNotEmpty);
       expect(projects.first.isOpen, isTrue);
+    });
+
+    test('mapea jobs y skills cuando vienen envueltos en objeto {"values": [...]}', () async {
+      final source = _SingleProjectDataSource({
+        '_id': '42',
+        '_owner': 'u1',
+        'title': 'Test',
+        'imageUrl': '',
+        'description': '',
+        'jobs': {
+          'values': ['Dev', 'Designer']
+        },
+        'skills': '{"values": ["Dart", "Flutter"]}',
+        'status': 'open',
+      });
+      final repo = ProjectRepository(source);
+      final project = await repo.getProjectById('42');
+
+      expect(project!.jobs, ['Dev', 'Designer']);
+      expect(project.skills, ['Dart', 'Flutter']);
+    });
+
+    test('devuelve lista vacía si jobs o skills no siguen la convención estricta {"values": [...]}', () async {
+      final source = _SingleProjectDataSource({
+        '_id': '43',
+        '_owner': 'u1',
+        'title': 'Test Loose',
+        'imageUrl': '',
+        'description': '',
+        'jobs': ['Dev', 'Designer'], // lista directa no permitida
+        'skills': {'otherKey': ['Dart', 'Flutter']}, // mapa sin 'values'
+        'status': 'open',
+      });
+      final repo = ProjectRepository(source);
+      final project = await repo.getProjectById('43');
+
+      expect(project!.jobs, isEmpty);
+      expect(project.skills, isEmpty);
     });
 
     test('obtiene un proyecto por ID', () async {

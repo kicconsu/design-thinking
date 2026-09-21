@@ -1,4 +1,4 @@
-import 'package:f_clean_template/features/product/domain/repositories/i_product_repository.dart';
+import 'package:imker/features/product/domain/repositories/i_product_repository.dart';
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
