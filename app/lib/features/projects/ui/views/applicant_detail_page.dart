@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../discover/domain/models/project.dart';
+import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
 import '../viewmodels/user_projects_controller.dart';
 import 'request_decision_result_page.dart';

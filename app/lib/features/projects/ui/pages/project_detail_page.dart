@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:f_clean_template/features/discover/domain/models/project.dart';
-import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
-import 'package:f_clean_template/features/projects/ui/widgets/confirm_application_dialog.dart';
+import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 
 /// Pantalla de detalle de proyecto: permite ver la descripción completa,
 /// integrantes, habilidades requeridas y postularse al proyecto.

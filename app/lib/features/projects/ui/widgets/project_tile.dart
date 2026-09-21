@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:f_clean_template/features/discover/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project.dart';
 
 /// Tarjeta reutilizable para mostrar un proyecto en las listas de proyectos.
 class ProjectTile extends StatelessWidget {

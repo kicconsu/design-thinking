@@ -15,6 +15,6 @@ abstract class RobleConfig {
 
   static const contractId = String.fromEnvironment(
     'ROBLE_CONTRACT_ID',
-    defaultValue: '',
+    defaultValue: 'imker_532a660dc4',
   );
 }

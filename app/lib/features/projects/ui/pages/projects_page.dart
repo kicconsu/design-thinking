@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:f_clean_template/features/projects/ui/pages/co_created_projects_page.dart';
-import 'package:f_clean_template/features/projects/ui/pages/other_projects_page.dart';
-import 'package:f_clean_template/features/projects/ui/viewmodels/user_projects_controller.dart';
-import 'package:f_clean_template/core/widgets/segmented_tab_switch.dart';
+import 'package:imker/features/projects/ui/pages/co_created_projects_page.dart';
+import 'package:imker/features/projects/ui/pages/other_projects_page.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/core/widgets/segmented_tab_switch.dart';
 
 /// Página principal del feature Proyectos:
 /// Coordina la alternancia entre "Proyectos Co-creados" y "Otros Proyectos"

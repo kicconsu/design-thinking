@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
-import '../../../discover/domain/models/project.dart';
+import '../../domain/fixtures/project_fixtures.dart';
+import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
 
 /// Mantiene el estado de los proyectos del usuario: los que co-crea,
@@ -28,39 +29,12 @@ class UserProjectsController extends GetxController {
 
   // Placeholder mientras no exista el flujo real de creación de proyectos.
   void _seedCoCreatedDemo() {
-    coCreatedProjects.add(
-      const Project(
-        id: 'kirche-co-created',
-        title: 'Kirche: Proyecto de renovación urbana y sostenibilidad',
-        imageUrl:
-            'https://fultoncountyvetclinic.com/wp-content/uploads/bb-plugin/cache/cat-stretching-panorama-fd4135722bc818a9db1debc7def411a0-4hg3jvxm67az.jpg',
-        jobs: ['Ing. Software', 'Ing. Ambiental', 'Ing. Electrónica', 'Ing. Industrial'],
-        skills: ['Modelación', 'Análisis de datos', 'Desarrollo de software', 'Diseño de software'],
-        description:
-            'Proyecto de renovación urbana enfocado en la integración de tecnologías sostenibles en edificios históricos.',
-        members: ['Pedro Jiménez', 'Alberto Mendoza', 'Juana De Arco'],
-        status: 'Activo',
-        applicantsCount: 1,
-      ),
-    );
+    coCreatedProjects.add(ProjectFixtures.kirche);
   }
 
   // Placeholder de proyecto en el que el usuario ya colabora activamente.
   void _seedActiveCollaborationDemo() {
-    activeProjects.add(
-      const Project(
-        id: 'solaria-active',
-        title: 'Solaria: Red comunitaria de microrredes solares',
-        imageUrl: 'https://picsum.photos/seed/solaria-panel/800/450',
-        jobs: ['Ing. Eléctrica', 'Desarrollador IoT'],
-        skills: ['Hardware', 'Firmware', 'C++', 'Sistemas Embebidos'],
-        description:
-            'Implementación de microrredes solares conectadas entre vecinos para compartir excedentes de energía limpia.',
-        members: ['Santiago Vargas', 'Tú (Colaborador)', 'Mariana Ruiz'],
-        status: 'En Desarrollo',
-        applicantsCount: 5,
-      ),
-    );
+    activeProjects.add(ProjectFixtures.solaria);
   }
 
   // Proyectos guardados que todavía no han sido postulados
@@ -79,7 +53,7 @@ class UserProjectsController extends GetxController {
     applicants.add(
       const Applicant(
         id: 'valentina-rios',
-        projectId: 'kirche-co-created',
+        projectId: ProjectFixtures.kircheId,
         name: 'Valentina Ríos',
         academicInfo: 'Ingeniería de Sistemas - Universidad de la Costa',
         requestedRole: 'Analista de datos',

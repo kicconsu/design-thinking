@@ -1,4 +1,4 @@
-import 'package:f_clean_template/features/product/ui/views/list_product_page.dart';
+import 'package:imker/features/product/ui/views/list_product_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

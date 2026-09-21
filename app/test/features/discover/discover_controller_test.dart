@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:f_clean_template/features/discover/data/datasources/in_memory_project_data_source.dart';
-import 'package:f_clean_template/features/discover/data/repositories/project_repository.dart';
-import 'package:f_clean_template/features/discover/domain/models/project.dart';
-import 'package:f_clean_template/features/discover/domain/project_failure.dart';
-import 'package:f_clean_template/features/discover/domain/repositories/i_project_repository.dart';
-import 'package:f_clean_template/features/discover/ui/viewmodels/discover_controller.dart';
+import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
+import 'package:imker/features/projects/data/repositories/project_repository.dart';
+import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/project_failure.dart';
+import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
+import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
 
 class _MockFailingRepository implements IProjectRepository {
   @override
