@@ -6,6 +6,7 @@ class RequestsButton extends StatelessWidget {
   final ColorScheme cs;
 
   const RequestsButton({
+    super.key,
     required this.count,
     required this.onTap,
     required this.cs,

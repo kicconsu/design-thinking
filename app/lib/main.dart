@@ -10,8 +10,11 @@ import 'package:loggy/loggy.dart';
 import 'core/preferences/i_local_preferences.dart';
 import 'core/preferences/local_preferences_secured.dart';
 import 'core/preferences/local_preferences_shared.dart';
+import 'core/roble/roble_client.dart';
+import 'core/roble/roble_config.dart';
 
 import 'features/auth/auth_dependencies.dart';
+import 'features/discover/discover_dependencies.dart';
 import 'features/product/product_dependencies.dart';
 import 'features/projects/ui/viewmodels/user_projects_controller.dart';
 
@@ -24,8 +27,15 @@ void main() async {
       : LocalPreferencesSecured();
   Get.put<ILocalPreferences>(preferences, permanent: true);
 
+  final robleClient = RobleClient(
+    baseUrl: RobleConfig.baseUrl,
+    contractId: RobleConfig.contractId,
+  );
+  Get.put(robleClient, permanent: true);
+
   registerAuth();
   registerProduct();
+  registerDiscover();
   Get.put(HomeViewModel());
   Get.put(UserProjectsController(), permanent: true);
   runApp(const MyApp());
