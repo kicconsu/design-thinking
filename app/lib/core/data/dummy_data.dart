@@ -20,6 +20,10 @@ class DummyData {
   static const String eduReachId = '3';
   static const String solariaId = 'solaria-active';
 
+  // ─── Credenciales de Prueba (Desarrollo) ───────────────────────────────────
+  static const String devEmail = 'dev@uninorte.edu.co';
+  static const String devPassword = 'ThePassword1!';
+
   /// Filas de la tabla 'project' que devolvería Roble.
   /// Respeta la convención de almacenar listas bajo {"values": [...]}.
   final projects = <Map<String, dynamic>>[];

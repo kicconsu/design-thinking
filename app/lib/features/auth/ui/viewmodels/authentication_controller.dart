@@ -3,6 +3,7 @@ import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
+import 'package:imker/core/data/dummy_data.dart';
 import '../../../../core/utils/error_message.dart';
 
 class AuthenticationController extends GetxController with UiLoggy {
@@ -75,7 +76,7 @@ class AuthenticationController extends GetxController with UiLoggy {
 
   /// Acceso rápido para desarrollo y pruebas locales (usado en kDebugMode).
   Future<bool> quickDevLogin() async {
-    return login('dev@uninorte.edu.co', 'ThePassword1!');
+    return login(DummyData.devEmail, DummyData.devPassword);
   }
 
   Future<bool> signUp(String email, String password, {String name = ''}) async {
