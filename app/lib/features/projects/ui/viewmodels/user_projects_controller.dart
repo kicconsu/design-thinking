@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import '../../domain/fixtures/project_fixtures.dart';
+import 'package:imker/core/data/dummy_data.dart';
 import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
 
@@ -29,12 +29,12 @@ class UserProjectsController extends GetxController {
 
   // Placeholder mientras no exista el flujo real de creación de proyectos.
   void _seedCoCreatedDemo() {
-    coCreatedProjects.add(ProjectFixtures.kirche);
+    coCreatedProjects.add(DummyData.kircheProject);
   }
 
   // Placeholder de proyecto en el que el usuario ya colabora activamente.
   void _seedActiveCollaborationDemo() {
-    activeProjects.add(ProjectFixtures.solaria);
+    activeProjects.add(DummyData.solariaProject);
   }
 
   // Proyectos guardados que todavía no han sido postulados
@@ -53,7 +53,7 @@ class UserProjectsController extends GetxController {
     applicants.add(
       const Applicant(
         id: 'valentina-rios',
-        projectId: ProjectFixtures.kircheId,
+        projectId: DummyData.kircheId,
         name: 'Valentina Ríos',
         academicInfo: 'Ingeniería de Sistemas - Universidad de la Costa',
         requestedRole: 'Analista de datos',
