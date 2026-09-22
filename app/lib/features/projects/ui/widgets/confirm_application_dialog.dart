@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/discover/ui/pages/collaboration_done_page.dart';
 
 /// Muestra un diálogo de confirmación con estilo Imker antes de enviar la postulación.
@@ -69,7 +70,10 @@ Future<void> showConfirmApplicationDialog({
               if (onConfirmed != null) {
                 onConfirmed();
               } else {
-                Get.to(() => CollaborationDonePage(project: project));
+                final applied = Get.find<UserProjectsController>().applyToProject(project);
+                if (applied) {
+                  Get.to(() => CollaborationDonePage(project: project));
+                }
               }
             },
           ),

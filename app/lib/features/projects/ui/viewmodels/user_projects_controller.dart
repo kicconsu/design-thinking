@@ -101,14 +101,22 @@ class UserProjectsController extends GetxController {
 
   bool isApplied(String projectId) => appliedProjectIds.contains(projectId);
 
-  void saveProject(Project project) {
+  /// Guarda un proyecto. Retorna true si se guardó con éxito, false si ya estaba guardado o no se pudo.
+  bool saveProject(Project project) {
     if (!isSaved(project.id)) {
       savedProjects.add(project);
+      return true;
     }
+    return false;
   }
 
-  void applyToProject(Project project) {
+  /// Postula al usuario a un proyecto. Retorna true si se postuló con éxito.
+  bool applyToProject(Project project) {
     saveProject(project);
-    appliedProjectIds.add(project.id);
+    if (!appliedProjectIds.contains(project.id)) {
+      appliedProjectIds.add(project.id);
+      return true;
+    }
+    return false;
   }
 }

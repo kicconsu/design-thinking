@@ -292,10 +292,10 @@ packages:
     dependency: transitive
     description:
       name: google_sign_in_ios
-      sha256: "50ab85d3a732227807bb871a5df0dfaa09005f24b00b6f775f500c7b62b12d7e"
+      sha256: c2154d2849310a0286aab2e35e3bee585f2034afdf8ac364c4d7b3638e4c40b6
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.3"
+    version: "6.3.5"
   google_sign_in_platform_interface:
     dependency: transitive
     description:

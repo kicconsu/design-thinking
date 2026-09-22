@@ -1,14 +1,13 @@
-import 'package:imker/core/preferences/i_local_preferences.dart';
-import 'package:imker/features/auth/data/datasources/remote/authentication_source_service.dart';
+import 'package:imker/core/data/dummy_auth_source.dart';
 import 'package:imker/features/auth/domain/models/authentication_user.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('AuthenticationSourceService', () {
-    late AuthenticationSourceService source;
+  group('DummyAuthSource', () {
+    late DummyAuthSource source;
 
     setUp(() {
-      source = AuthenticationSourceService(_MemoryPreferences());
+      source = DummyAuthSource();
     });
 
     test(
@@ -42,52 +41,29 @@ void main() {
         throwsA(isA<StateError>()),
       );
     });
+
+    test('supports anonymous guest session and upgrade', () async {
+      expect(await source.signInAnonymously(), isTrue);
+      expect(source.isAnonymous, isTrue);
+      expect(await source.restoreSession(), isTrue);
+      final guest = await source.getLoggedUser();
+      expect(guest?.email, 'guest@anonymous.invalid');
+
+      expect(
+        await source.upgradeAccount(
+          'newuser@example.com',
+          'Pass123!',
+          'New User',
+        ),
+        isTrue,
+      );
+      expect(source.isAnonymous, isFalse);
+      final upgraded = await source.getLoggedUser();
+      expect(upgraded?.email, 'newuser@example.com');
+      expect(upgraded?.name, 'New User');
+    });
   });
 }
 
 AuthenticationUser _user(String email, String password) =>
     AuthenticationUser(email: email, name: email, password: password);
-
-class _MemoryPreferences implements ILocalPreferences {
-  final Map<String, Object> _values = <String, Object>{};
-
-  @override
-  Future<void> clear() async => _values.clear();
-
-  @override
-  Future<bool?> getBool(String key) async => _values[key] as bool?;
-
-  @override
-  Future<double?> getDouble(String key) async => _values[key] as double?;
-
-  @override
-  Future<int?> getInt(String key) async => _values[key] as int?;
-
-  @override
-  Future<String?> getString(String key) async => _values[key] as String?;
-
-  @override
-  Future<List<String>?> getStringList(String key) async =>
-      (_values[key] as List<String>?)?.toList();
-
-  @override
-  Future<void> remove(String key) async => _values.remove(key);
-
-  @override
-  Future<void> setBool(String key, bool value) async => _values[key] = value;
-
-  @override
-  Future<void> setDouble(String key, double value) async =>
-      _values[key] = value;
-
-  @override
-  Future<void> setInt(String key, int value) async => _values[key] = value;
-
-  @override
-  Future<void> setString(String key, String value) async =>
-      _values[key] = value;
-
-  @override
-  Future<void> setStringList(String key, List<String> value) async =>
-      _values[key] = value.toList();
-}

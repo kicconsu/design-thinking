@@ -1,3 +1,4 @@
+import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
@@ -218,16 +219,17 @@ class _ActionButtons extends StatelessWidget {
             label: Text('Leer más', style: tt.headlineSmall),
           ),
           const SizedBox(width: 12),
-          Expanded(
+            Expanded(
             child: Obx(() {
               final saved = projectsController.isSaved(project.id);
               return FilledButton.icon(
                 onPressed: saved
                     ? null
-                    : () {
-                        projectsController.saveProject(project);
-                        _showSavedNotice(context);
-                      },
+                    : (() {
+                        if (projectsController.saveProject(project)) {
+                          _showSavedNotice(context);
+                        }
+                      }).guarded('Para guardar proyectos necesitas una cuenta real.'),
                 style: buttonStyle,
                 icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
                 label: Text(

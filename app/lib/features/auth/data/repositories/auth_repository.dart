@@ -37,4 +37,16 @@ class AuthRepository implements IAuthRepository {
   @override
   Future<void> forgotPassword(String email) async =>
       await authenticationSource.forgotPassword(email);
+
+  @override
+  Future<bool> signInAnonymously() async =>
+      await authenticationSource.signInAnonymously();
+
+  @override
+  Future<bool> upgradeAccount(String email, String password, String name) async =>
+      await authenticationSource.upgradeAccount(email, password, name);
+
+  @override
+  bool get isAnonymous => authenticationSource.isAnonymous;
 }
+

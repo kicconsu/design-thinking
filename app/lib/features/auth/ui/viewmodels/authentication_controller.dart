@@ -1,25 +1,28 @@
 import 'package:imker/features/auth/domain/models/authentication_user.dart';
 import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:get/get.dart';
-
 import 'package:loggy/loggy.dart';
 
 import '../../../../core/utils/error_message.dart';
 
 class AuthenticationController extends GetxController with UiLoggy {
   final IAuthRepository repoAuthentication;
+
   final _logged = false.obs;
+  final _isAnonymous = false.obs;
   final _loggedUser = Rxn<AuthenticationUser>();
   final _isLoading = false.obs;
 
-  /// Empty while the latest authentication request completed successfully.
+  /// Vacío mientras la última operación de auth fue exitosa.
   final RxString error = ''.obs;
 
   AuthenticationController(this.repoAuthentication);
 
   bool get isLoading => _isLoading.value;
   bool get isLogged => _logged.value;
+  bool get isAnonymous => _isAnonymous.value;
   String get loggedEmail => _loggedUser.value?.email ?? '';
+  String get loggedName => _loggedUser.value?.name ?? '';
 
   @override
   void onInit() {
@@ -28,42 +31,41 @@ class AuthenticationController extends GetxController with UiLoggy {
   }
 
   Future<void> _restoreSession() async {
+    _isLoading.value = true;
     try {
-      _logged.value = await repoAuthentication.restoreSession();
-      _loggedUser.value = _logged.value
-          ? await repoAuthentication.getLoggedUser()
-          : null;
+      final restored = await repoAuthentication.restoreSession();
+      _logged.value = restored;
+      _isAnonymous.value = restored ? repoAuthentication.isAnonymous : false;
+      _loggedUser.value = restored ? await repoAuthentication.getLoggedUser() : null;
     } catch (exception) {
-      loggy.warning(
-        'AuthenticationController: Could not restore session: $exception',
-      );
+      loggy.warning('AuthController: restoreSession failed — $exception');
       _logged.value = false;
+      _isAnonymous.value = false;
       _loggedUser.value = null;
+    } finally {
+      _isLoading.value = false;
     }
   }
 
   Future<bool> login(String email, String password) async {
-    loggy.debug('AuthenticationController: Login $email');
+    loggy.debug('AuthController: login $email');
     error.value = '';
     if (!_validate(email, password)) {
-      loggy.warning('AuthenticationController: Invalid email or password');
-      error.value =
-          'Enter a valid email and a password with at least 7 characters.';
+      error.value = 'Correo o contraseña inválidos (mínimo 7 caracteres).';
       return false;
     }
     _isLoading.value = true;
     try {
-      final loggedIn = await repoAuthentication.login(
+      final ok = await repoAuthentication.login(
         AuthenticationUser(email: email, name: email, password: password),
       );
-      _logged.value = loggedIn;
-      _loggedUser.value = loggedIn
-          ? await repoAuthentication.getLoggedUser()
-          : null;
-      if (!loggedIn) error.value = 'Unable to sign in. Check your credentials.';
-      return loggedIn;
+      _logged.value = ok;
+      _isAnonymous.value = false;
+      _loggedUser.value = ok ? await repoAuthentication.getLoggedUser() : null;
+      if (!ok) error.value = 'No se pudo iniciar sesión. Verifica tus datos.';
+      return ok;
     } catch (exception) {
-      loggy.error('AuthenticationController: Login error $exception');
+      loggy.error('AuthController: login error — $exception');
       error.value = errorMessage(exception);
       return false;
     } finally {
@@ -71,26 +73,28 @@ class AuthenticationController extends GetxController with UiLoggy {
     }
   }
 
-  Future<bool> signUp(String email, String password) async {
-    loggy.debug('AuthenticationController: Sign Up $email');
+  /// Acceso rápido para desarrollo y pruebas locales (usado en kDebugMode).
+  Future<bool> quickDevLogin() async {
+    return login('dev@uninorte.edu.co', 'ThePassword1!');
+  }
+
+  Future<bool> signUp(String email, String password, {String name = ''}) async {
+    loggy.debug('AuthController: signUp $email');
     error.value = '';
-    if (!_validate(email, password)) {
-      loggy.warning('AuthenticationController: Invalid email or password');
-      error.value =
-          'Enter a valid email and a password with at least 7 characters.';
+    if (email.isEmpty || !email.contains('@')) {
+      error.value = 'Correo inválido.';
       return false;
     }
     _isLoading.value = true;
     try {
+      final effectiveName = name.trim().isNotEmpty ? name.trim() : email;
       final created = await repoAuthentication.signUp(
-        AuthenticationUser(email: email, name: email, password: password),
+        AuthenticationUser(email: email, name: effectiveName, password: password),
       );
-      if (!created) {
-        error.value = 'Unable to create the account. Please try again.';
-      }
+      if (!created) error.value = 'No se pudo crear la cuenta. Intenta de nuevo.';
       return created;
     } catch (exception) {
-      loggy.error('AuthenticationController: Sign up error $exception');
+      loggy.error('AuthController: signUp error — $exception');
       error.value = errorMessage(exception);
       return false;
     } finally {
@@ -99,25 +103,75 @@ class AuthenticationController extends GetxController with UiLoggy {
   }
 
   Future<bool> logOut() async {
-    loggy.debug('AuthenticationController: Log Out');
+    loggy.debug('AuthController: logOut');
     error.value = '';
     try {
-      final loggedOut = await repoAuthentication.logOut();
-      _logged.value = false;
-      _loggedUser.value = null;
-      if (!loggedOut) error.value = 'Unable to sign out. Please try again.';
-      return loggedOut;
+      await repoAuthentication.logOut();
     } catch (exception) {
-      loggy.error('AuthenticationController: Logout error $exception');
-      error.value = errorMessage(exception);
-      // A failed remote request should not keep a user in a local session that
-      // is no longer trustworthy.
+      loggy.error('AuthController: logOut error — $exception');
+      // Aunque falle el servidor, limpiamos el estado local.
+    } finally {
       _logged.value = false;
+      _isAnonymous.value = false;
       _loggedUser.value = null;
+    }
+    return true;
+  }
+
+  // ─── Invitado ─────────────────────────────────────────────────────────────
+
+  /// Abre una sesión anónima. El invitado puede navegar y luego completar cuenta.
+  Future<bool> signInAsGuest() async {
+    loggy.debug('AuthController: signInAsGuest');
+    error.value = '';
+    _isLoading.value = true;
+    try {
+      final ok = await repoAuthentication.signInAnonymously();
+      _logged.value = ok;
+      _isAnonymous.value = ok;
+      _loggedUser.value = ok ? await repoAuthentication.getLoggedUser() : null;
+      return ok;
+    } catch (exception) {
+      loggy.error('AuthController: signInAsGuest error — $exception');
+      error.value = errorMessage(exception);
       return false;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  /// Convierte al invitado en cuenta real. Conserva el mismo _id y sus filas.
+  /// La validación de fortaleza de contraseña la hace Roble server-side.
+  /// Si el email ya pertenece a otra cuenta, Roble falla y se muestra el error.
+  Future<bool> upgradeAccount(String email, String password, String name) async {
+    loggy.debug('AuthController: upgradeAccount $email');
+    error.value = '';
+    if (email.isEmpty || !email.contains('@')) {
+      error.value = 'Correo inválido.';
+      return false;
+    }
+    if (password.isEmpty) {
+      error.value = 'Ingresa una contraseña.';
+      return false;
+    }
+    _isLoading.value = true;
+    try {
+      final ok = await repoAuthentication.upgradeAccount(email, password, name);
+      if (ok) {
+        _isAnonymous.value = false;
+        _loggedUser.value = await repoAuthentication.getLoggedUser();
+      }
+      return ok;
+    } catch (exception) {
+      loggy.error('AuthController: upgradeAccount error — $exception');
+      error.value = errorMessage(exception);
+      return false;
+    } finally {
+      _isLoading.value = false;
     }
   }
 
   bool _validate(String email, String password) =>
-      email.isNotEmpty && password.length > 6;
+      email.isNotEmpty && email.contains('@') && password.length >= 7;
 }
+

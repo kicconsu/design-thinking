@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
@@ -8,12 +9,20 @@ import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.da
 /// Pantalla de detalle de proyecto: permite ver la descripción completa,
 /// integrantes, habilidades requeridas y postularse al proyecto.
 class ProjectDetailPage extends StatelessWidget {
-  final Project project;
+  final Project? project;
 
-  const ProjectDetailPage({super.key, required this.project});
+  const ProjectDetailPage({super.key, this.project});
 
   @override
   Widget build(BuildContext context) {
+    final effectiveProject = project ?? (Get.arguments is Project ? Get.arguments as Project : null);
+    if (effectiveProject == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Proyecto')),
+        body: const Center(child: Text('No se especificó un proyecto')),
+      );
+    }
+    final projectItem = effectiveProject;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final userProjectsController = Get.find<UserProjectsController>();
@@ -30,23 +39,23 @@ class ProjectDetailPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Text(project.title, style: tt.headlineSmall),
+            Text(projectItem.title, style: tt.headlineSmall),
             const SizedBox(height: 20),
             _Section(
               title: 'Descripción',
-              child: Text(project.description, style: tt.bodyMedium),
+              child: Text(projectItem.description, style: tt.bodyMedium),
             ),
             const SizedBox(height: 20),
             _Section(
               title: 'Integrantes',
-              child: project.members.isEmpty
+              child: projectItem.members.isEmpty
                   ? Text(
                       'Aún no hay integrantes definidos.',
                       style: tt.bodyMedium,
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: project.members
+                      children: projectItem.members
                           .map((m) => Text('• $m', style: tt.bodyMedium))
                           .toList(),
                     ),
@@ -62,7 +71,7 @@ class ProjectDetailPage extends StatelessWidget {
                     style: tt.bodySmall,
                   ),
                   const SizedBox(height: 6),
-                  ...project.skills.map(
+                  ...projectItem.skills.map(
                     (s) => Text('• $s', style: tt.bodyMedium),
                   ),
                 ],
@@ -70,9 +79,9 @@ class ProjectDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             Obx(() {
-              final isPending = userProjectsController.isApplied(project.id);
+              final isPending = userProjectsController.isApplied(projectItem.id);
               final isActive = userProjectsController.activeProjects
-                  .any((p) => p.id == project.id);
+                  .any((p) => p.id == projectItem.id);
 
               // No mostrar el botón si ya es pendiente o colaboración activa
               if (isPending || isActive) return const SizedBox.shrink();
@@ -84,10 +93,10 @@ class ProjectDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.zero,
                   ),
                 ),
-                onPressed: () => showConfirmApplicationDialog(
-                  context: context,
-                  project: project,
-                ),
+                onPressed: (() => showConfirmApplicationDialog(
+                      context: context,
+                      project: projectItem,
+                    )).guarded('Para postularte a un proyecto necesitas una cuenta real.'),
                 icon: const Icon(Icons.volunteer_activism_outlined),
                 label: const Text('¡Quiero colaborar!'),
               );

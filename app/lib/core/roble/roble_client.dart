@@ -6,13 +6,17 @@ import 'package:roble/roble.dart';
 /// pantalla le daría a cada copia su propia sesión. Los repositorios lo
 /// reciben inyectado a través de sus datasources.
 class RobleClient {
-  RobleClient({required String baseUrl, required String contractId})
-    : db = RobleApiDataBase(
-        config: RobleApiConfig.fromContract(
-          baseUrl: baseUrl,
-          contractId: contractId,
-        ),
-      );
+  RobleClient({
+    required String baseUrl,
+    required String contractId,
+    Duration timeout = const Duration(seconds: 10),
+  }) : db = RobleApiDataBase(
+          config: RobleApiConfig.fromContract(
+            baseUrl: baseUrl,
+            contractId: contractId,
+            timeout: timeout,
+          ),
+        );
 
   /// Constructor alternativo para pruebas.
   RobleClient.withDatabase(this.db);
@@ -31,8 +35,8 @@ class RobleClient {
   // Un typo aquí es un 404 y no un error de compilación.
   // Centralizar evita que se repitan por toda la app.
 
-  /// Tabla de proyectos del feed.
   static const projects = 'project';
+  static const profileTable = 'profile';
 
   // ─── Lectura pública vs. autenticada ─────────────────────────────────────
 
