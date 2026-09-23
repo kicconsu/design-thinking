@@ -79,9 +79,29 @@ class ProjectDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             Obx(() {
+              final isOwner = userProjectsController.isOwner(projectItem);
               final isPending = userProjectsController.isApplied(projectItem.id);
               final isActive = userProjectsController.activeProjects
                   .any((p) => p.id == projectItem.id);
+
+              if (isOwner) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: cs.secondaryContainer,
+                    border: Border.all(color: cs.outline),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Eres el creador de este proyecto',
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                );
+              }
 
               // No mostrar el botón si ya es pendiente o colaboración activa
               if (isPending || isActive) return const SizedBox.shrink();
@@ -101,6 +121,7 @@ class ProjectDetailPage extends StatelessWidget {
                 label: const Text('¡Quiero colaborar!'),
               );
             }),
+
           ],
         ),
       ),

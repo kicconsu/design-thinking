@@ -18,65 +18,84 @@ class CoCreatedProjectsPage extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Obx(() {
-      final projects = controller.coCreatedProjects;
+    return RefreshIndicator(
+      onRefresh: () => controller.fetchCoCreatedProjects(),
+      child: Obx(() {
+        if (controller.isLoadingProjects.value && controller.coCreatedProjects.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
 
-      if (projects.isEmpty) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+        final projects = controller.coCreatedProjects;
+
+        if (projects.isEmpty) {
+          return ListView(
+            children: [
+              const SizedBox(height: 120),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.architecture_outlined,
+                        size: 64,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Aún no co-creas ningún proyecto.',
+                        style: tt.bodyLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Cuando crees o lideres iniciativas aparecerán aquí.',
+                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.architecture_outlined,
-                  size: 64,
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  'Aún no co-creas ningún proyecto.',
-                  style: tt.bodyLarge,
-                  textAlign: TextAlign.center,
+                  'Mis Proyectos Co-creados',
+                  style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Cuando crees o lideres iniciativas aparecerán aquí.',
-                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                  textAlign: TextAlign.center,
+                IconButton(
+                  icon: const Icon(Icons.add_box_outlined),
+                  tooltip: 'Crear nuevo proyecto',
+                  onPressed: () => Get.to(() => const CreateProjectPage()),
                 ),
               ],
             ),
-          ),
-        );
-      }
-
-      return ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Mis Proyectos Co-creados',
-                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            const SizedBox(height: 8),
+            ...projects.map(
+              (project) => ProjectTile(
+                project: project,
+                trailing: RequestsButton(
+                  count: project.applicantsCount,
+                  onTap: () => Get.to(() => CollaborationRequestsPage(project: project)),
+                  cs: cs,
+                ),
               ),
-              IconButton(
-                icon: const Icon(Icons.add_box_outlined),
-                tooltip: 'Crear nuevo proyecto',
-                onPressed: () => Get.to(() => const CreateProjectPage()),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...projects.map(
-            (project) => ProjectTile(
-              project: project,
-              trailing: RequestsButton(count: project.applicantsCount, onTap: () => Get.to(() => CollaborationRequestsPage(project: project)), cs: cs),
             ),
-          ),
-        ],
-      );
-    });
+          ],
+        );
+      }),
+    );
   }
 }
+

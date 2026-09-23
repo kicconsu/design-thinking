@@ -13,7 +13,15 @@ class _FailingDataSource implements IProjectDataSource {
   Future<List<Map<String, dynamic>>> readProjects() async => throw exception;
 
   @override
+  Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId) async =>
+      throw exception;
+
+  @override
   Future<Map<String, dynamic>?> readProjectById(String id) async => throw exception;
+
+  @override
+  Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
+      throw exception;
 }
 
 class _SingleProjectDataSource implements IProjectDataSource {
@@ -24,8 +32,17 @@ class _SingleProjectDataSource implements IProjectDataSource {
   Future<List<Map<String, dynamic>>> readProjects() async => [row];
 
   @override
+  Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId) async => [row];
+
+  @override
   Future<Map<String, dynamic>?> readProjectById(String id) async => row;
+
+  @override
+  Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
+      {'_id': 'created-id', '_owner': 'test-owner', ...projectData};
 }
+
+
 
 void main() {
   group('ProjectRepository', () {
@@ -130,5 +147,22 @@ void main() {
         ),
       );
     });
+
+    test('crea un proyecto correctamente', () async {
+      final repo = ProjectRepository(InMemoryProjectDataSource());
+
+      final project = await repo.createProject(
+        title: 'Nuevo Proyecto Test',
+        description: 'Descripción de prueba',
+        jobs: ['Ing. Sistemas'],
+        skills: ['Flutter'],
+      );
+
+      expect(project.id, isNotEmpty);
+      expect(project.title, 'Nuevo Proyecto Test');
+      expect(project.jobs, ['Ing. Sistemas']);
+      expect(project.skills, ['Flutter']);
+    });
   });
 }
+

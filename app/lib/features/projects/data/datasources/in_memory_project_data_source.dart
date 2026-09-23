@@ -13,6 +13,24 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   Future<List<Map<String, dynamic>>> readProjects() async => _data.projects;
 
   @override
+  Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId) async =>
+      _data.projects.where((r) => r['_owner'] == ownerId).toList();
+
+
+  @override
   Future<Map<String, dynamic>?> readProjectById(String id) async =>
       _data.projects.where((r) => r['_id'] == id).firstOrNull;
+
+  @override
+  Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async {
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final row = <String, dynamic>{
+      '_id': newId,
+      '_owner': 'demo-owner',
+      ...projectData,
+    };
+    _data.projects.add(row);
+    return row;
+  }
 }
+

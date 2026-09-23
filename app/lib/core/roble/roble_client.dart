@@ -30,6 +30,22 @@ class RobleClient {
   /// preguntarlo en cada una sería una llamada de más. Lo escribe el
   /// repositorio de auth al entrar y lo borra al salir.
   String? currentUserId;
+  String? currentUserEmail;
+
+  /// Conjunto con todos los identificadores del usuario activo (`user_id`, `_owner`, `id`, `_id`, `email`).
+  /// Esto asegura la coincidencia exacta contra la columna `_owner` de las tablas en Roble.
+  final Set<String> currentUserIdentifiers = <String>{};
+
+  /// Comprueba si un valor de `_owner` coincide con alguno de los identificadores del usuario activo.
+  bool matchesUser(String? owner) {
+    if (owner == null || owner.trim().isEmpty) return false;
+    final trimmed = owner.trim();
+    if (currentUserIdentifiers.contains(trimmed)) return true;
+    if (currentUserId != null && currentUserId == trimmed) return true;
+    if (currentUserEmail != null && currentUserEmail == trimmed) return true;
+    return false;
+  }
+
 
   // ─── Nombres de tablas en un solo sitio ─────────────────────────────────
   // Un typo aquí es un 404 y no un error de compilación.
