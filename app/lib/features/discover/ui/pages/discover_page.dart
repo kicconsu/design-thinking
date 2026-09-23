@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:imker/features/discover/ui/widgets/filter_bar.dart';
 
 import '../viewmodels/discover_controller.dart';
 import '../widgets/project_card.dart';
@@ -63,17 +64,24 @@ class DiscoverPage extends StatelessWidget {
 
       return RefreshIndicator(
         onRefresh: controller.loadProjects,
-        child: PageView.builder(
-          scrollDirection: Axis.vertical,
-          controller: PageController(viewportFraction: 0.92),
-          itemCount: controller.projects.length,
-          itemBuilder: (context, index) {
-            final project = controller.projects[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: ProjectCard(project: project),
-            );
-          },
+        child: Column(
+          children: [
+            FilterBar(controller: controller),
+            Expanded(
+              child: PageView.builder(
+                scrollDirection: Axis.vertical,
+                controller: PageController(viewportFraction: 0.92),
+                itemCount: controller.projects.length,
+                itemBuilder: (context, index) {
+                  final project = controller.projects[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: ProjectCard(project: project),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       );
     });

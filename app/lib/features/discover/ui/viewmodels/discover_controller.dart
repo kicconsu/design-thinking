@@ -13,6 +13,13 @@ class DiscoverController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxnString error = RxnString();
 
+  // TODO: metodos de skill y carrera
+  final careers = <String>[].obs;
+  final skillsByCareer = <String, List<String>>{}.obs;
+
+  final careerIndex = 0.obs;
+  final skillIndex = 0.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -33,4 +40,5 @@ class DiscoverController extends GetxController {
       isLoading.value = false;
     }
   }
+  
 }

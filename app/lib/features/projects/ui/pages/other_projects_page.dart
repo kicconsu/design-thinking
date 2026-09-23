@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:imker/core/widgets/filter_drowpdown_button.dart';
 
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
@@ -86,60 +87,14 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
               children: [
                 // PopupMenuButton: siempre abre hacia abajo desde el botón,
                 // sin el comportamiento de "subir" del DropdownButton estándar
-                Builder(
-                  builder: (btnContext) {
-                    final labels = [
-                      'Guardados (${saved.length})',
-                      'Pendientes (${pending.length})',
-                      'Activos (${active.length})',
-                    ];
-                    return PopupMenuButton<int>(
-                      // offset positivo en Y = abre justo debajo del botón
-                      offset: const Offset(0, 42),
-                      onSelected: _onCategorySelected,
-                      itemBuilder: (_) => [
-                        for (int i = 0; i < labels.length; i++)
-                          PopupMenuItem<int>(
-                            value: i,
-                            child: Text(
-                              labels[i],
-                              style: TextStyle(
-                                fontWeight: i == currentIndex
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                      ],
-                      child: SizedBox(
-                        width: 160,
-                        child: Container(
-                          height: 38,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(btnContext).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.black, width: 1.2),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  labels[currentIndex],
-                                  style: Theme.of(btnContext)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const Icon(Icons.arrow_drop_down, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                FilterDropdownButton(
+                  labels: [
+                    'Guardados (${saved.length})',
+                    'Pendientes (${pending.length})',
+                    'Activos (${active.length})',
+                    ],
+                    currentIndex: currentIndex,
+                    onSelected: _onCategorySelected,
                 ),
 
                 // Dots: feedback visual del swipe + toque directo
