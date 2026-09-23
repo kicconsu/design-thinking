@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../viewmodels/user_projects_controller.dart';
+
 /// Pantalla "Crear proyecto" de Imker
 class CreateProjectPage extends StatefulWidget {
   const CreateProjectPage({super.key});
@@ -13,11 +15,17 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   /// Pestaña seleccionada: 0 = "Info. básica", 1 = "Miembros".
   int _selectedTab = 0;
 
+  /// Estado de envío del formulario al backend Roble.
+  bool _isSubmitting = false;
+
   /// Controlador del campo "Nombre del proyecto".
   final TextEditingController _nombreController = TextEditingController();
 
   /// Controlador del campo "Descripción".
   final TextEditingController _descripcionController = TextEditingController();
+
+  /// Controlador del campo "URL de la imagen".
+  final TextEditingController _imageUrlController = TextEditingController();
 
   /// Controlador del campo de texto para agregar una carrera relacionada.
   final TextEditingController _carreraController = TextEditingController();
@@ -41,6 +49,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     // Liberar los controladores de texto para evitar fugas de memoria.
     _nombreController.dispose();
     _descripcionController.dispose();
+    _imageUrlController.dispose();
     _carreraController.dispose();
     _habilidadController.dispose();
     _miembroController.dispose();
@@ -76,24 +85,26 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: cs.secondaryContainer,
-      appBar: _buildAppBar(cs, tt),
-      body: Column(
-        children: [
-          _buildTabs(cs, tt),
-          // El formulario completo es desplazable para que la descripción
-          // y los demás campos no queden cortados en pantallas pequeñas
-          // o cuando aparece el teclado.
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: _selectedTab == 0
-                  ? _buildInfoBasicaForm(cs, tt)
-                  : _buildMiembrosPlaceholder(cs, tt),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: cs.secondaryContainer,
+        appBar: _buildAppBar(cs, tt),
+        body: Column(
+          children: [
+            _buildTabs(cs, tt),
+            // El formulario completo es desplazable para que la descripción
+            // y los demás campos no queden cortados en pantallas pequeñas
+            // o cuando aparece el teclado.
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: _selectedTab == 0
+                    ? _buildInfoBasicaForm(cs, tt)
+                    : _buildMiembrosPlaceholder(cs, tt),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -125,7 +136,9 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: cs.outline.withValues(alpha: 0.3))),
+        border: Border(
+          bottom: BorderSide(color: cs.outline.withValues(alpha: 0.3)),
+        ),
       ),
       child: Row(children: [_buildTabItem('Info. básica', 0, cs, tt)]),
     );
@@ -207,6 +220,26 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
                 cs,
                 tt,
                 hint: 'la cosa la cosa la cosa hacer la cosa es muy importante porque la cosa la cosa la cosa',
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // --- URL de la imagen ---
+        _sectionCard(
+          cs,
+          child: _labeledField(
+            cs,
+            tt,
+            label: 'URL de la imagen (opcional)',
+            child: TextField(
+              controller: _imageUrlController,
+              style: tt.bodyMedium?.copyWith(color: cs.onSecondaryContainer),
+              decoration: _fieldDecoration(
+                cs,
+                tt,
+                hint: 'https://ejemplo.com/imagen.png',
               ),
             ),
           ),
@@ -307,11 +340,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
-              // TODO: recolectar los valores de los controladores y listas
-              // (_nombreController, _descripcionController, _carreras,
-              // _habilidades) y enviar la creación del proyecto.
-            },
+            onPressed: _isSubmitting ? null : _submitForm,
             style: ElevatedButton.styleFrom(
               backgroundColor: cs.inversePrimary,
               foregroundColor: cs.onPrimary,
@@ -320,14 +349,84 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
                 side: BorderSide(color: cs.outline),
               ),
             ),
-            child: Text(
-              'Crear proyecto',
-              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
+            child: _isSubmitting
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: cs.onPrimary,
+                    ),
+                  )
+                : Text(
+                    'Crear proyecto',
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ),
       ],
     );
+  }
+
+  /// Recolecta los valores del formulario y envía la solicitud de creación
+  /// a través del [UserProjectsController] hacia el repositorio de Roble.
+  Future<void> _submitForm() async {
+    final title = _nombreController.text.trim();
+    final description = _descripcionController.text.trim();
+    final imageUrl = _imageUrlController.text.trim();
+
+    if (title.isEmpty) {
+      Get.snackbar(
+        'Campo requerido',
+        'Por favor, ingresa el nombre del proyecto.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (description.isEmpty) {
+      Get.snackbar(
+        'Campo requerido',
+        'Por favor, ingresa una descripción para el proyecto.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final controller = Get.isRegistered<UserProjectsController>()
+          ? Get.find<UserProjectsController>()
+          : Get.put(UserProjectsController());
+
+      await controller.createProject(
+        title: title,
+        description: description,
+        imageUrl: imageUrl,
+        jobs: List<String>.from(_carreras),
+        skills: List<String>.from(_habilidades),
+      );
+
+      Get.back();
+      Get.snackbar(
+        '¡Éxito!',
+        'El proyecto "$title" ha sido creado correctamente.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error al crear proyecto',
+        e.toString().replaceAll('ProjectFailure: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   /// Contenido temporal de la pestaña "Miembros".
