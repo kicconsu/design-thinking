@@ -23,9 +23,7 @@ class AuthenticationSourceService
     loggy.debug('AuthSource: restoreSession');
     try {
       final restored = await _db.restoreSession();
-      if (restored) {
-        await _cacheCurrentUserId();
-      }
+      if (restored) _cacheCurrentUserId();
       return restored;
     } on RobleApiException catch (e) {
       loggy.warning('AuthSource: restoreSession failed — $e');
@@ -38,12 +36,7 @@ class AuthenticationSourceService
     loggy.debug('AuthSource: login ${user.email}');
     try {
       await _db.login(email: user.email, password: user.password);
-      await _cacheCurrentUserId();
-      final profile = await _db.currentUser();
-      final currentName = (profile['name'] as String?)?.trim() ?? '';
-      await _syncProfile(
-        name: currentName.isNotEmpty ? currentName : user.email,
-      );
+      _cacheCurrentUserId();
       return true;
     } on RobleApiAuthException catch (e) {
       loggy.warning('AuthSource: login auth error — $e');
@@ -56,38 +49,17 @@ class AuthenticationSourceService
 
   @override
   Future<bool> signUp(AuthenticationUser user) async {
-    loggy.debug('AuthSource: register ${user.email}');
     final name = user.name.trim().isEmpty ? user.email : user.name.trim();
+    loggy.debug('AuthSource: register ${user.email}');
     try {
-      try {
-        // Intentar registro directo estándar (POST /signup-direct)
-        await _db.register(
-          email: user.email,
-          password: user.password,
-          name: name,
-          autoLogin: true,
-        );
-      } on RobleApiHttpException catch (httpError) {
-        // Si Roble aplica rate limiting (429) en /signup-direct:
-        // bypasseamos usando el endpoint separado /me/upgrade-direct vía sesión anónima.
-        if (httpError.statusCode == 429) {
-          loggy.warning(
-            'AuthSource: 429 en signup-direct. Aplicando bypass vía signInAnonymously + upgradeAccount...',
-          );
-          await _db.signInAnonymously();
-          await _db.upgradeAccount(
-            email: user.email,
-            password: user.password,
-            name: name,
-          );
-        } else {
-          rethrow;
-        }
-      }
-      await _cacheCurrentUserId();
-      // Crear fila en tabla `profile` vinculada al _owner recién registrado.
+      await _db.register(
+        email: user.email,
+        password: user.password,
+        name: name,
+        autoLogin: true,
+      );
+      _cacheCurrentUserId();
       await _syncProfile(name: name);
-      // Cerrar sesión para que el usuario haga login explícito si ese es el flujo.
       await _db.logout();
       return true;
     } on RobleApiException catch (e) {
@@ -116,22 +88,21 @@ class AuthenticationSourceService
     if (!_db.isLoggedIn) return null;
     try {
       final profile = await _db.currentUser();
-      String name = profile['name'] as String? ?? '';
-      // Si currentUser() todavía tiene 'Invitado' o viene vacío pero tenemos sesión real,
-      // buscamos si en la tabla profile ya está su nombre real.
-      if (name.isEmpty || name == 'Invitado') {
+      String name = (profile['name'] as String?)?.trim() ?? '';
+
+      // Los invitados tienen nombre sintético del servidor; no buscamos en
+      // la tabla de perfil porque tampoco van a tener fila allí todavía.
+      if (!_db.isAnonymous && (name.isEmpty || name == 'Invitado')) {
         try {
-          final rows = await _db.read(RobleClient.profileTable);
-          if (rows.isNotEmpty) {
-            final rowName = rows.first['name'] as String?;
-            if (rowName != null &&
-                rowName.trim().isNotEmpty &&
-                rowName != 'Invitado') {
-              name = rowName.trim();
-            }
-          }
+          final rows = await _db.read(
+            RobleClient.profileTable,
+            filters: {'_owner': _db.currentUserId},
+          );
+          final rowName = (rows.firstOrNull?['name'] as String?)?.trim() ?? '';
+          if (rowName.isNotEmpty && rowName != 'Invitado') name = rowName;
         } catch (_) {}
       }
+
       return AuthenticationUser(
         id: profile['_id'] as int? ?? 0,
         email: profile['email'] as String? ?? '',
@@ -151,7 +122,7 @@ class AuthenticationSourceService
     loggy.debug('AuthSource: signInAnonymously');
     try {
       await _db.signInAnonymously();
-      await _cacheCurrentUserId();
+      _cacheCurrentUserId();
       return true;
     } on RobleApiException catch (e) {
       loggy.error('AuthSource: signInAnonymously error — $e');
@@ -176,8 +147,7 @@ class AuthenticationSourceService
         password: password,
         name: effectiveName,
       );
-      await _cacheCurrentUserId();
-      // Insertar o actualizar la fila en la tabla `profile` de Roble
+      _cacheCurrentUserId();
       await _syncProfile(name: effectiveName);
       return true;
     } on RobleApiException catch (e) {
@@ -186,7 +156,7 @@ class AuthenticationSourceService
     }
   }
 
-  // ─── Otros (no usados activamente, stubs para cumplir contrato) ───────────
+  // ─── Otros (stubs para cumplir el contrato) ───────────────────────────────
 
   @override
   Future<bool> validate(String email, String validationCode) async => true;
@@ -205,81 +175,64 @@ class AuthenticationSourceService
     String email,
     String newPassword,
     String validationCode,
-  ) async => true;
+  ) async =>
+      true;
 
   @override
   Future<bool> verifyToken() async => _db.isLoggedIn;
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  Future<void> _cacheCurrentUserId() async {
-    try {
-      final profile = await _db.currentUser();
-      _client.currentUserIdentifiers.clear();
-
-      for (final key in ['user_id', '_owner', 'id', '_id', 'email']) {
-        final val = profile[key]?.toString();
-        if (val != null && val.trim().isNotEmpty) {
-          _client.currentUserIdentifiers.add(val.trim());
-        }
-      }
-
-      final primaryId =
-          (profile['user_id'] ??
-                  profile['_owner'] ??
-                  profile['id'] ??
-                  profile['_id'])
-              ?.toString();
-      _client.currentUserId = primaryId;
-      _client.currentUserEmail = profile['email']?.toString();
-    } catch (_) {}
+  /// Actualiza [RobleClient] con los identificadores de la sesión activa.
+  ///
+  /// Lee desde el JWT en memoria (sin red) usando [RobleApiDataBase.currentUserId],
+  /// que devuelve el `sub` del token. El email requiere un [currentUser()] pero
+  /// no es crítico para filtrar por _owner, así que solo se guarda el userId.
+  void _cacheCurrentUserId() {
+    final userId = _db.currentUserId;
+    _client.currentUserIdentifiers.clear();
+    if (userId != null && userId.isNotEmpty) {
+      _client.currentUserId = userId;
+      _client.currentUserIdentifiers.add(userId);
+    }
   }
 
-  /// Sincroniza la fila del usuario en la tabla `profile` de Roble según el UML:
-  /// - _owner: FK a user_system (manejado por Roble)
-  /// - name: text (*)
-  /// - career: json (*)
-  /// - skills: json
-  /// - profilePicture: varchar
-  /// - description: text
+  /// Crea o actualiza la fila del usuario en la tabla `profile`.
+  ///
+  /// Roble filtra [read] por el `_owner` de la sesión activa, así que la
+  /// primera fila del resultado (si existe) es siempre la del usuario actual.
+  /// No hace falta buscar manualmente por `_owner`.
+  ///
+  /// Columnas de la tabla según el UML:
+  /// - `name` text (*)
+  /// - `career` json (*)
+  /// - `skills` json
+  /// - `profilePicture` varchar
+  /// - `description` text
   Future<void> _syncProfile({required String name}) async {
     try {
-      final current = await _db.currentUser();
-      loggy.debug(current);
-      final userId =
-          current['userId']?.toString() ?? _client.currentUserId ?? '';
-
-      List<dynamic> rows = [];
-      try {
-        rows = await _db.read(RobleClient.profileTable);
-      } catch (readErr) {
-        loggy.warning('AuthSource: read profile table error — $readErr');
-      }
-
-      Map<String, dynamic>? existing;
-      for (final r in rows) {
-        if (r is Map<String, dynamic>) {
-          if (userId.isNotEmpty && r['_owner']?.toString() == userId) {
-            existing = r;
-            break;
-          }
-        }
-      }
+      final rows = await _db.read(
+        RobleClient.profileTable,
+        filters: {'_owner': _db.currentUserId},
+      );
+      final existing = rows.firstOrNull;
 
       if (existing != null && existing['_id'] != null) {
-        await _db.update(RobleClient.profileTable, existing['_id'].toString(), {
-          'name': name,
-        });
-        loggy.info('AuthSource: profile updated in table with name: $name');
+        await _db.update(
+          RobleClient.profileTable,
+          existing['_id'].toString(),
+          {'name': name},
+        );
+        loggy.info('AuthSource: profile updated — name: $name');
       } else {
-        final created = await _db.create(RobleClient.profileTable, {
+        await _db.create(RobleClient.profileTable, {
           'name': name,
           'career': <String, dynamic>{},
           'skills': <dynamic>[],
           'profilePicture': '',
           'description': '',
         });
-        loggy.info('AuthSource: profile created in table profile: $created');
+        loggy.info('AuthSource: profile created — name: $name');
       }
     } catch (e, st) {
       loggy.error('AuthSource: _syncProfile failed — $e', st);
