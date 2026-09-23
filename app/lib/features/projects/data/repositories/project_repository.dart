@@ -19,10 +19,39 @@ class ProjectRepository implements IProjectRepository {
   }
 
   @override
+  Future<List<Project>> getProjectsByOwner(String ownerId) async {
+    final rows = await _guard(() => _source.readProjectsByOwner(ownerId));
+    return rows.map(_toProject).toList();
+  }
+
+
+  @override
   Future<Project?> getProjectById(String id) async {
     final row = await _guard(() => _source.readProjectById(id));
     return row == null ? null : _toProject(row);
   }
+
+  @override
+  Future<Project> createProject({
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+    String imageUrl = '',
+  }) async {
+    final payload = <String, dynamic>{
+      'title': title,
+      'description': description,
+      'imageUrl': imageUrl,
+      'jobs': {'values': jobs},
+      'skills': {'values': skills},
+      'status': 'open',
+    };
+
+    final resultRow = await _guard(() => _source.createProject(payload));
+    return _toProject(resultRow);
+  }
+
 
   // ─── Traducción de errores ────────────────────────────────────────────────
   // Las excepciones se atrapan de más específica a más general; si no se
@@ -45,9 +74,9 @@ class ProjectRepository implements IProjectRepository {
 
   // ─── Mapper ───────────────────────────────────────────────────────────────
   Project _toProject(Map<String, dynamic> row) => Project(
-    id: row['_id'] as String,
-    owner: (row['_owner'] as String?) ?? '',
-    title: row['title'] as String,
+    id: (row['_id'] ?? row['id'])?.toString() ?? '',
+    owner: (row['_owner'] ?? row['owner'] ?? row['user_id'])?.toString() ?? '',
+    title: (row['title'] ?? '') as String,
     imageUrl: (row['imageUrl'] as String?) ?? '',
     description: (row['description'] as String?) ?? '',
     // jobs y skills son columnas json: pueden llegar como List<dynamic>.
@@ -55,6 +84,7 @@ class ProjectRepository implements IProjectRepository {
     skills: _parseList(row['skills']),
     status: (row['status'] as String?) ?? 'open',
   );
+
 
   /// Convención estricta: Roble no admite arrays JSON en la raíz de columnas jsonb,
   /// por lo que las listas se almacenan siempre envueltas en un objeto: {"values": [...]}.

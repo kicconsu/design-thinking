@@ -13,8 +13,26 @@ class _MockFailingRepository implements IProjectRepository {
   }
 
   @override
+  Future<List<Project>> getProjectsByOwner(String ownerId) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
   Future<Project?> getProjectById(String id) async => null;
+
+
+  @override
+  Future<Project> createProject({
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+    String imageUrl = '',
+  }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
 }
+
 
 void main() {
   group('DiscoverController', () {

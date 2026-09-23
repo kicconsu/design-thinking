@@ -221,7 +221,22 @@ class _ActionButtons extends StatelessWidget {
           const SizedBox(width: 12),
             Expanded(
             child: Obx(() {
+              final isOwner = projectsController.isOwner(project);
               final saved = projectsController.isSaved(project.id);
+
+              if (isOwner) {
+                return FilledButton.icon(
+                  onPressed: null,
+                  style: buttonStyle,
+                  icon: const Icon(Icons.star_rounded),
+                  label: Text(
+                    'Tu proyecto',
+                    style: tt.headlineSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }
+
               return FilledButton.icon(
                 onPressed: saved
                     ? null
@@ -240,6 +255,7 @@ class _ActionButtons extends StatelessWidget {
               );
             }),
           ),
+
         ],
       ),
     );

@@ -93,17 +93,20 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
 
   @override
   Future<bool> logOut() async {
+
     loggy.debug('AuthSource: logout');
     try {
       await _db.logout();
-      _client.currentUserId = null;
-      return true;
     } on RobleApiException catch (e) {
       loggy.error('AuthSource: logout error — $e');
+    } finally {
       _client.currentUserId = null;
-      return false;
+      _client.currentUserEmail = null;
+      _client.currentUserIdentifiers.clear();
     }
+    return true;
   }
+
 
   @override
   Future<AuthenticationUser?> getLoggedUser() async {
@@ -204,9 +207,26 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
   Future<void> _cacheCurrentUserId() async {
     try {
       final profile = await _db.currentUser();
-      _client.currentUserId = profile['_id']?.toString();
+      _client.currentUserIdentifiers.clear();
+
+      for (final key in ['user_id', '_owner', 'id', '_id', 'email']) {
+        final val = profile[key]?.toString();
+        if (val != null && val.trim().isNotEmpty) {
+          _client.currentUserIdentifiers.add(val.trim());
+        }
+      }
+
+      final primaryId = (profile['user_id'] ??
+              profile['_owner'] ??
+              profile['id'] ??
+              profile['_id'])
+          ?.toString();
+      _client.currentUserId = primaryId;
+      _client.currentUserEmail = profile['email']?.toString();
     } catch (_) {}
   }
+
+
 
   /// Sincroniza la fila del usuario en la tabla `profile` de Roble según el UML:
   /// - _owner: FK a user_system (manejado por Roble)

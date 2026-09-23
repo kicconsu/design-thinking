@@ -6,6 +6,8 @@ import 'package:loggy/loggy.dart';
 import 'package:imker/core/data/dummy_data.dart';
 import '../../../../core/utils/error_message.dart';
 
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+
 class AuthenticationController extends GetxController with UiLoggy {
   final IAuthRepository repoAuthentication;
 
@@ -38,6 +40,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       _logged.value = restored;
       _isAnonymous.value = restored ? repoAuthentication.isAnonymous : false;
       _loggedUser.value = restored ? await repoAuthentication.getLoggedUser() : null;
+      if (restored) _refreshUserProjects();
     } catch (exception) {
       loggy.warning('AuthController: restoreSession failed — $exception');
       _logged.value = false;
@@ -63,6 +66,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       _logged.value = ok;
       _isAnonymous.value = false;
       _loggedUser.value = ok ? await repoAuthentication.getLoggedUser() : null;
+      if (ok) _refreshUserProjects();
       if (!ok) error.value = 'No se pudo iniciar sesión. Verifica tus datos.';
       return ok;
     } catch (exception) {
@@ -73,6 +77,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       _isLoading.value = false;
     }
   }
+
 
   /// Acceso rápido para desarrollo y pruebas locales (usado en kDebugMode).
   Future<bool> quickDevLogin() async {
@@ -115,9 +120,17 @@ class AuthenticationController extends GetxController with UiLoggy {
       _logged.value = false;
       _isAnonymous.value = false;
       _loggedUser.value = null;
+      _refreshUserProjects();
     }
     return true;
   }
+
+  void _refreshUserProjects() {
+    if (Get.isRegistered<UserProjectsController>()) {
+      Get.find<UserProjectsController>().fetchCoCreatedProjects();
+    }
+  }
+
 
   // ─── Invitado ─────────────────────────────────────────────────────────────
 
