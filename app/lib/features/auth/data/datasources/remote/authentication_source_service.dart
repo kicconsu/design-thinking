@@ -2,11 +2,14 @@ import 'package:loggy/loggy.dart';
 import 'package:roble/roble.dart';
 
 import 'package:imker/core/roble/roble_client.dart';
+
 import '../../../domain/models/authentication_user.dart';
 import 'i_authentication_source.dart';
 
 /// Datasource de autenticación real, respaldado por el SDK de Roble.
-class AuthenticationSourceService with UiLoggy implements IAuthenticationSource {
+class AuthenticationSourceService
+    with UiLoggy
+    implements IAuthenticationSource {
   final RobleClient _client;
 
   AuthenticationSourceService(this._client);
@@ -38,7 +41,9 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
       await _cacheCurrentUserId();
       final profile = await _db.currentUser();
       final currentName = (profile['name'] as String?)?.trim() ?? '';
-      await _syncProfile(name: currentName.isNotEmpty ? currentName : user.email);
+      await _syncProfile(
+        name: currentName.isNotEmpty ? currentName : user.email,
+      );
       return true;
     } on RobleApiAuthException catch (e) {
       loggy.warning('AuthSource: login auth error — $e');
@@ -93,7 +98,6 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
 
   @override
   Future<bool> logOut() async {
-
     loggy.debug('AuthSource: logout');
     try {
       await _db.logout();
@@ -106,7 +110,6 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
     }
     return true;
   }
-
 
   @override
   Future<AuthenticationUser?> getLoggedUser() async {
@@ -121,7 +124,9 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
           final rows = await _db.read(RobleClient.profileTable);
           if (rows.isNotEmpty) {
             final rowName = rows.first['name'] as String?;
-            if (rowName != null && rowName.trim().isNotEmpty && rowName != 'Invitado') {
+            if (rowName != null &&
+                rowName.trim().isNotEmpty &&
+                rowName != 'Invitado') {
               name = rowName.trim();
             }
           }
@@ -158,7 +163,11 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
   bool get isAnonymous => _db.isAnonymous;
 
   @override
-  Future<bool> upgradeAccount(String email, String password, String name) async {
+  Future<bool> upgradeAccount(
+    String email,
+    String password,
+    String name,
+  ) async {
     loggy.debug('AuthSource: upgradeAccount $email');
     final effectiveName = name.trim().isEmpty ? email : name.trim();
     try {
@@ -196,8 +205,7 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
     String email,
     String newPassword,
     String validationCode,
-  ) async =>
-      true;
+  ) async => true;
 
   @override
   Future<bool> verifyToken() async => _db.isLoggedIn;
@@ -216,17 +224,16 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
         }
       }
 
-      final primaryId = (profile['user_id'] ??
-              profile['_owner'] ??
-              profile['id'] ??
-              profile['_id'])
-          ?.toString();
+      final primaryId =
+          (profile['user_id'] ??
+                  profile['_owner'] ??
+                  profile['id'] ??
+                  profile['_id'])
+              ?.toString();
       _client.currentUserId = primaryId;
       _client.currentUserEmail = profile['email']?.toString();
     } catch (_) {}
   }
-
-
 
   /// Sincroniza la fila del usuario en la tabla `profile` de Roble según el UML:
   /// - _owner: FK a user_system (manejado por Roble)
@@ -238,7 +245,9 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
   Future<void> _syncProfile({required String name}) async {
     try {
       final current = await _db.currentUser();
-      final userId = current['_id']?.toString() ?? _client.currentUserId ?? '';
+      loggy.debug(current);
+      final userId =
+          current['userId']?.toString() ?? _client.currentUserId ?? '';
 
       List<dynamic> rows = [];
       try {
@@ -258,11 +267,9 @@ class AuthenticationSourceService with UiLoggy implements IAuthenticationSource 
       }
 
       if (existing != null && existing['_id'] != null) {
-        await _db.update(
-          RobleClient.profileTable,
-          existing['_id'].toString(),
-          {'name': name},
-        );
+        await _db.update(RobleClient.profileTable, existing['_id'].toString(), {
+          'name': name,
+        });
         loggy.info('AuthSource: profile updated in table with name: $name');
       } else {
         final created = await _db.create(RobleClient.profileTable, {
