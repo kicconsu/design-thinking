@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:imker/core/widgets/segmented_tab_switch.dart';
+import 'package:imker/core/widgets/trust_indicators.dart';
 import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
 import '../viewmodels/user_projects_controller.dart';
@@ -129,14 +131,13 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _SegmentedTabs(
-                    labels: const [
+                  SegmentedTabSwitch(
+                    tabs: [
                       'Perfil General',
-                      'Proyectos',
+                      'Proyectos (${applicant.experience.length})',
                     ],
-                    counts: [null, applicant.experience.length],
                     selectedIndex: _tab,
-                    onSelected: (i) => setState(() => _tab = i),
+                    onTabSelected: (i) => setState(() => _tab = i),
                   ),
                   const SizedBox(height: 16),
                   if (_tab == 0)
@@ -186,55 +187,6 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
   }
 }
 
-class _SegmentedTabs extends StatelessWidget {
-  final List<String> labels;
-  final List<int?> counts;
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  const _SegmentedTabs({
-    required this.labels,
-    required this.counts,
-    required this.selectedIndex,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Row(
-      children: List.generate(labels.length, (i) {
-        final selected = i == selectedIndex;
-        final label = counts[i] == null
-            ? labels[i]
-            : '${labels[i]} (${counts[i]})';
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => onSelected(i),
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              margin: EdgeInsets.only(right: i == labels.length - 1 ? 0 : 8),
-              decoration: BoxDecoration(
-                color: selected ? cs.primary : cs.surface,
-                border: Border.all(color: cs.outline),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: selected ? cs.onPrimary : cs.onSurface,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
 class _GeneralProfileTab extends StatelessWidget {
   final Applicant applicant;
   final ColorScheme cs;
@@ -251,57 +203,11 @@ class _GeneralProfileTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Indicadores de confianza',
-          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Índice general de compromiso',
-                style: tt.bodyMedium,
-              ),
-            ),
-            Text(
-              '${applicant.commitmentScore}%',
-              style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          child: LinearProgressIndicator(
-            value: applicant.commitmentScore / 100,
-            minHeight: 8,
-            backgroundColor: cs.surfaceContainerHighest,
-            color: cs.primary,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _ScoreGauge(
-              label: 'Entrega a tiempo',
-              value: applicant.onTimeScore,
-              cs: cs,
-              tt: tt,
-            ),
-            _ScoreGauge(
-              label: 'Tasa de respuesta',
-              value: applicant.responseRateScore,
-              cs: cs,
-              tt: tt,
-            ),
-            _ScoreGauge(
-              label: 'Proyectos completados',
-              value: applicant.completedProjectsScore,
-              cs: cs,
-              tt: tt,
-            ),
-          ],
+        TrustIndicators(
+          commitmentScore: applicant.commitmentScore,
+          onTimeScore: applicant.onTimeScore,
+          responseRateScore: applicant.responseRateScore,
+          completedProjectsScore: applicant.completedProjectsScore,
         ),
         const SizedBox(height: 24),
         Text(
@@ -347,56 +253,6 @@ class _GeneralProfileTab extends StatelessWidget {
               .toList(),
         ),
       ],
-    );
-  }
-}
-
-class _ScoreGauge extends StatelessWidget {
-  final String label;
-  final int value;
-  final ColorScheme cs;
-  final TextTheme tt;
-
-  const _ScoreGauge({
-    required this.label,
-    required this.value,
-    required this.cs,
-    required this.tt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 90,
-      child: Column(
-        children: [
-          SizedBox(
-            width: 64,
-            height: 64,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: value / 100,
-                  strokeWidth: 6,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  color: cs.primary,
-                ),
-                Text(
-                  '$value%',
-                  style: tt.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: tt.bodySmall,
-          ),
-        ],
-      ),
     );
   }
 }
