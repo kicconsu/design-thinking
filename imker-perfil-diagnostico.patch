@@ -1,0 +1,103 @@
+diff --git a/app/lib/features/profile/data/datasources/roble_profile_data_source.dart b/app/lib/features/profile/data/datasources/roble_profile_data_source.dart
+index 0a29329..7bdb198 100644
+--- a/app/lib/features/profile/data/datasources/roble_profile_data_source.dart
++++ b/app/lib/features/profile/data/datasources/roble_profile_data_source.dart
+@@ -1,10 +1,12 @@
++import 'package:loggy/loggy.dart';
++
+ import 'package:imker/core/roble/roble_client.dart';
+ 
+ import 'i_profile_data_source.dart';
+ 
+ /// Datasource real: lee y actualiza la fila del usuario en la tabla
+ /// `profile` de Roble (la misma que crea `_syncProfile` en el login/signup).
+-class RobleProfileDataSource implements IProfileDataSource {
++class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
+   RobleProfileDataSource(this._client);
+ 
+   final RobleClient _client;
+@@ -32,12 +34,19 @@ class RobleProfileDataSource implements IProfileDataSource {
+     };
+ 
+     if (own != null && own['_id'] != null) {
++      loggy.debug(
++        'ProfileDataSource: updating row _id=${own['_id']} _owner=${own['_owner']} '
++        'currentUserId=${_client.currentUserId}',
++      );
+       await _client.db.update(RobleClient.profileTable, own['_id'].toString(), payload);
+       return {...own, ...payload};
+     }
+ 
+     // No debería pasar (la fila se crea en signup/upgrade), pero si falta,
+     // la creamos para no dejar al usuario sin poder guardar su perfil.
++    loggy.warning(
++      'ProfileDataSource: no existing row found for currentUserId=${_client.currentUserId}, creando una nueva',
++    );
+     return _client.db.create(RobleClient.profileTable, {
+       'name': '',
+       'career': <String, dynamic>{},
+@@ -48,10 +57,20 @@ class RobleProfileDataSource implements IProfileDataSource {
+ 
+   Map<String, dynamic>? _findOwnRow(List<Map<String, dynamic>> rows) {
+     final userId = _client.currentUserId;
+-    if (userId == null) return rows.isNotEmpty ? rows.first : null;
++    if (userId == null) {
++      loggy.warning(
++        'ProfileDataSource: currentUserId es null — no se puede identificar la fila propia '
++        'con certeza, usando la primera fila de ${rows.length} recibidas.',
++      );
++      return rows.isNotEmpty ? rows.first : null;
++    }
+     for (final row in rows) {
+       if (row['_owner']?.toString() == userId) return row;
+     }
++    loggy.warning(
++      'ProfileDataSource: ninguna de las ${rows.length} filas tiene _owner == $userId — '
++      'usando la primera fila como último recurso.',
++    );
+     return rows.isNotEmpty ? rows.first : null;
+   }
+ }
+diff --git a/app/lib/features/profile/data/repositories/profile_repository.dart b/app/lib/features/profile/data/repositories/profile_repository.dart
+index 865e4d2..7b2de6d 100644
+--- a/app/lib/features/profile/data/repositories/profile_repository.dart
++++ b/app/lib/features/profile/data/repositories/profile_repository.dart
+@@ -14,7 +14,7 @@ class ProfileRepository implements IProfileRepository {
+ 
+   @override
+   Future<UserProfile> getMyProfile() async {
+-    final row = await _guard(() => _source.readMyProfile());
++    final row = await _guard(() => _source.readMyProfile(), isWrite: false);
+     return _toProfile(row ?? const {});
+   }
+ 
+@@ -25,12 +25,13 @@ class ProfileRepository implements IProfileRepository {
+   }) async {
+     final row = await _guard(
+       () => _source.updateMyProfile(bio: bio, skills: skills),
++      isWrite: true,
+     );
+     return _toProfile(row);
+   }
+ 
+   // ─── Traducción de errores ────────────────────────────────────────────────
+-  Future<T> _guard<T>(Future<T> Function() action) async {
++  Future<T> _guard<T>(Future<T> Function() action, {required bool isWrite}) async {
+     try {
+       return await action();
+     } on RobleApiNetworkException {
+@@ -38,7 +39,13 @@ class ProfileRepository implements IProfileRepository {
+     } on RobleApiTimeoutException {
+       throw const ProfileFailure('La solicitud tardó demasiado. Intenta de nuevo.');
+     } on RobleApiHttpException catch (e) {
+-      if (e.statusCode == 403) throw const ProfileFailure('No tienes permiso para ver esto.');
++      if (e.statusCode == 403) {
++        throw ProfileFailure(
++          isWrite
++              ? 'No tienes permiso para editar este perfil.'
++              : 'No tienes permiso para ver este perfil.',
++        );
++      }
+       if (e.statusCode == 404) throw const ProfileFailure('No se encontró tu perfil.');
+       throw ProfileFailure(e.message);
+     } on RobleApiException catch (e) {
