@@ -19,6 +19,13 @@ class ProfileRepository implements IProfileRepository {
   }
 
   @override
+  Future<void> ensureMyProfile({required String name}) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    await _guard(() => _source.ensureMyProfile(name: trimmed), isWrite: false);
+  }
+
+  @override
   Future<UserProfile> updateMyProfile({
     required String bio,
     required List<String> skills,

@@ -2,108 +2,139 @@
 
 ## Overview
 
-`f_clean_template` is a Flutter application organized by feature using a pragmatic Clean Architecture / MVVM structure. GetX provides dependency injection, navigation, and reactive state. The implemented features are authentication and product CRUD.
+`imker` es una app Flutter organizada por feature con una arquitectura
+pragmática Clean / MVVM. GetX aporta la inyección de dependencias, la
+navegación por rutas nombradas y el estado reactivo.
 
-## Runtime entry and composition
+El backend es **Roble** (`roble: ^1.12.0`): el paquete maneja tokens, cabeceras,
+refresco automático y persistencia en `flutter_secure_storage`. La app no toca
+tokens ni construye peticiones HTTP a mano.
 
-- [`lib/main.dart`](lib/main.dart) — Application entry point. Initializes logging, delegates feature wiring to `registerAuth` and `registerProduct`, and starts `MyApp`.
-- [`lib/central.dart`](lib/central.dart) — Root authentication gate. Reactively displays `LoginPage` or `ListProductPage` based on `AuthenticationController.isLogged`.
-- [`lib/core/app_theme.dart`](lib/core/app_theme.dart) — Light and dark Material themes built with FlexColorScheme.
-- [`lib/core/error_message.dart`](lib/core/error_message.dart) — Converts authentication exceptions into presentation-safe error messages.
-- [`lib/core/i_local_preferences.dart`](lib/core/i_local_preferences.dart) — Storage contract, implemented by shared web and encrypted native adapters; the native adapter falls back to shared preferences only when its plugin is unavailable.
+## Runtime entry y composición
 
-Dependency graph:
+- [`lib/main.dart`](lib/main.dart) — Punto de entrada. Registra `RobleClient`
+  (sólo si hay contrato), `registerProfileData()`, `registerAuth()`,
+  `registerProjects()` y arranca `MyApp`.
+- [`lib/core/roble/roble_config.dart`](lib/core/roble/roble_config.dart) —
+  `baseUrl`, `contractId` y el flag `DEV_LOGIN`, todos por `--dart-define`.
+- [`lib/core/roble/roble_client.dart`](lib/core/roble/roble_client.dart) — Un
+  único cliente por app. Expone `currentUserId` (el `sub` del JWT, que es el
+  `_owner` de las filas), `matchesUser`, los nombres de tabla y
+  `readPublicOrPrivate`.
+- [`lib/routes/app_pages.dart`](lib/routes/app_pages.dart) — Tabla de rutas y
+  bindings por pantalla.
+- [`lib/core/utils/error_message.dart`](lib/core/utils/error_message.dart) —
+  Excepciones de Roble a mensajes presentables.
+
+Grafo de dependencias (auth):
 
 ```text
 AuthenticationController
   -> IAuthRepository
-    -> AuthRepository
+    -> AuthRepository          (encadena register -> login)
       -> IAuthenticationSource
-        -> AuthenticationSourceService
+        -> AuthenticationSourceService  (Roble)  o  DummyAuthSource (sin contrato)
+          -> RobleClient.db : RobleApiDataBase
+  -> IProfileRepository        (garantiza la fila `profile`, vía Get.find)
+```
 
-ProductController
-  -> IProductRepository
-    -> ProductRepository
-      -> IProductSource
-        -> LocalProductSource (active)
-        -> RemoteProductSource (available stub)
+Grafo de dependencias (perfil):
+
+```text
+ProfileController
+  -> IProfileRepository
+    -> ProfileRepository       (traduce RobleApi* a ProfileFailure)
+      -> IProfileDataSource
+        -> RobleProfileDataSource  o  InMemoryProfileDataSource
+          -> RobleClient
 ```
 
 ## Authentication feature
 
 ### Domain
 
-- [`lib/features/auth/domain/models/authentication_user.dart`](lib/features/auth/domain/models/authentication_user.dart) — `AuthenticationUser` entity plus JSON conversion.
-- [`lib/features/auth/domain/repositories/i_auth_repository.dart`](lib/features/auth/domain/repositories/i_auth_repository.dart) — Authentication operations exposed to the UI layer.
+- [`lib/features/auth/domain/models/authentication_user.dart`](lib/features/auth/domain/models/authentication_user.dart) —
+  `AuthenticationUser` (`id` es el `userId` de Roble, no el id de la fila).
+- [`lib/features/auth/domain/repositories/i_auth_repository.dart`](lib/features/auth/domain/repositories/i_auth_repository.dart) —
+  Contrato que ve la UI.
 
 ### Data
 
-- [`lib/features/auth/data/datasources/remote/i_authentication_source.dart`](lib/features/auth/data/datasources/remote/i_authentication_source.dart) — Full authentication data-source contract.
-- [`lib/features/auth/data/datasources/remote/authentication_source_service.dart`](lib/features/auth/data/datasources/remote/authentication_source_service.dart) — Local multi-user authentication implementation: persists accounts, verifies credentials, and restores the session for a valid stored account.
-- [`lib/features/auth/data/repositories/auth_repository.dart`](lib/features/auth/data/repositories/auth_repository.dart) — Adapter from the domain repository contract to the authentication source.
-- [`lib/features/auth/auth_dependencies.dart`](lib/features/auth/auth_dependencies.dart) — Registers the authentication source, repository, and controller with GetX.
+- [`lib/features/auth/data/datasources/remote/i_authentication_source.dart`](lib/features/auth/data/datasources/remote/i_authentication_source.dart) —
+  Contrato del proveedor de auth: credenciales, sesión y `sessionExpired`.
+- [`lib/features/auth/data/datasources/remote/roble_auth_data_source.dart`](lib/features/auth/data/datasources/remote/roble_auth_data_source.dart) —
+  Implementación real contra Roble. **No toca tablas de negocio**: si la sesión
+  necesita una fila en `profile`, la pide `AuthenticationController` a
+  `features/profile`.
+- [`lib/features/auth/data/repositories/auth_repository.dart`](lib/features/auth/data/repositories/auth_repository.dart) —
+  Delegación fina; el registro encadena `register` + `login`.
+- [`lib/core/data/dummy_auth_source.dart`](lib/core/data/dummy_auth_source.dart) —
+  Fuente en memoria, sólo con `ROBLE_CONTRACT_ID` vacío.
+- [`lib/features/auth/auth_dependencies.dart`](lib/features/auth/auth_dependencies.dart) —
+  Registro GetX.
 
 ### UI
 
-- [`lib/features/auth/ui/viewmodels/authentication_controller.dart`](lib/features/auth/ui/viewmodels/authentication_controller.dart) — Reactive logged/loading state, credential validation, and login/signup/logout orchestration.
-- [`lib/features/auth/ui/views/login_page.dart`](lib/features/auth/ui/views/login_page.dart) — Login form and navigation to signup.
-- [`lib/features/auth/ui/views/signup_page.dart`](lib/features/auth/ui/views/signup_page.dart) — Account creation form.
+- [`lib/features/auth/ui/viewmodels/authentication_controller.dart`](lib/features/auth/ui/viewmodels/authentication_controller.dart) —
+  Estado de sesión, validación, y coordinación: suscripción a
+  `sessionExpired`, garantía de la fila de perfil y refresco de proyectos.
+- [`lib/features/auth/ui/pages/login_page.dart`](lib/features/auth/ui/pages/login_page.dart),
+  [`register_page.dart`](lib/features/auth/ui/pages/register_page.dart),
+  [`upgrade_account_page.dart`](lib/features/auth/ui/pages/upgrade_account_page.dart) —
+  Pantallas de auth.
+- [`lib/features/auth/ui/widgets/account_required_prompt.dart`](lib/features/auth/ui/widgets/account_required_prompt.dart) —
+  Portón de invitado.
 
-Authentication flow:
-
-```text
-LoginPage -> AuthenticationController.login()
-          -> AuthRepository.login()
-          -> AuthenticationSourceService.login()
-          -> isLogged = true
-          -> Central rebuilds with ListProductPage
-```
-
-## Product feature
-
-### Domain
-
-- [`lib/features/product/domain/models/product.dart`](lib/features/product/domain/models/product.dart) — Mutable `Product` entity and JSON conversion.
-- [`lib/features/product/domain/repositories/i_product_repository.dart`](lib/features/product/domain/repositories/i_product_repository.dart) — Product CRUD contract.
-
-### Data
-
-- [`lib/features/product/data/datasources/i_remote_product_source.dart`](lib/features/product/data/datasources/i_remote_product_source.dart) — Product data-source contract. Despite its filename, it is shared by local and remote implementations.
-- [`lib/features/product/data/datasources/local/local_product_source.dart`](lib/features/product/data/datasources/local/local_product_source.dart) — Active JSON-backed local CRUD store; product data persists across app restarts.
-- [`lib/features/product/data/datasources/remote_product_source.dart`](lib/features/product/data/datasources/remote_product_source.dart) — Remote API placeholder; no HTTP requests are implemented yet.
-- [`lib/features/product/data/repositories/product_repository.dart`](lib/features/product/data/repositories/product_repository.dart) — Pass-through adapter from domain operations to the selected product source.
-- [`lib/features/product/product_dependencies.dart`](lib/features/product/product_dependencies.dart) — Registers the active local product source, repository, and controller with GetX.
-
-### UI
-
-- [`lib/features/product/ui/viewmodels/product_controller.dart`](lib/features/product/ui/viewmodels/product_controller.dart) — Owns the reactive product list/loading state and refreshes after mutations.
-- [`lib/features/product/ui/views/list_product_page.dart`](lib/features/product/ui/views/list_product_page.dart) — Product list, pull-to-refresh, swipe deletion, delete-all, logout, and add/edit navigation.
-- [`lib/features/product/ui/views/add_product_page.dart`](lib/features/product/ui/views/add_product_page.dart) — Product creation form.
-- [`lib/features/product/ui/views/edit_product_page.dart`](lib/features/product/ui/views/edit_product_page.dart) — Product editing form; receives a product through GetX navigation arguments.
-
-CRUD flow:
+Flujo:
 
 ```text
-Product view -> ProductController
-             -> ProductRepository
-             -> LocalProductSource
-             -> ProductController.getProducts()
-             -> reactive list rebuild
+SplashPage -> AuthenticationController.restoreSession()
+           -> sessionExpired? -> /login con "Tu sesión caducó..."
+LoginPage  -> login() / signInAsGuest() / quickDevLogin (DEV_LOGIN=true)
+Register   -> signUp() -> register + login -> /home  (ya dentro)
 ```
 
-## Platform and project files
+## Profile feature
 
-- [`pubspec.yaml`](pubspec.yaml) — Dart/Flutter constraints and dependencies (`get`, `http`, `loggy`, `shared_preferences`, `flex_color_scheme`).
-- [`analysis_options.yaml`](analysis_options.yaml) — Dart analyzer and lint configuration.
-- [`android/`](android/) — Android runner and Gradle configuration.
-- [`ios/`](ios/) — iOS runner and Xcode/CocoaPods configuration.
-- [`web/`](web/) — Flutter web bootstrap, manifest, and icons.
-- [`test/widget_test.dart`](test/widget_test.dart) — Default counter-template test; it does not match the current application behavior.
+- [`lib/features/profile/data/datasources/roble_profile_data_source.dart`](lib/features/profile/data/datasources/roble_profile_data_source.dart) —
+  Lee y escribe la tabla `profile`. Busca la fila propia por `_owner`.
+- [`lib/features/profile/data/repositories/profile_repository.dart`](lib/features/profile/data/repositories/profile_repository.dart) —
+  Traduce `RobleApi*` a `ProfileFailure` (403/404/red/tiempo).
+- [`lib/features/profile/profile_dependencies.dart`](lib/features/profile/profile_dependencies.dart) —
+  `registerProfileData()` (permanente, en `main`) y `registerProfile()`
+  (controlador perezoso en `HomeBinding`).
+- [`lib/features/profile/ui/pages/profile_page.dart`](lib/features/profile/ui/pages/profile_page.dart),
+  [`edit_profile_page.dart`](lib/features/profile/ui/pages/edit_profile_page.dart) —
+  Pantallas.
 
-## Current implementation boundaries
+## Projects / Discover / Home
 
-- Authentication and the remote product source do not communicate with a backend. Local authentication is for demos only and must be replaced with a backend before production.
-- Authentication and products use local storage; replace the auth session marker with secure backend tokens when a real backend is connected.
-- There is no route table; navigation uses widget-based GetX calls.
-- There are no use-case classes by design: controllers call repository interfaces directly.
-- Automated coverage is effectively absent because the remaining widget test targets the original Flutter counter template.
+- `features/projects` — Proyectos (`project`), guardados, postulaciones y
+  colaboraciones. `RobleProjectDataSource` usa `readPublicOrPrivate`.
+- `features/discover` — Feed de descubrimiento.
+- `features/home` — `SplashPage` (restaura sesión y enruta) y `HomePage`
+  (IndexedStack de pestañas).
+
+## Tests
+
+- `test/features/auth/auth_repository_test.dart` — `signUp` encadena
+  registro + entrada; delegación de `sessionExpired`.
+- `test/features/auth/authentication_source_service_test.dart` — `DummyAuthSource`.
+- `test/features/profile/roble_profile_data_source_test.dart` — Nunca devuelve
+  el perfil de otra persona; `ensureMyProfile`/`updateMyProfile` crean sólo
+  cuando hace falta.
+- `test/features/projects/project_repository_test.dart`,
+  `test/features/discover/discover_controller_test.dart` — Mapeo y errores.
+- `test/widget_test.dart` — Plantilla original, no refleja la app.
+
+## Límites actuales
+
+- Sólo `data/datasources/*` habla con Roble; los repositorios sólo traducen
+  excepciones y los viewmodels no tocan UI.
+- No hay clases de caso de uso: los controladores llaman a los repositorios.
+- `features/applications/project_applications.dart` sigue en memoria (falta
+  conectar `project_join_request` del UML).
+- `ILocalPreferences` está registrado pero ya no se usa: la sesión la
+  persiste el paquete de Roble.
+- El botón «Acceso rápido Dev» usa credenciales del servidor real y sólo
+  aparece con `--dart-define=DEV_LOGIN=true` en debug.

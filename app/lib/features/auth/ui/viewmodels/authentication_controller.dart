@@ -1,12 +1,16 @@
-import 'package:imker/features/auth/domain/models/authentication_user.dart';
-import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
 import 'package:imker/core/data/dummy_data.dart';
-import '../../../../core/utils/error_message.dart';
-
+import 'package:imker/core/utils/error_message.dart';
+import 'package:imker/features/auth/domain/models/authentication_user.dart';
+import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
+import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
+import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/routes/app_routes.dart';
 
 class AuthenticationController extends GetxController with UiLoggy {
   final IAuthRepository repoAuthentication;
@@ -19,6 +23,8 @@ class AuthenticationController extends GetxController with UiLoggy {
   /// Vacío mientras la última operación de auth fue exitosa.
   final RxString error = ''.obs;
 
+  StreamSubscription<void>? _expiry;
+
   AuthenticationController(this.repoAuthentication);
 
   bool get isLoading => _isLoading.value;
@@ -30,7 +36,41 @@ class AuthenticationController extends GetxController with UiLoggy {
   @override
   void onInit() {
     super.onInit();
+    // El paquete avisa sólo cuando la sesión se cae sin que nadie la cierre:
+    // `logout()` no emite, así que este aviso nunca aparece por cerrar sesión.
+    _expiry = repoAuthentication.sessionExpired.listen((_) => _onSessionExpired());
     _restoreSession();
+  }
+
+  @override
+  void onClose() {
+    _expiry?.cancel();
+    super.onClose();
+  }
+
+  void _onSessionExpired() {
+    if (!_logged.value) return;
+    loggy.warning('AuthController: sesión caducada');
+    _clearSessionState();
+    error.value = 'Tu sesión caducó. Vuelve a entrar.';
+    if (Get.currentRoute != AppRoutes.login) {
+      Get.offAllNamed(AppRoutes.login);
+    }
+  }
+
+  void _clearSessionState() {
+    _logged.value = false;
+    _isAnonymous.value = false;
+    _loggedUser.value = null;
+    _dropProfileCache();
+  }
+
+  /// El perfil cacheado en memoria pertenece a la sesión que se acaba de ir.
+  /// Se borra para que la siguiente persona no encuentre el del anterior.
+  void _dropProfileCache() {
+    if (Get.isRegistered<ProfileController>()) {
+      Get.delete<ProfileController>();
+    }
   }
 
   Future<void> _restoreSession() async {
@@ -40,12 +80,13 @@ class AuthenticationController extends GetxController with UiLoggy {
       _logged.value = restored;
       _isAnonymous.value = restored ? repoAuthentication.isAnonymous : false;
       _loggedUser.value = restored ? await repoAuthentication.getLoggedUser() : null;
-      if (restored) _refreshUserProjects();
+      if (restored) {
+        await _ensureProfileExists();
+        _refreshUserProjects();
+      }
     } catch (exception) {
       loggy.warning('AuthController: restoreSession failed — $exception');
-      _logged.value = false;
-      _isAnonymous.value = false;
-      _loggedUser.value = null;
+      _clearSessionState();
     } finally {
       _isLoading.value = false;
     }
@@ -66,7 +107,10 @@ class AuthenticationController extends GetxController with UiLoggy {
       _logged.value = ok;
       _isAnonymous.value = false;
       _loggedUser.value = ok ? await repoAuthentication.getLoggedUser() : null;
-      if (ok) _refreshUserProjects();
+      if (ok) {
+        await _ensureProfileExists();
+        _refreshUserProjects();
+      }
       if (!ok) error.value = 'No se pudo iniciar sesión. Verifica tus datos.';
       return ok;
     } catch (exception) {
@@ -78,8 +122,7 @@ class AuthenticationController extends GetxController with UiLoggy {
     }
   }
 
-
-  /// Acceso rápido para desarrollo y pruebas locales (usado en kDebugMode).
+  /// Acceso rápido para desarrollo: sólo si se pidió `--dart-define=DEV_LOGIN=true`.
   Future<bool> quickDevLogin() async {
     return login(DummyData.devEmail, DummyData.devPassword);
   }
@@ -94,10 +137,20 @@ class AuthenticationController extends GetxController with UiLoggy {
     _isLoading.value = true;
     try {
       final effectiveName = name.trim().isNotEmpty ? name.trim() : email;
+      // El repositorio crea la cuenta y entra: quien se registra queda
+      // dentro, igual que en cualquier app.
       final created = await repoAuthentication.signUp(
         AuthenticationUser(email: email, name: effectiveName, password: password),
       );
-      if (!created) error.value = 'No se pudo crear la cuenta. Intenta de nuevo.';
+      if (created) {
+        _logged.value = true;
+        _isAnonymous.value = false;
+        _loggedUser.value = await repoAuthentication.getLoggedUser();
+        await _ensureProfileExists();
+        _refreshUserProjects();
+      } else {
+        error.value = 'No se pudo crear la cuenta. Intenta de nuevo.';
+      }
       return created;
     } catch (exception) {
       loggy.error('AuthController: signUp error — $exception');
@@ -117,9 +170,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       loggy.error('AuthController: logOut error — $exception');
       // Aunque falle el servidor, limpiamos el estado local.
     } finally {
-      _logged.value = false;
-      _isAnonymous.value = false;
-      _loggedUser.value = null;
+      _clearSessionState();
       _refreshUserProjects();
     }
     return true;
@@ -131,6 +182,22 @@ class AuthenticationController extends GetxController with UiLoggy {
     }
   }
 
+  /// Garantiza que la sesión tenga fila en `profile`.
+  ///
+  /// Los líderes ven el perfil de los postulantes desde esa tabla, así que un
+  /// usuario que nunca abrió su pestaña de perfil tiene que tenerla igual.
+  /// Un fallo aquí no arruina el login: se reintenta en el siguiente arranque.
+  Future<void> _ensureProfileExists() async {
+    if (_isAnonymous.value) return;
+    if (!Get.isRegistered<IProfileRepository>()) return;
+    final name = loggedName.isNotEmpty ? loggedName : loggedEmail;
+    if (name.isEmpty) return;
+    try {
+      await Get.find<IProfileRepository>().ensureMyProfile(name: name);
+    } catch (exception) {
+      loggy.warning('AuthController: no se pudo garantizar la fila de perfil — $exception');
+    }
+  }
 
   // ─── Invitado ─────────────────────────────────────────────────────────────
 
@@ -144,6 +211,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       _logged.value = ok;
       _isAnonymous.value = ok;
       _loggedUser.value = ok ? await repoAuthentication.getLoggedUser() : null;
+      if (ok) _refreshUserProjects();
       return ok;
     } catch (exception) {
       loggy.error('AuthController: signInAsGuest error — $exception');
@@ -154,7 +222,7 @@ class AuthenticationController extends GetxController with UiLoggy {
     }
   }
 
-  /// Convierte al invitado en cuenta real. Conserva el mismo _id y sus filas.
+  /// Convierte al invitado en cuenta real. Conserva el mismo userId y sus filas.
   /// La validación de fortaleza de contraseña la hace Roble server-side.
   /// Si el email ya pertenece a otra cuenta, Roble falla y se muestra el error.
   Future<bool> upgradeAccount(String email, String password, String name) async {
@@ -173,7 +241,10 @@ class AuthenticationController extends GetxController with UiLoggy {
       final ok = await repoAuthentication.upgradeAccount(email, password, name);
       if (ok) {
         _isAnonymous.value = false;
+        _logged.value = true;
         _loggedUser.value = await repoAuthentication.getLoggedUser();
+        await _ensureProfileExists();
+        _refreshUserProjects();
       }
       return ok;
     } catch (exception) {
@@ -188,4 +259,3 @@ class AuthenticationController extends GetxController with UiLoggy {
   bool _validate(String email, String password) =>
       email.isNotEmpty && email.contains('@') && password.length >= 7;
 }
-

@@ -11,6 +11,7 @@ import 'core/roble/roble_config.dart';
 import 'core/theme/theme.dart';
 import 'core/theme/theme_builder.dart';
 import 'features/auth/auth_dependencies.dart';
+import 'features/profile/profile_dependencies.dart';
 import 'features/projects/projects_dependencies.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
@@ -34,7 +35,9 @@ void main() async {
     Get.put(robleClient, permanent: true);
   }
 
-  // Infraestructura permanente
+  // Infraestructura permanente. El perfil va antes que auth: al restaurar la
+  // sesión, auth garantiza que la fila de `profile` exista.
+  registerProfileData();
   registerAuth();
   registerProjects();
 

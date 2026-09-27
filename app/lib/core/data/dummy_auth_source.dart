@@ -60,14 +60,14 @@ class DummyAuthSource implements IAuthenticationSource {
     if (_session == null && !_isAnonymous) return null;
     if (_isAnonymous) {
       return AuthenticationUser(
-        id: 0,
+        id: null,
         email: 'guest@anonymous.invalid',
         name: 'Invitado',
         password: '',
       );
     }
     return AuthenticationUser(
-      id: _session.hashCode,
+      id: null,
       email: _session!.email,
       name: _session!.name,
       password: '',
@@ -98,27 +98,11 @@ class DummyAuthSource implements IAuthenticationSource {
     return true;
   }
 
-  // ─── Stubs del contrato ───────────────────────────────────────────────────
+  // ─── Sesión ───────────────────────────────────────────────────────────────
 
+  /// En memoria no hay tokens que caducar, así que nadie se entera nunca.
   @override
-  Future<bool> validate(String email, String validationCode) async => true;
-
-  @override
-  Future<bool> refreshToken() async => true;
-
-  @override
-  Future<bool> forgotPassword(String email) async => true;
-
-  @override
-  Future<bool> resetPassword(
-    String email,
-    String newPassword,
-    String validationCode,
-  ) async =>
-      true;
-
-  @override
-  Future<bool> verifyToken() async => _session != null || _isAnonymous;
+  Stream<void> get sessionExpired => const Stream.empty();
 }
 
 class _Account {

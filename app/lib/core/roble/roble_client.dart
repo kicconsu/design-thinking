@@ -11,41 +11,35 @@ class RobleClient {
     required String contractId,
     Duration timeout = const Duration(seconds: 10),
   }) : db = RobleApiDataBase(
-          config: RobleApiConfig.fromContract(
-            baseUrl: baseUrl,
-            contractId: contractId,
-            timeout: timeout,
-          ),
-        );
+         config: RobleApiConfig.fromContract(
+           baseUrl: baseUrl,
+           contractId: contractId,
+           timeout: timeout,
+         ),
+       );
 
   /// Constructor alternativo para pruebas.
   RobleClient.withDatabase(this.db);
 
   final RobleApiDataBase db;
 
-  /// El [userId] de la sesión activa, cacheado.
+  /// El `userId` de la sesión activa: el `sub` del JWT, que es exactamente lo
+  /// que el servidor escribe en `_owner` de cada fila.
   ///
-  /// El paquete guarda los tokens pero no el perfil, y [currentUser()] hace
-  /// un viaje al servidor. Varias lecturas dependen de quién mira, así que
-  /// preguntarlo en cada una sería una llamada de más. Lo escribe el
-  /// repositorio de auth al entrar y lo borra al salir.
-  String? currentUserId;
-  String? currentUserEmail;
+  /// No hay caché propio: el paquete lo saca del token en memoria sin ir al
+  /// servidor.
+  String? get currentUserId => db.currentUserId;
 
-  /// Conjunto con todos los identificadores del usuario activo (`user_id`, `_owner`, `id`, `_id`, `email`).
-  /// Esto asegura la coincidencia exacta contra la columna `_owner` de las tablas en Roble.
-  final Set<String> currentUserIdentifiers = <String>{};
-
-  /// Comprueba si un valor de `_owner` coincide con alguno de los identificadores del usuario activo.
+  /// ¿Esta fila es del que está dentro?
+  ///
+  /// `_owner` es un uuid de usuario; a veces viene vacío (filas antiguas o
+  /// creadas con clave publicable) y eso nunca es nadie.
   bool matchesUser(String? owner) {
+    final userId = currentUserId;
+    if (userId == null || userId.isEmpty) return false;
     if (owner == null || owner.trim().isEmpty) return false;
-    final trimmed = owner.trim();
-    if (currentUserIdentifiers.contains(trimmed)) return true;
-    if (currentUserId != null && currentUserId == trimmed) return true;
-    if (currentUserEmail != null && currentUserEmail == trimmed) return true;
-    return false;
+    return owner.trim() == userId;
   }
-
 
   // ─── Nombres de tablas en un solo sitio ─────────────────────────────────
   // Un typo aquí es un 404 y no un error de compilación.

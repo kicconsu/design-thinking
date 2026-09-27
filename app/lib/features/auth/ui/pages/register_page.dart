@@ -5,7 +5,8 @@ import 'package:loggy/loggy.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/routes/app_routes.dart';
 
-/// Página de registro de cuenta nueva. Navega a login tras crear la cuenta.
+/// Página de registro de cuenta nueva. Al crearse, el repositorio entra con
+/// las mismas credenciales y la pantalla va al inicio ya dentro.
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -31,10 +32,10 @@ class _RegisterPageState extends State<RegisterPage> with UiLoggy {
     if (ok) {
       Get.snackbar(
         'Cuenta creada',
-        'Ya puedes iniciar sesión',
+        'Bienvenido a Imker',
         snackPosition: SnackPosition.BOTTOM,
       );
-      Get.offAllNamed(AppRoutes.login);
+      Get.offAllNamed(AppRoutes.home);
     } else {
       Get.snackbar('Error', _auth.error.value, snackPosition: SnackPosition.BOTTOM);
     }

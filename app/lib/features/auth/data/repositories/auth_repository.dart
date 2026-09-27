@@ -3,50 +3,42 @@ import '../../domain/repositories/i_auth_repository.dart';
 import '../datasources/remote/i_authentication_source.dart';
 
 class AuthRepository implements IAuthRepository {
-  late IAuthenticationSource authenticationSource;
-
   AuthRepository(this.authenticationSource);
 
-  @override
-  Future<bool> login(AuthenticationUser user) async =>
-      await authenticationSource.login(user);
+  final IAuthenticationSource authenticationSource;
 
   @override
-  Future<bool> restoreSession() async =>
-      await authenticationSource.restoreSession();
+  Future<bool> login(AuthenticationUser user) =>
+      authenticationSource.login(user);
 
   @override
-  Future<AuthenticationUser?> getLoggedUser() async =>
-      await authenticationSource.getLoggedUser();
+  Future<bool> restoreSession() => authenticationSource.restoreSession();
 
   @override
-  Future<bool> signUp(AuthenticationUser user) async =>
-      await authenticationSource.signUp(user);
+  Future<AuthenticationUser?> getLoggedUser() =>
+      authenticationSource.getLoggedUser();
 
   @override
-  Future<bool> logOut() async => await authenticationSource.logOut();
+  Future<bool> signUp(AuthenticationUser user) async {
+    // `register` crea la cuenta pero no deja sesión abierta. Se entra a
+    // continuación para que quien se registró quede dentro.
+    await authenticationSource.signUp(user);
+    return authenticationSource.login(user);
+  }
 
   @override
-  Future<bool> validate(String email, String validationCode) async =>
-      await authenticationSource.validate(email, validationCode);
+  Future<bool> logOut() => authenticationSource.logOut();
 
   @override
-  Future<bool> validateToken() async =>
-      await authenticationSource.verifyToken();
+  Future<bool> signInAnonymously() => authenticationSource.signInAnonymously();
 
   @override
-  Future<void> forgotPassword(String email) async =>
-      await authenticationSource.forgotPassword(email);
-
-  @override
-  Future<bool> signInAnonymously() async =>
-      await authenticationSource.signInAnonymously();
-
-  @override
-  Future<bool> upgradeAccount(String email, String password, String name) async =>
-      await authenticationSource.upgradeAccount(email, password, name);
+  Future<bool> upgradeAccount(String email, String password, String name) =>
+      authenticationSource.upgradeAccount(email, password, name);
 
   @override
   bool get isAnonymous => authenticationSource.isAnonymous;
-}
 
+  @override
+  Stream<void> get sessionExpired => authenticationSource.sessionExpired;
+}

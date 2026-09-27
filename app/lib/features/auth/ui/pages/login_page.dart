@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
+import 'package:imker/core/roble/roble_config.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/routes/app_routes.dart';
 
@@ -120,6 +121,22 @@ class _LoginPageState extends State<LoginPage> with UiLoggy {
                           child: const Text('Entrar'),
                         ),
                 ),
+                // Aquí caen los errores que no nacen de un toque en el botón:
+                // la sesión que se cayó, por ejemplo.
+                Obx(
+                  () => _auth.error.value.isEmpty
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            _auth.error.value,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                ),
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () => Get.toNamed(AppRoutes.register),
@@ -130,7 +147,9 @@ class _LoginPageState extends State<LoginPage> with UiLoggy {
                   onPressed: _loginAsGuest,
                   child: const Text('Entrar como invitado'),
                 ),
-                if (kDebugMode) ...[
+                // Las credenciales de prueba viven en el servidor real: el
+                // botón sólo aparece si además se pidió a propósito.
+                if (kDebugMode && RobleConfig.devLoginEnabled) ...[
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: _loginDev,
