@@ -1,7 +1,6 @@
-import 'dart:convert';
-
 import 'package:roble/roble.dart';
 
+import 'package:imker/core/utils/string_list.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
@@ -43,8 +42,8 @@ class ProjectRepository implements IProjectRepository {
       'title': title,
       'description': description,
       'imageUrl': imageUrl,
-      'jobs': {'values': jobs},
-      'skills': {'values': skills},
+      'jobs': jobs,
+      'skills': skills,
       'status': 'open',
     };
 
@@ -79,34 +78,9 @@ class ProjectRepository implements IProjectRepository {
     title: (row['title'] ?? '') as String,
     imageUrl: (row['imageUrl'] as String?) ?? '',
     description: (row['description'] as String?) ?? '',
-    // jobs y skills son columnas json: pueden llegar como List<dynamic>.
-    jobs: _parseList(row['jobs']),
-    skills: _parseList(row['skills']),
+    // jobs y skills son columnas jsonb: un array en la raíz de la columna.
+    jobs: decodeStringList(row['jobs']),
+    skills: decodeStringList(row['skills']),
     status: (row['status'] as String?) ?? 'open',
   );
-
-
-  /// Convención estricta: Roble no admite arrays JSON en la raíz de columnas jsonb,
-  /// por lo que las listas se almacenan siempre envueltas en un objeto: {"values": [...]}.
-  /// El valor puede llegar ya deserializado como [Map] o serializado como [String] JSON.
-  static List<String> _parseList(Object? value) {
-    if (value == null) return const [];
-
-    Object? raw = value;
-    if (raw is String) {
-      final trimmed = raw.trim();
-      if (trimmed.isEmpty) return const [];
-      try {
-        raw = jsonDecode(trimmed);
-      } catch (_) {
-        return const [];
-      }
-    }
-
-    if (raw is Map && raw['values'] is List) {
-      return (raw['values'] as List).map((e) => e.toString()).toList();
-    }
-
-    return const [];
-  }
 }

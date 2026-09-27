@@ -25,7 +25,7 @@ class DummyData {
   static const String devPassword = 'ThePassword1!';
 
   /// Filas de la tabla 'project' que devolvería Roble.
-  /// Respeta la convención de almacenar listas bajo {"values": [...]}.
+  /// Respeta la convención de las columnas jsonb: el array va en la raíz.
   final projects = <Map<String, dynamic>>[];
 
   // ─── Entidades estáticas para vistas que aún no tienen backend ───────────
@@ -66,12 +66,8 @@ class DummyData {
         'imageUrl': 'https://picsum.photos/seed/kirche-imker/800/450',
         'description':
             'Proyecto de renovación urbana enfocado en la integración de tecnologías sostenibles en edificios históricos.',
-        'jobs': {
-          'values': ['Ing. Software', 'Ing. Ambiental', 'Ing. Electrónica', 'Ing. Industrial'],
-        },
-        'skills': {
-          'values': ['Modelación', 'Análisis de datos', 'Desarrollo de software', 'Diseño de software'],
-        },
+        'jobs': ['Ing. Software', 'Ing. Ambiental', 'Ing. Electrónica', 'Ing. Industrial'],
+        'skills': ['Modelación', 'Análisis de datos', 'Desarrollo de software', 'Diseño de software'],
         'status': 'open',
       },
       {
@@ -81,12 +77,8 @@ class DummyData {
         'imageUrl': 'https://picsum.photos/seed/aquanet-imker/800/450',
         'description':
             'Sistema de monitoreo en tiempo real para cuencas hidrográficas urbanas. Combinamos sensores IoT con modelos predictivos.',
-        'jobs': {
-          'values': ['Ing. Ambiental', 'Data Scientist', 'Ing. Civil'],
-        },
-        'skills': {
-          'values': ['IoT', 'Machine Learning', 'Gestión hídrica', 'Python'],
-        },
+        'jobs': ['Ing. Ambiental', 'Data Scientist', 'Ing. Civil'],
+        'skills': ['IoT', 'Machine Learning', 'Gestión hídrica', 'Python'],
         'status': 'open',
       },
       {
@@ -96,12 +88,8 @@ class DummyData {
         'imageUrl': 'https://picsum.photos/seed/edureach-imker/800/450',
         'description':
             'Aplicación móvil para comunidades rurales con conectividad intermitente.',
-        'jobs': {
-          'values': ['Ing. Software', 'Diseñador UX', 'Pedagogo'],
-        },
-        'skills': {
-          'values': ['Flutter', 'Diseño instruccional', 'Offline-first', 'Accesibilidad'],
-        },
+        'jobs': ['Ing. Software', 'Diseñador UX', 'Pedagogo'],
+        'skills': ['Flutter', 'Diseño instruccional', 'Offline-first', 'Accesibilidad'],
         'status': 'open',
       },
     ]);

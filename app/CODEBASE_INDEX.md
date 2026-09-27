@@ -123,8 +123,12 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 - `test/features/profile/roble_profile_data_source_test.dart` — Nunca devuelve
   el perfil de otra persona; `ensureMyProfile`/`updateMyProfile` crean sólo
   cuando hace falta.
+- `test/features/profile/profile_repository_test.dart` — Mapeo de `skills`
+  (array en la raíz), `career` y traducción de errores.
 - `test/features/projects/project_repository_test.dart`,
   `test/features/discover/discover_controller_test.dart` — Mapeo y errores.
+- `test/core/string_list_test.dart` — Lectura de columnas jsonb con array
+  en la raíz (`decodeStringList`).
 - `test/widget_test.dart` — Plantilla original, no refleja la app.
 
 ## Límites actuales

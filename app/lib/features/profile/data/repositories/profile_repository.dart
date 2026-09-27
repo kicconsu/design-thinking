@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:roble/roble.dart';
 
+import 'package:imker/core/utils/string_list.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import '../../domain/profile_failure.dart';
 import '../../domain/repositories/i_profile_repository.dart';
@@ -64,7 +65,7 @@ class ProfileRepository implements IProfileRepository {
   UserProfile _toProfile(Map<String, dynamic> row) => UserProfile(
     academicInfo: _formatCareer(row['career']),
     bio: (row['description'] as String?) ?? '',
-    skills: _parseList(row['skills']),
+    skills: decodeStringList(row['skills']),
     // Placeholder hasta que exista un algoritmo real de reputación.
     commitmentScore: 83,
     onTimeScore: 83,
@@ -97,30 +98,5 @@ class ProfileRepository implements IProfileRepository {
       return '$program - $institution';
     }
     return '';
-  }
-
-  /// A diferencia de `ProjectRepository` (donde las columnas json se guardan
-  /// como `{"values": [...]}`), la tabla `profile` guarda `skills` como una
-  /// lista plana — ver `AuthenticationSourceService._syncProfile`. Se maneja
-  /// también el formato envuelto por si acaso, para no romper si cambia.
-  static List<String> _parseList(Object? value) {
-    if (value == null) return const [];
-    Object? raw = value;
-    if (raw is String) {
-      final trimmed = raw.trim();
-      if (trimmed.isEmpty) return const [];
-      try {
-        raw = jsonDecode(trimmed);
-      } catch (_) {
-        return const [];
-      }
-    }
-    if (raw is List) {
-      return raw.map((e) => e.toString()).toList();
-    }
-    if (raw is Map && raw['values'] is List) {
-      return (raw['values'] as List).map((e) => e.toString()).toList();
-    }
-    return const [];
   }
 }

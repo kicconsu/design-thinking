@@ -48,8 +48,7 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
   }) async {
     final payload = {
       'description': bio,
-      // La tabla `profile` guarda `skills` como lista plana, a diferencia de
-      // `project` que envuelve sus columnas json como {"values": [...]}.
+      // `skills` es jsonb: el array va en la raíz de la columna.
       'skills': skills,
     };
 

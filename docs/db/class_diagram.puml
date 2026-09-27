@@ -1,5 +1,5 @@
-@startuml v1
-title Imker - UML v1
+@startuml v2
+title Imker - UML v2
 
 hide circle
 skinparam shadowing false
@@ -30,8 +30,8 @@ entity profile {
 --
   _owner : text <<FK user_system>>
 * name : text
-* career : json
-  skills : json
+* career : jsonb
+  skills : jsonb
   profilePicture : varchar
   description : text
 }
@@ -43,10 +43,17 @@ entity project {
 * title : text
 * imageUrl : varchar
 * description : text
-* jobs : json
-* skills : json
+* jobs : jsonb
+* skills : jsonb
 * status : open | closed
 }
+
+note bottom of project
+  Las columnas jsonb que guardan listas
+  (jobs y skills de project, skills de profile)
+  llevan el array en la raíz de la columna:
+  ["a", "b"] y nunca {"values": [...]}.
+end note
 
 entity project_saved  {
 * user_id : uuid <<PK, FK>>

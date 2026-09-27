@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:imker/core/data/dummy_data.dart';
 import 'package:imker/features/projects/data/datasources/i_project_data_source.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
@@ -58,17 +59,15 @@ void main() {
       expect(projects.first.isOpen, isTrue);
     });
 
-    test('mapea jobs y skills cuando vienen envueltos en objeto {"values": [...]}', () async {
+    test('mapea jobs y skills cuando vienen como array en la raíz de la columna', () async {
       final source = _SingleProjectDataSource({
         '_id': '42',
         '_owner': 'u1',
         'title': 'Test',
         'imageUrl': '',
         'description': '',
-        'jobs': {
-          'values': ['Dev', 'Designer']
-        },
-        'skills': '{"values": ["Dart", "Flutter"]}',
+        'jobs': ['Dev', 'Designer'],
+        'skills': '["Dart", "Flutter"]', // jsonb serializado como texto
         'status': 'open',
       });
       final repo = ProjectRepository(source);
@@ -78,22 +77,29 @@ void main() {
       expect(project.skills, ['Dart', 'Flutter']);
     });
 
-    test('devuelve lista vacía si jobs o skills no siguen la convención estricta {"values": [...]}', () async {
-      final source = _SingleProjectDataSource({
-        '_id': '43',
-        '_owner': 'u1',
-        'title': 'Test Loose',
-        'imageUrl': '',
-        'description': '',
-        'jobs': ['Dev', 'Designer'], // lista directa no permitida
-        'skills': {'otherKey': ['Dart', 'Flutter']}, // mapa sin 'values'
-        'status': 'open',
-      });
-      final repo = ProjectRepository(source);
-      final project = await repo.getProjectById('43');
+    test('devuelve lista vacía si la columna no es un array en la raíz', () async {
+      final valoresNoSoportados = <Object?>[
+        {'values': ['Dev', 'Designer']}, // envoltorio legado, ya no soportado
+        {'otherKey': ['Dart']}, // mapa arbitrario
+        'Dart, Flutter', // texto plano
+        null,
+      ];
 
-      expect(project!.jobs, isEmpty);
-      expect(project.skills, isEmpty);
+      for (final jobs in valoresNoSoportados) {
+        final repo = ProjectRepository(_SingleProjectDataSource({
+          '_id': '43',
+          '_owner': 'u1',
+          'title': 'Test',
+          'imageUrl': '',
+          'description': '',
+          'jobs': jobs,
+          'status': 'open',
+        }));
+
+        final project = await repo.getProjectById('43');
+
+        expect(project!.jobs, isEmpty, reason: 'no debería leer: $jobs');
+      }
     });
 
     test('obtiene un proyecto por ID', () async {
@@ -148,8 +154,9 @@ void main() {
       );
     });
 
-    test('crea un proyecto correctamente', () async {
-      final repo = ProjectRepository(InMemoryProjectDataSource());
+    test('crea un proyecto con los arrays planos en la raíz de la fila', () async {
+      final source = InMemoryProjectDataSource(DummyData());
+      final repo = ProjectRepository(source);
 
       final project = await repo.createProject(
         title: 'Nuevo Proyecto Test',
@@ -162,6 +169,10 @@ void main() {
       expect(project.title, 'Nuevo Proyecto Test');
       expect(project.jobs, ['Ing. Sistemas']);
       expect(project.skills, ['Flutter']);
+
+      final stored = (await source.readProjects()).last;
+      expect(stored['jobs'], ['Ing. Sistemas']);
+      expect(stored['skills'], ['Flutter']);
     });
   });
 }
