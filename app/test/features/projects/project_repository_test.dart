@@ -23,6 +23,43 @@ class _FailingDataSource implements IProjectDataSource {
   @override
   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
       throw exception;
+
+  @override
+  Future<Map<String, dynamic>> createJoinRequest(Map<String, dynamic> joinRequestData) async =>
+      throw exception;
+
+  @override
+  Future<List<Map<String, dynamic>>> readJoinRequestsByUser(String userId) async =>
+      throw exception;
+
+  @override
+  Future<List<Map<String, dynamic>>> readJoinRequestsForProject(String projectId) async =>
+      throw exception;
+
+  @override
+  Future<Map<String, dynamic>> updateJoinRequestStatus({
+    required String requestId,
+    required String status,
+    required String reviewedBy,
+    String? reviewNote,
+  }) async =>
+      throw exception;
+
+  @override
+  Future<Map<String, dynamic>?> readUserProfile(String userId) async =>
+      throw exception;
+
+  @override
+  Future<Map<String, dynamic>> addProjectMember({
+    required String projectId,
+    required String userId,
+    Map<String, dynamic>? role,
+  }) async =>
+      throw exception;
+
+  @override
+  Future<List<Map<String, dynamic>>> readProjectMembers({String? projectId}) async =>
+      throw exception;
 }
 
 class _SingleProjectDataSource implements IProjectDataSource {
@@ -41,7 +78,48 @@ class _SingleProjectDataSource implements IProjectDataSource {
   @override
   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
       {'_id': 'created-id', '_owner': 'test-owner', ...projectData};
+
+  @override
+  Future<Map<String, dynamic>> createJoinRequest(Map<String, dynamic> joinRequestData) async =>
+      {'_id': 'req-1', '_owner': 'u1', 'user_id': 'u1', ...joinRequestData};
+
+  @override
+  Future<List<Map<String, dynamic>>> readJoinRequestsByUser(String userId) async => [
+        {'_id': 'req-1', '_owner': userId, 'user_id': userId, 'project_id': 'p1', 'status': {'state': 'pending'}}
+      ];
+
+  @override
+  Future<List<Map<String, dynamic>>> readJoinRequestsForProject(String projectId) async => [
+        {'_id': 'req-1', '_owner': 'u1', 'user_id': 'u1', 'project_id': projectId, 'status': {'state': 'pending'}}
+      ];
+
+  @override
+  Future<Map<String, dynamic>> updateJoinRequestStatus({
+    required String requestId,
+    required String status,
+    required String reviewedBy,
+    String? reviewNote,
+  }) async =>
+      {'_id': requestId, 'status': {'state': status}, 'reviewed_by': reviewedBy};
+
+  @override
+  Future<Map<String, dynamic>?> readUserProfile(String userId) async =>
+      {'_id': 'prof-1', '_owner': userId, 'name': 'Test User'};
+
+  @override
+  Future<Map<String, dynamic>> addProjectMember({
+    required String projectId,
+    required String userId,
+    Map<String, dynamic>? role,
+  }) async =>
+      {'_id': 'member-1', 'project_id': projectId, 'user_id': userId, 'role': role ?? {'name': 'collaborator'}};
+
+  @override
+  Future<List<Map<String, dynamic>>> readProjectMembers({String? projectId}) async => [
+        {'_id': 'member-1', 'project_id': projectId ?? 'p1', 'user_id': 'u1', 'role': {'name': 'owner'}}
+      ];
 }
+
 
 
 
@@ -174,6 +252,58 @@ void main() {
       expect(stored['jobs'], ['Ing. Sistemas']);
       expect(stored['skills'], ['Flutter']);
     });
+
+    test('crea una solicitud de colaboración (project_join_request)', () async {
+      final source = InMemoryProjectDataSource(DummyData());
+      final repo = ProjectRepository(source);
+
+      final request = await repo.createJoinRequest(
+        projectId: 'p-100',
+        status: {'state': 'pending'},
+      );
+
+      expect(request.id, isNotEmpty);
+      expect(request.projectId, 'p-100');
+      expect(request.statusState, 'pending');
+    });
+
+    test('obtiene las solicitudes de un proyecto (getJoinRequestsForProject)', () async {
+      final source = InMemoryProjectDataSource(DummyData());
+      final repo = ProjectRepository(source);
+
+      await repo.createJoinRequest(
+        projectId: 'p-300',
+        userId: 'user-a',
+        status: {'state': 'pending'},
+      );
+
+      final projectRequests = await repo.getJoinRequestsForProject('p-300');
+      expect(projectRequests, isNotEmpty);
+      expect(projectRequests.first.projectId, 'p-300');
+      expect(projectRequests.first.userId, 'user-a');
+    });
+
+    test('actualiza el estado de una solicitud (updateJoinRequestStatus)', () async {
+      final source = InMemoryProjectDataSource(DummyData());
+      final repo = ProjectRepository(source);
+
+      final created = await repo.createJoinRequest(
+        projectId: 'p-400',
+        userId: 'user-b',
+        status: {'state': 'pending'},
+      );
+
+      final updated = await repo.updateJoinRequestStatus(
+        requestId: created.id,
+        status: 'accepted',
+        reviewedBy: 'owner-1',
+      );
+
+      expect(updated.id, created.id);
+      expect(updated.statusState, 'accepted');
+      expect(updated.reviewedBy, 'owner-1');
+    });
   });
 }
+
 

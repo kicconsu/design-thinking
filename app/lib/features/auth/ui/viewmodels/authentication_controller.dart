@@ -178,7 +178,9 @@ class AuthenticationController extends GetxController with UiLoggy {
 
   void _refreshUserProjects() {
     if (Get.isRegistered<UserProjectsController>()) {
-      Get.find<UserProjectsController>().fetchCoCreatedProjects();
+      final ctrl = Get.find<UserProjectsController>();
+      ctrl.fetchCoCreatedProjects();
+      ctrl.fetchUserApplications();
     }
   }
 

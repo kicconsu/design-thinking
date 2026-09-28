@@ -26,8 +26,8 @@ class ProjectCard extends StatelessWidget {
         children: [
           // Jobs at top
           _JobsRow(jobs: project.jobs, tt: tt),
-          // Image takes remaining vertical space
-          Expanded(flex: 4, child: _ProjectImage(imageUrl: project.imageUrl)),
+          // Image takes remaining vertical space with heart button overlay
+          Expanded(flex: 4, child: _ProjectImage(project: project)),
           Divider(color: cs.outline, thickness: 1, height: 1),
           // Title
           Padding(
@@ -84,22 +84,96 @@ class _JobsRow extends StatelessWidget {
 }
 
 class _ProjectImage extends StatelessWidget {
-  final String imageUrl;
+  final Project project;
 
-  const _ProjectImage({required this.imageUrl});
+  const _ProjectImage({required this.project});
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
-      fit: BoxFit.fill,
-      errorBuilder: (_, _, _) =>
-          const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
-      loadingBuilder: (_, child, progress) {
-        if (progress == null) return child;
-        return const Center(child: CircularProgressIndicator());
-      },
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.network(
+          project.imageUrl,
+          fit: BoxFit.fill,
+          errorBuilder: (_, _, _) =>
+              const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
+          loadingBuilder: (_, child, progress) {
+            if (progress == null) return child;
+            return const Center(child: CircularProgressIndicator());
+          },
+        ),
+        Positioned(top: 8, right: 8, child: _FavoriteButton(project: project)),
+      ],
     );
+  }
+}
+
+class _FavoriteButton extends StatelessWidget {
+  final Project project;
+
+  const _FavoriteButton({required this.project});
+
+  void _showNotice(BuildContext context, bool nowSaved) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    if (nowSaved) {
+      Get.snackbar(
+        '¡Proyecto guardado!',
+        "Entra a la pestaña 'Proyectos' para más detalles.",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cs.tertiaryContainer,
+        icon: Icon(Icons.favorite, color: Colors.red),
+        duration: const Duration(seconds: 4),
+        mainButton: TextButton(
+          onPressed: () {
+            Get.closeCurrentSnackbar();
+            Get.find<HomeViewModel>().changePage(1);
+          },
+          child: Text('Ir a Proyectos', style: tt.labelSmall?.copyWith()),
+        ),
+      );
+    } else {
+      Get.snackbar(
+        'Proyecto removido',
+        'El proyecto se eliminó de tus proyectos guardados.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cs.surfaceContainerHigh,
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final projectsController = Get.find<UserProjectsController>();
+
+    return Obx(() {
+      final isOwner = projectsController.isOwner(project);
+      if (isOwner) return const SizedBox.shrink();
+
+      final saved = projectsController.isSaved(project.id);
+
+      return Material(
+        color: Colors.black45,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: IconButton(
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          icon: Icon(
+            saved ? Icons.favorite : Icons.favorite_border,
+            color: saved ? Colors.redAccent : Colors.white,
+            size: 24,
+          ),
+          tooltip: saved ? 'Quitar de guardados' : '¡Me interesa!',
+          onPressed: (() {
+            final nowSaved = projectsController.toggleSaveProject(project);
+            _showNotice(context, nowSaved);
+          }).guarded('Para guardar proyectos necesitas una cuenta real.'),
+        ),
+      );
+    });
   }
 }
 
@@ -177,24 +251,6 @@ class _ActionButtons extends StatelessWidget {
     required this.project,
   });
 
-  void _showSavedNotice(BuildContext context) {
-    Get.snackbar(
-      '¡Proyecto guardado!',
-      "Entra a la pestaña 'Proyectos' para más detalles.",
-      snackPosition: SnackPosition.TOP,
-      backgroundColor: cs.tertiaryContainer,
-      icon: Icon(Icons.bookmark, color: cs.onTertiaryContainer),
-      duration: const Duration(seconds: 4),
-      mainButton: TextButton(
-        onPressed: () {
-          Get.closeCurrentSnackbar();
-          Get.find<HomeViewModel>().changePage(1);
-        },
-        child: Text('Ir a Proyectos', style: tt.labelSmall?.copyWith()),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final projectsController = Get.find<UserProjectsController>();
@@ -210,52 +266,46 @@ class _ActionButtons extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          FilledButton.icon(
-            onPressed: () {
-              Get.to(() => ProjectDetailPage(project: project));
-            },
-            style: buttonStyle,
-            icon: const Icon(Icons.menu_book),
-            label: Text('Leer más', style: tt.headlineSmall),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () {
+                Get.to(() => ProjectDetailPage(project: project));
+              },
+              style: buttonStyle,
+              icon: const Icon(Icons.menu_book),
+              label: Text('Leer más', style: tt.headlineSmall),
+            ),
           ),
-          const SizedBox(width: 12),
-            Expanded(
-            child: Obx(() {
-              final isOwner = projectsController.isOwner(project);
-              final saved = projectsController.isSaved(project.id);
-
-              if (isOwner) {
-                return FilledButton.icon(
-                  onPressed: null,
-                  style: buttonStyle,
-                  icon: const Icon(Icons.star_rounded),
-                  label: Text(
-                    'Tu proyecto',
-                    style: tt.headlineSmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }
-
-              return FilledButton.icon(
-                onPressed: saved
-                    ? null
-                    : (() {
-                        if (projectsController.saveProject(project)) {
-                          _showSavedNotice(context);
-                        }
-                      }).guarded('Para guardar proyectos necesitas una cuenta real.'),
-                style: buttonStyle,
-                icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
-                label: Text(
-                  saved ? 'Guardado' : '¡Me interesa!',
-                  style: tt.headlineSmall,
-                  overflow: TextOverflow.ellipsis,
+          Obx(() {
+            final isOwner = projectsController.isOwner(project);
+            if (!isOwner) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
                 ),
-              );
-            }),
-          ),
-
+                decoration: BoxDecoration(
+                  color: cs.secondaryContainer,
+                  border: Border.all(color: Colors.black, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star_rounded, size: 16, color: cs.primary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tu proyecto',
+                      style: tt.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );

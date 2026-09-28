@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_join_request.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
@@ -28,6 +29,49 @@ class _MockFailingRepository implements IProjectRepository {
     required List<String> jobs,
     required List<String> skills,
     String imageUrl = '',
+  }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<ProjectJoinRequest> createJoinRequest({
+    required String projectId,
+    String? userId,
+    dynamic status,
+  }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<List<ProjectJoinRequest>> getJoinRequestsByUser(String userId) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<List<ProjectJoinRequest>> getJoinRequestsForProject(String projectId) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<ProjectJoinRequest> updateJoinRequestStatus({
+    required String requestId,
+    required String status,
+    required String reviewedBy,
+    String? reviewNote,
+  }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<void> addProjectMember({
+    required String projectId,
+    required String userId,
+    Map<String, dynamic>? role,
   }) async {
     throw const ProjectFailure('Error de prueba');
   }

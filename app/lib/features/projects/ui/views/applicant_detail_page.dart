@@ -27,13 +27,24 @@ class ApplicantDetailPage extends StatefulWidget {
 
 class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
   int _tab = 0; // 0: Perfil General, 1: Proyectos
+  bool _isSubmitting = false;
 
-  void _decide(bool accepted) {
-    Get.find<UserProjectsController>().decideOnApplicant(
-      widget.applicant,
-      accepted: accepted,
-    );
-    Get.to(() => RequestDecisionResultPage(accepted: accepted));
+  Future<void> _decide(bool accepted) async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final success = await Get.find<UserProjectsController>().decideOnApplicant(
+        widget.applicant,
+        accepted: accepted,
+      );
+      if (success) {
+        Get.to(() => RequestDecisionResultPage(accepted: accepted));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -153,28 +164,40 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => _decide(false),
+                      onPressed: _isSubmitting ? null : () => _decide(false),
                       style: OutlinedButton.styleFrom(
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Rechazar'),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Rechazar'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
                     child: FilledButton(
-                      onPressed: () => _decide(true),
+                      onPressed: _isSubmitting ? null : () => _decide(true),
                       style: FilledButton.styleFrom(
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Aceptar solicitud'),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Aceptar solicitud'),
                     ),
                   ),
                 ],

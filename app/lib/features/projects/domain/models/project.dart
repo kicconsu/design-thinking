@@ -26,6 +26,33 @@ class Project {
 
   bool get isOpen => status == 'open';
 
+  Project copyWith({
+    String? id,
+    String? owner,
+    String? title,
+    String? imageUrl,
+    String? description,
+    List<String>? jobs,
+    List<String>? skills,
+    String? status,
+    List<String>? members,
+    int? applicantsCount,
+  }) {
+    return Project(
+      id: id ?? this.id,
+      owner: owner ?? this.owner,
+      title: title ?? this.title,
+      imageUrl: imageUrl ?? this.imageUrl,
+      description: description ?? this.description,
+      jobs: jobs ?? this.jobs,
+      skills: skills ?? this.skills,
+      status: status ?? this.status,
+      members: members ?? this.members,
+      applicantsCount: applicantsCount ?? this.applicantsCount,
+    );
+  }
+
   @override
   String toString() => 'Project(id: $id, title: $title, status: $status)';
 }
+

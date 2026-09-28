@@ -8,10 +8,22 @@ import 'applicant_detail_page.dart';
 
 /// Pantalla "Requests" del flujo de Figma: lista las solicitudes de
 /// colaboración recibidas para un proyecto co-creado.
-class CollaborationRequestsPage extends StatelessWidget {
+class CollaborationRequestsPage extends StatefulWidget {
   final Project project;
 
   const CollaborationRequestsPage({super.key, required this.project});
+
+  @override
+  State<CollaborationRequestsPage> createState() => _CollaborationRequestsPageState();
+}
+
+class _CollaborationRequestsPageState extends State<CollaborationRequestsPage> {
+  @override
+  void initState() {
+    super.initState();
+    final controller = Get.find<UserProjectsController>();
+    controller.fetchJoinRequestsForProject(widget.project.id);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,52 +40,55 @@ class CollaborationRequestsPage extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Obx(() {
-          final applicants = controller.applicantsFor(project.id);
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(
-                'Solicitudes de colaboración',
-                style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                project.title,
-                style: tt.titleMedium,
-              ),
-              Text(
-                'Revisa cada perfil antes de decidir',
-                style: tt.bodySmall,
-              ),
-              const SizedBox(height: 8),
-              Divider(color: cs.outline),
-              const SizedBox(height: 8),
-              if (applicants.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    'No hay solicitudes pendientes por revisar.',
-                    style: tt.bodyMedium,
-                  ),
-                )
-              else
-                ...applicants.map(
-                  (applicant) => _ApplicantTile(
-                    applicant: applicant,
-                    onTap: () {
-                      Get.to(
-                        () => ApplicantDetailPage(
-                          project: project,
-                          applicant: applicant,
-                        ),
-                      );
-                    },
-                  ),
+        child: RefreshIndicator(
+          onRefresh: () => controller.fetchJoinRequestsForProject(widget.project.id),
+          child: Obx(() {
+            final applicants = controller.applicantsFor(widget.project.id);
+            return ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  'Solicitudes de colaboración',
+                  style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
-            ],
-          );
-        }),
+                const SizedBox(height: 4),
+                Text(
+                  widget.project.title,
+                  style: tt.titleMedium,
+                ),
+                Text(
+                  'Revisa cada perfil antes de decidir',
+                  style: tt.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                Divider(color: cs.outline),
+                const SizedBox(height: 8),
+                if (applicants.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'No hay solicitudes pendientes por revisar.',
+                      style: tt.bodyMedium,
+                    ),
+                  )
+                else
+                  ...applicants.map(
+                    (applicant) => _ApplicantTile(
+                      applicant: applicant,
+                      onTap: () {
+                        Get.to(
+                          () => ApplicantDetailPage(
+                            project: widget.project,
+                            applicant: applicant,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }

@@ -65,12 +65,12 @@ Future<void> showConfirmApplicationDialog({
             ),
             icon: const Icon(Icons.check, size: 18),
             label: const Text('Confirmar'),
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(dialogContext).pop();
               if (onConfirmed != null) {
                 onConfirmed();
               } else {
-                final applied = Get.find<UserProjectsController>().applyToProject(project);
+                final applied = await Get.find<UserProjectsController>().applyToProject(project);
                 if (applied) {
                   Get.to(() => CollaborationDonePage(project: project));
                 }
