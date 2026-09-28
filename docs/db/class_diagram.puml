@@ -81,6 +81,18 @@ entity project_member {
 * role : owner | member
 }
 
+entity project_invitation {
+* _id : uuid <<PK>>
+--
+  _owner : text
+* project_id : uuid <<FK project>>
+* email : text
+* user_id : uuid <<FK user_system>>
+* status : pending | accepted | declined
+* createdAt : timestamptz
+  respondedAt : timestamptz
+}
+
 entity task {
 * _id : uuid <<PK>>
 --
@@ -113,6 +125,9 @@ project ||--o{ project_join_request
 user_system ||--o{ project_member
 project ||--o{ project_member
 
+user_system ||--o{ project_invitation : "invitado"
+project ||--o{ project_invitation : invita
+
 project ||--o{ task
 
 project_member ||--o{ contribution : "(user_id, project_id)"
@@ -136,6 +151,18 @@ PK (user_id, project_id): una membresía
   por usuario y proyecto.
 Pendiente: qué pasa cuando alguien se va
 (status o left_at).
+end note
+
+note bottom of project_invitation
+  El cliente verifica TODOS los correos
+  (consulta guardada usuario_por_correo)
+  ANTES de crear el proyecto.
+  Si alguno no tiene cuenta, no se escribe
+  nada: la creación se aborta por completo.
+  Si la inserción falla después de crear el
+  proyecto, se borra el proyecto con sus
+  miembros e invitaciones (rollback).
+  Una sola pending por (project_id, email).
 end note
 
 @enduml

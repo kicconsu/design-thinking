@@ -39,12 +39,98 @@ class ProjectRepository implements IProjectRepository {
   }
 
   @override
+  Future<List<String>> validateInviteEmails(List<String> emails) async {
+    final normalized = _normalizeEmails(emails);
+    if (normalized.isEmpty) return [];
+    final invitees = await _resolveInvitees(normalized);
+    return normalized.where((email) => !invitees.containsKey(email)).toList();
+  }
+
+  @override
   Future<Project> createProject({
     required String title,
     required String description,
     required List<String> jobs,
     required List<String> skills,
     String imageUrl = '',
+    List<String> inviteEmails = const [],
+  }) async {
+    final emails = _normalizeEmails(inviteEmails);
+
+    // 1. Nada se escribe hasta que TODOS los correos estén verificados.
+    // Roble no tiene transacciones: la única forma de que una creación sea
+    // todo-o-nada es validar antes de tocar la base.
+    final Map<String, String> invitees = emails.isEmpty
+        ? const <String, String>{}
+        : await _resolveInvitees(emails);
+    final missing = emails
+        .where((email) => !invitees.containsKey(email))
+        .toList();
+    if (missing.isNotEmpty) {
+      throw ProjectFailure(
+        'No existe una cuenta para ${missing.length == 1 ? 'el correo' : 'los correos'}: '
+        '${missing.join(', ')}. El proyecto no se creó.',
+      );
+    }
+
+    // 2. El proyecto.
+    final project = await _createProjectRow(
+      title: title,
+      description: description,
+      jobs: jobs,
+      skills: skills,
+      imageUrl: imageUrl,
+    );
+    if (emails.isEmpty) return project;
+
+    // 3. Invitaciones, todas en una sola petición.
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final rows = [
+      for (final email in emails)
+        <String, dynamic>{
+          'project_id': project.id,
+          'email': email,
+          'user_id': invitees[email],
+          'status': 'pending',
+          'createdAt': nowIso,
+        },
+    ];
+
+    try {
+      final inserted = await _source.createInvitations(rows);
+      if (inserted.length != rows.length) {
+        throw StateError(
+          'El servidor rechazó ${rows.length - inserted.length} invitaciones',
+        );
+      }
+    } catch (_) {
+      // 4. Reversible: una invitación que no entra se lleva el proyecto
+      // consigo, para que no quede una creación a medias.
+      var undone = false;
+      try {
+        await _source.deleteProjectCascade(project.id);
+        undone = true;
+      } catch (_) {
+        // El rollback también falló: se avisa, pero el error real es el de
+        // las invitaciones.
+      }
+      throw ProjectFailure(
+        undone
+            ? 'No se pudieron enviar las invitaciones. El proyecto no se creó.'
+            : 'No se pudieron enviar las invitaciones y no se pudo deshacer la '
+                  'creación. Revisa tu lista de proyectos.',
+      );
+    }
+    return project;
+  }
+
+  /// Cuerpo de la creación sin invitaciones: escribe la fila del proyecto.
+  Future<Project> _createProjectRow({
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+    required String imageUrl,
   }) async {
     final payload = <String, dynamic>{
       'title': title,
@@ -59,6 +145,43 @@ class ProjectRepository implements IProjectRepository {
     final createdId = (resultRow['_id'] ?? resultRow['id'])?.toString() ?? '';
     final membersMap = await _getMembersMap(projectId: createdId);
     return _toProject(resultRow, membersMap);
+  }
+
+  List<String> _normalizeEmails(List<String> emails) => emails
+      .map((email) => email.trim().toLowerCase())
+      .where((email) => email.isNotEmpty)
+      .toSet()
+      .toList();
+
+  /// Correo → user_id para los que sí tienen cuenta.
+  Future<Map<String, String>> _resolveInvitees(List<String> emails) async {
+    final List<Map<String, dynamic>> rows;
+    try {
+      rows = await _source.findUsersByEmails(emails);
+    } on RobleApiNetworkException {
+      throw const ProjectFailure('Sin conexión. Verifica tu red.');
+    } on RobleApiTimeoutException {
+      throw const ProjectFailure(
+        'La solicitud tardó demasiado. Intenta de nuevo.',
+      );
+    } catch (_) {
+      throw const ProjectFailure(
+        'No se pudieron verificar los correos invitados. Revisa que la consulta '
+        'guardada "usuario_por_correo" esté activa en la consola de Roble.',
+      );
+    }
+
+    final resolved = <String, String>{};
+    for (final row in rows) {
+      final email = (row['email'] ?? '').toString().trim().toLowerCase();
+      final userId = (row['user_id'] ?? row['userId'] ?? row['id'] ?? '')
+          .toString()
+          .trim();
+      if (email.isNotEmpty && userId.isNotEmpty) {
+        resolved[email] = userId;
+      }
+    }
+    return resolved;
   }
 
   @override

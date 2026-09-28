@@ -154,12 +154,16 @@ class UserProjectsController extends GetxController {
   }
 
   /// Crea un nuevo proyecto en Roble / repositorio y lo agrega a [coCreatedProjects].
+  ///
+  /// [inviteEmails] se verifica TODOS antes de escribir nada: si alguno no
+  /// tiene cuenta, lanza [ProjectFailure] y no se crea el proyecto.
   Future<Project> createProject({
     required String title,
     required String description,
     required List<String> jobs,
     required List<String> skills,
     String imageUrl = '',
+    List<String> inviteEmails = const [],
   }) async {
     try {
       isCreating.value = true;
@@ -170,6 +174,7 @@ class UserProjectsController extends GetxController {
         jobs: jobs,
         skills: skills,
         imageUrl: imageUrl,
+        inviteEmails: inviteEmails,
       );
       userCreatedProjectIds.add(newProject.id);
 

@@ -480,6 +480,77 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
     }
   }
 
+  @override
+  Future<List<Map<String, dynamic>>> findUsersByEmails(
+    List<String> emails,
+  ) async {
+    final found = <Map<String, dynamic>>[];
+    for (final email in emails) {
+      // Consulta guardada en la consola de Roble (IMPLEMENTATION_PLAN §4):
+      //   SELECT user_id, email FROM user_system
+      //   WHERE lower(email) = lower($1)
+      // Si no existe o está apagada, la excepción se propaga: mejor abortar
+      // la operación entera que dar un "no existe" falso.
+      final result = await _client.db.executeQueryByName(
+        'usuario_por_correo',
+        params: [email.trim()],
+      );
+      for (final row in result.rows) {
+        if (row is! Map) continue;
+        found.add(Map<String, dynamic>.from(row));
+      }
+    }
+    return found;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> createInvitations(
+    List<Map<String, dynamic>> invitations,
+  ) async {
+    if (invitations.isEmpty) return [];
+    final result = await _client.db.createMany(
+      RobleClient.projectInvitation,
+      invitations,
+    );
+    if (result.hasSkipped) {
+      loggy.warning(
+        'createInvitations: ${result.skipped.length} de ${invitations.length} '
+        'rechazadas por el servidor: ${result.skipped.join(', ')}',
+      );
+    }
+    return result.inserted;
+  }
+
+  @override
+  Future<void> deleteProjectCascade(String projectId) async {
+    if (!_isValidUuid(projectId)) return;
+
+    // Las tres fases son best effort salvo la última: sin borrar el proyecto
+    // el rollback no sirve, así que ese error se propaga.
+    await _deleteRowsWhere(RobleClient.projectInvitation, projectId);
+    await _deleteRowsWhere(RobleClient.projectMembers, projectId);
+
+    loggy.debug('deleteProjectCascade: borrando proyecto $projectId');
+    await _client.db.delete(RobleClient.projects, projectId);
+  }
+
+  /// Borra todas las filas de [table] que apunten a [projectId].
+  /// Un fallo aquí deja costras, pero no impide deshacer la creación.
+  Future<void> _deleteRowsWhere(String table, String projectId) async {
+    try {
+      final rows = await _client.db.read(table, filters: {
+        'project_id': projectId,
+      });
+      for (final row in rows) {
+        final id = (row['_id'] ?? row['id'])?.toString() ?? '';
+        if (id.isEmpty) continue;
+        await _client.db.delete(table, id);
+      }
+    } catch (e) {
+      loggy.warning('deleteProjectCascade($table): $e');
+    }
+  }
+
   bool _isValidUuid(String value) {
     if (value.trim().isEmpty) return false;
     final uuidRegExp = RegExp(

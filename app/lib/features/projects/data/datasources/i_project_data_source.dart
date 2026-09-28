@@ -36,4 +36,20 @@ abstract class IProjectDataSource {
   /// Borra por `_id` las filas de `project_saved` de ese proyecto para ese
   /// usuario. Roble borra por `_id`, por eso se recorre lo que se leyó.
   Future<void> deleteSaved({required String userId, required String projectId});
+
+  /// Devuelve una fila `{email, user_id}` por cada correo que sí tiene cuenta.
+  /// Los que no aparecen en la respuesta no existen.
+  Future<List<Map<String, dynamic>>> findUsersByEmails(List<String> emails);
+
+  /// Inserta todas las invitaciones en una sola petición. Devuelve las que
+  /// quedaron insertadas: si el servidor rechazó alguna, devuelve menos
+  /// filas que las enviadas.
+  Future<List<Map<String, dynamic>>> createInvitations(
+    List<Map<String, dynamic>> invitations,
+  );
+
+  /// Borrado compensatorio de una creación fallida: invitaciones, miembros
+  /// y el proyecto. Lo usa el repositorio para deshacerlo todo si alguna
+  /// invitación no se pudo enviar.
+  Future<void> deleteProjectCascade(String projectId);
 }

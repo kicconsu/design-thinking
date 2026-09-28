@@ -28,6 +28,7 @@ class _MockFailingRepository implements IProjectRepository {
     required List<String> jobs,
     required List<String> skills,
     String imageUrl = '',
+    List<String> inviteEmails = const [],
   }) async {
     throw const ProjectFailure('Error de prueba');
   }
@@ -95,6 +96,11 @@ class _MockFailingRepository implements IProjectRepository {
     required String userId,
     required String projectId,
   }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<List<String>> validateInviteEmails(List<String> emails) async {
     throw const ProjectFailure('Error de prueba');
   }
 }

@@ -44,6 +44,10 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   /// Arranca vacía a propósito: nada de datos precargados.
   final List<String> _habilidades = [];
 
+  /// Correos de las personas invitadas a colaborar en el proyecto.
+  /// Se verifican TODOS en el servidor antes de crear el proyecto.
+  final List<String> _invitados = [];
+
   @override
   void dispose() {
     // Liberar los controladores de texto para evitar fugas de memoria.
@@ -81,6 +85,22 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
       target.add(value);
       field.clear();
     });
+  }
+
+  /// Añade un correo a la lista de invitados. El formato se chequea aquí y
+  /// la existencia de la cuenta la resuelve el servidor al crear el proyecto.
+  void _addInvitado() {
+    final value = _miembroController.text.trim();
+    if (value.isNotEmpty &&
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+      Get.snackbar(
+        'Correo inválido',
+        '"$value" no parece un correo electrónico.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+    _addTo(_invitados, _miembroController, 'correo');
   }
 
   @override
@@ -282,25 +302,22 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         const SizedBox(height: 14),
 
         // --- Invitar miembros ---
-        // Campo de correo + botón "Añadir". Por ahora solo limpia el campo;
-        // aquí se debe conectar el envío real de la invitación.
-        _sectionCard(
+        // Se agregan correos como chips; el servidor verifica que todos
+        // tengan cuenta antes de crear el proyecto (si falta alguno, no se
+        // crea nada). Esta sección es opcional.
+        _tagField(
           cs,
-          child: _labeledField(
-            cs,
-            tt,
-            label: 'Invitar miembros',
-            child: _addRow(
-              cs,
-              tt,
-              controller: _miembroController,
-              hint: 'compañero@example.edu.co',
-              onAdd: () {
-                // TODO: enviar invitación por correo a _miembroController.text
-                _miembroController.clear();
-              },
-            ),
-          ),
+          tt,
+          label: 'Invitar miembros (opcional)',
+          hint: 'compañero@ejemplo.com',
+          emptyText:
+              'Todavía no has invitado a nadie. '
+              'Puedes hacerlo después desde el proyecto.',
+          controller: _miembroController,
+          values: _invitados,
+          valueKind: 'correo',
+          onAdd: _addInvitado,
+          onRemove: (value) => setState(() => _invitados.remove(value)),
         ),
         const SizedBox(height: 20),
 
@@ -376,12 +393,16 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         imageUrl: imageUrl,
         jobs: List<String>.from(_carreras),
         skills: List<String>.from(_habilidades),
+        inviteEmails: List<String>.from(_invitados),
       );
 
       Get.back();
       Get.snackbar(
         '¡Éxito!',
-        'El proyecto "$title" ha sido creado correctamente.',
+        _invitados.isEmpty
+            ? 'El proyecto "$title" ha sido creado correctamente.'
+            : 'El proyecto "$title" ha sido creado y se invitó a '
+                  '${_invitados.length} ${_invitados.length == 1 ? 'persona' : 'personas'}.',
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {

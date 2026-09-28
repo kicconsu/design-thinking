@@ -81,6 +81,19 @@ class _FailingDataSource implements IProjectDataSource {
     required String userId,
     required String projectId,
   }) async => throw exception;
+
+  @override
+  Future<List<Map<String, dynamic>>> findUsersByEmails(
+    List<String> emails,
+  ) async => throw exception;
+
+  @override
+  Future<List<Map<String, dynamic>>> createInvitations(
+    List<Map<String, dynamic>> invitations,
+  ) async => throw exception;
+
+  @override
+  Future<void> deleteProjectCascade(String projectId) async => throw exception;
 }
 
 class _SingleProjectDataSource implements IProjectDataSource {
@@ -196,6 +209,19 @@ class _SingleProjectDataSource implements IProjectDataSource {
     required String userId,
     required String projectId,
   }) async {}
+
+  @override
+  Future<List<Map<String, dynamic>>> findUsersByEmails(
+    List<String> emails,
+  ) async => [];
+
+  @override
+  Future<List<Map<String, dynamic>>> createInvitations(
+    List<Map<String, dynamic>> invitations,
+  ) async => invitations;
+
+  @override
+  Future<void> deleteProjectCascade(String projectId) async {}
 }
 
 void main() {

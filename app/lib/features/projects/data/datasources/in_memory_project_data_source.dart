@@ -12,6 +12,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   final List<Map<String, dynamic>> _joinRequests = [];
   final List<Map<String, dynamic>> _projectMembers = [];
   final List<Map<String, dynamic>> _saved = [];
+  final List<Map<String, dynamic>> _invitations = [];
 
   @override
   Future<List<Map<String, dynamic>>> readProjects() async => _data.projects;
@@ -170,5 +171,53 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     _saved.removeWhere(
       (r) => r['user_id'] == userId && r['project_id'] == projectId,
     );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> findUsersByEmails(
+    List<String> emails,
+  ) async {
+    // No hay directorio de usuarios en memoria: se acepta cualquier correo
+    // bien formado. El comportamiento real (rechazar los que no existen)
+    // lo cubren los tests del repositorio con un datasource doble.
+    return [
+      for (final email in emails)
+        if (_looksLikeEmail(email))
+          {'email': email.trim().toLowerCase(), 'user_id': 'user-$email'},
+    ];
+  }
+
+  bool _looksLikeEmail(String value) =>
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim());
+
+  @override
+  Future<List<Map<String, dynamic>>> createInvitations(
+    List<Map<String, dynamic>> invitations,
+  ) async {
+    final inserted = <Map<String, dynamic>>[];
+    for (final row in invitations) {
+      final duplicate = _invitations.any(
+        (r) =>
+            r['project_id'] == row['project_id'] &&
+            r['email'] == row['email'] &&
+            r['status'] == 'pending',
+      );
+      if (duplicate) continue;
+      final stored = <String, dynamic>{
+        '_id': 'inv-${DateTime.now().microsecondsSinceEpoch}-${_invitations.length}',
+        ...row,
+      };
+      _invitations.add(stored);
+      inserted.add(stored);
+    }
+    return inserted;
+  }
+
+  @override
+  Future<void> deleteProjectCascade(String projectId) async {
+    _invitations.removeWhere((r) => r['project_id'] == projectId);
+    _projectMembers.removeWhere((r) => r['project_id'] == projectId);
+    _saved.removeWhere((r) => r['project_id'] == projectId);
+    _data.projects.removeWhere((r) => r['_id'] == projectId);
   }
 }

@@ -12,7 +12,12 @@ abstract class IProjectRepository {
     required List<String> jobs,
     required List<String> skills,
     String imageUrl = '',
+    List<String> inviteEmails = const [],
   });
+
+  /// Correos de [emails] que NO tienen cuenta. Vacío = todos existen.
+  /// Se llama antes de crear nada para poder abortar sin efectos parciales.
+  Future<List<String>> validateInviteEmails(List<String> emails);
 
   Future<ProjectJoinRequest> createJoinRequest({
     required String projectId,

@@ -50,6 +50,7 @@ class RobleClient {
   static const projectJoinRequests = 'project_join_request';
   static const projectMembers = 'project_member';
   static const projectSaved = 'project_saved';
+  static const projectInvitation = 'project_invitation';
 
   // ─── Lectura pública vs. autenticada ─────────────────────────────────────
 
