@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:loggy/loggy.dart';
 import 'package:roble/roble.dart';
 
 import 'package:imker/core/data/dummy_data.dart';
@@ -11,7 +12,7 @@ import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
 import '../datasources/i_project_data_source.dart';
 
-class ProjectRepository implements IProjectRepository {
+class ProjectRepository with UiLoggy implements IProjectRepository {
   ProjectRepository(this._source);
 
   final IProjectDataSource _source;
@@ -164,10 +165,13 @@ class ProjectRepository implements IProjectRepository {
       throw const ProjectFailure(
         'La solicitud tardó demasiado. Intenta de nuevo.',
       );
-    } catch (_) {
+    } on RobleApiHttpException catch (e) {
+      loggy.error('verify invitees error ${e.statusCode}: ${e.message}');
+      throw ProjectFailure(e.message);
+    } catch (e) {
+      loggy.error('verify invitees error: $e');
       throw const ProjectFailure(
-        'No se pudieron verificar los correos invitados. Revisa que la consulta '
-        'guardada "usuario_por_correo" esté activa en la consola de Roble.',
+        'Error del servidor al verificar los correos invitados.',
       );
     }
 

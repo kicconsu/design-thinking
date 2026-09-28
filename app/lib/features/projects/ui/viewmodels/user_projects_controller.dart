@@ -438,7 +438,14 @@ class UserProjectsController extends GetxController {
   ///
   /// Si el servidor rechaza la operación se deshace el cambio optimista:
   /// lo que se ve en pantalla siempre es lo que está guardado de verdad.
+  ///
+  /// No opera sobre proyectos con postulación pendiente (ni para guardar ni
+  /// para desguardar): ahí el estado lo manda [appliedProjectIds] y la pestaña
+  /// "Pendientes" se calcula como guardados ∩ aplicados, así que sacarlos de
+  /// [savedProjects] los haría desaparecer de ahí.
   Future<bool> toggleSaveProject(Project project) async {
+    if (isApplied(project.id)) return isSaved(project.id);
+
     final wasSaved = isSaved(project.id);
     if (wasSaved) {
       savedProjects.removeWhere((p) => p.id == project.id);

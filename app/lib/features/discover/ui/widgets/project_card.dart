@@ -145,6 +145,18 @@ class _FavoriteButton extends StatelessWidget {
     }
   }
 
+  void _showAppliedNotice(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    Get.snackbar(
+      'Ya postulaste a este proyecto',
+      "Sigue tu postulación en la pestaña 'Proyectos' → Pendientes.",
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: cs.tertiaryContainer,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final projectsController = Get.find<UserProjectsController>();
@@ -152,6 +164,26 @@ class _FavoriteButton extends StatelessWidget {
     return Obx(() {
       final isOwner = projectsController.isOwner(project);
       if (isOwner) return const SizedBox.shrink();
+
+      // Ya hay una postulación pendiente: el estado lo manda "Pendientes",
+      // así que aquí sólo se informa, no se alterna.
+      if (projectsController.isApplied(project.id)) {
+        return Material(
+          color: Colors.black45,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: IconButton(
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            icon: const Icon(
+              Icons.how_to_reg_outlined,
+              color: Colors.amberAccent,
+              size: 24,
+            ),
+            tooltip: 'Postulación pendiente',
+            onPressed: () => _showAppliedNotice(context),
+          ),
+        );
+      }
 
       final saved = projectsController.isSaved(project.id);
 
