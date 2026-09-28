@@ -86,7 +86,7 @@ class CoCreatedProjectsPage extends StatelessWidget {
               (project) => ProjectTile(
                 project: project,
                 trailing: RequestsButton(
-                  count: project.applicantsCount,
+                  count: controller.pendingApplicantsCount(project.id),
                   onTap: () => Get.to(() => CollaborationRequestsPage(project: project)),
                   cs: cs,
                 ),

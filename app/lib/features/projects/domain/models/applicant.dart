@@ -18,6 +18,7 @@ class ApplicantProjectExperience {
 class Applicant {
   final String id;
   final String projectId;
+  final String userId;
   final String name;
   final String academicInfo;
   final String requestedRole;
@@ -30,10 +31,12 @@ class Applicant {
   final String bio;
   final List<String> skills;
   final List<ApplicantProjectExperience> experience;
+  final String statusState;
 
   const Applicant({
     required this.id,
     required this.projectId,
+    this.userId = '',
     required this.name,
     required this.academicInfo,
     required this.requestedRole,
@@ -46,5 +49,6 @@ class Applicant {
     required this.bio,
     required this.skills,
     required this.experience,
+    this.statusState = 'pending',
   });
 }
