@@ -5,26 +5,30 @@ import 'i_project_data_source.dart';
 /// Backend falso: sirve las mismas filas que devolvería Roble desde memoria.
 /// Útil para desarrollo sin red y para pruebas unitarias del repositorio.
 class InMemoryProjectDataSource implements IProjectDataSource {
-  InMemoryProjectDataSource([DummyData? data]) : _data = data ?? DummyData.instance;
+  InMemoryProjectDataSource([DummyData? data])
+    : _data = data ?? DummyData.instance;
 
   final DummyData _data;
   final List<Map<String, dynamic>> _joinRequests = [];
   final List<Map<String, dynamic>> _projectMembers = [];
+  final List<Map<String, dynamic>> _saved = [];
 
   @override
   Future<List<Map<String, dynamic>>> readProjects() async => _data.projects;
 
   @override
-  Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId) async =>
-      _data.projects.where((r) => r['_owner'] == ownerId).toList();
-
+  Future<List<Map<String, dynamic>>> readProjectsByOwner(
+    String ownerId,
+  ) async => _data.projects.where((r) => r['_owner'] == ownerId).toList();
 
   @override
   Future<Map<String, dynamic>?> readProjectById(String id) async =>
       _data.projects.where((r) => r['_id'] == id).firstOrNull;
 
   @override
-  Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async {
+  Future<Map<String, dynamic>> createProject(
+    Map<String, dynamic> projectData,
+  ) async {
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
     final row = <String, dynamic>{
       '_id': newId,
@@ -36,7 +40,9 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> createJoinRequest(Map<String, dynamic> joinRequestData) async {
+  Future<Map<String, dynamic>> createJoinRequest(
+    Map<String, dynamic> joinRequestData,
+  ) async {
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
     final row = <String, dynamic>{
       '_id': newId,
@@ -51,12 +57,18 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> readJoinRequestsByUser(String userId) async {
-    return _joinRequests.where((r) => r['user_id'] == userId || r['_owner'] == userId).toList();
+  Future<List<Map<String, dynamic>>> readJoinRequestsByUser(
+    String userId,
+  ) async {
+    return _joinRequests
+        .where((r) => r['user_id'] == userId || r['_owner'] == userId)
+        .toList();
   }
 
   @override
-  Future<List<Map<String, dynamic>>> readJoinRequestsForProject(String projectId) async {
+  Future<List<Map<String, dynamic>>> readJoinRequestsForProject(
+    String projectId,
+  ) async {
     return _joinRequests.where((r) => r['project_id'] == projectId).toList();
   }
 
@@ -67,7 +79,9 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     required String reviewedBy,
     String? reviewNote,
   }) async {
-    final idx = _joinRequests.indexWhere((r) => r['_id'] == requestId || r['id'] == requestId);
+    final idx = _joinRequests.indexWhere(
+      (r) => r['_id'] == requestId || r['id'] == requestId,
+    );
     if (idx != -1) {
       _joinRequests[idx]['status'] = {'state': status};
       _joinRequests[idx]['reviewed_by'] = reviewedBy;
@@ -110,12 +124,51 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> readProjectMembers({String? projectId}) async {
+  Future<List<Map<String, dynamic>>> readProjectMembers({
+    String? projectId,
+  }) async {
     if (projectId != null && projectId.isNotEmpty) {
-      return _projectMembers.where((r) => r['project_id'] == projectId).toList();
+      return _projectMembers
+          .where((r) => r['project_id'] == projectId)
+          .toList();
     }
     return _projectMembers;
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> readSavedByUser(String userId) async {
+    return _saved.where((r) => r['user_id'] == userId).toList();
+  }
+
+  @override
+  Future<Map<String, dynamic>> createSaved({
+    required String userId,
+    required String projectId,
+  }) async {
+    final existing = _saved.firstWhere(
+      (r) => r['user_id'] == userId && r['project_id'] == projectId,
+      orElse: () => const {},
+    );
+    if (existing.isNotEmpty) return existing;
+
+    final row = <String, dynamic>{
+      '_id': 'saved-${DateTime.now().microsecondsSinceEpoch}',
+      '_owner': userId,
+      'user_id': userId,
+      'project_id': projectId,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    _saved.add(row);
+    return row;
+  }
+
+  @override
+  Future<void> deleteSaved({
+    required String userId,
+    required String projectId,
+  }) async {
+    _saved.removeWhere(
+      (r) => r['user_id'] == userId && r['project_id'] == projectId,
+    );
+  }
 }
-
-

@@ -1,10 +1,12 @@
 import 'dart:convert';
+
 import 'package:roble/roble.dart';
 
 import 'package:imker/core/data/dummy_data.dart';
 import 'package:imker/core/utils/string_list.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/models/project_join_request.dart';
+
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
 import '../datasources/i_project_data_source.dart';
@@ -27,7 +29,6 @@ class ProjectRepository implements IProjectRepository {
     final membersMap = await _getMembersMap();
     return rows.map((r) => _toProject(r, membersMap)).toList();
   }
-
 
   @override
   Future<Project?> getProjectById(String id) async {
@@ -83,8 +84,12 @@ class ProjectRepository implements IProjectRepository {
   }
 
   @override
-  Future<List<ProjectJoinRequest>> getJoinRequestsForProject(String projectId) async {
-    final rows = await _guard(() => _source.readJoinRequestsForProject(projectId));
+  Future<List<ProjectJoinRequest>> getJoinRequestsForProject(
+    String projectId,
+  ) async {
+    final rows = await _guard(
+      () => _source.readJoinRequestsForProject(projectId),
+    );
     return rows.map(_toProjectJoinRequest).toList();
   }
 
@@ -126,8 +131,38 @@ class ProjectRepository implements IProjectRepository {
     );
   }
 
+  // ─── Guardados (project_saved) ────────────────────────────────────────────
+  @override
+  Future<List<String>> getSavedProjectIds(String userId) async {
+    if (userId.isEmpty) return [];
+    final rows = await _guard(() => _source.readSavedByUser(userId));
+    return rows
+        .map((r) => (r['project_id'] ?? r['projectId'])?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList();
+  }
 
+  @override
+  Future<void> saveProject({
+    required String userId,
+    required String projectId,
+  }) async {
+    if (userId.isEmpty || projectId.isEmpty) return;
+    await _guard(
+      () => _source.createSaved(userId: userId, projectId: projectId),
+    );
+  }
 
+  @override
+  Future<void> unsaveProject({
+    required String userId,
+    required String projectId,
+  }) async {
+    if (userId.isEmpty || projectId.isEmpty) return;
+    await _guard(
+      () => _source.deleteSaved(userId: userId, projectId: projectId),
+    );
+  }
 
   // ─── Traducción de errores ────────────────────────────────────────────────
   // Las excepciones se atrapan de más específica a más general; si no se
@@ -138,15 +173,25 @@ class ProjectRepository implements IProjectRepository {
     } on RobleApiNetworkException {
       throw const ProjectFailure('Sin conexión. Verifica tu red.');
     } on RobleApiTimeoutException {
-      throw const ProjectFailure('La solicitud tardó demasiado. Intenta de nuevo.');
+      throw const ProjectFailure(
+        'La solicitud tardó demasiado. Intenta de nuevo.',
+      );
     } on RobleApiHttpException catch (e) {
-      if (e.statusCode == 403) throw const ProjectFailure('No tienes permiso para ver esto.');
-      if (e.statusCode == 404) throw const ProjectFailure('No se encontró el proyecto.');
+      if (e.statusCode == 403) {
+        throw const ProjectFailure('No tienes permiso para ver esto.');
+      }
+      if (e.statusCode == 404) {
+        throw const ProjectFailure('No se encontró el proyecto.');
+      }
       // Para 400 y otros, mostrar el mensaje real del servidor para facilitar diagnóstico.
-      final msg = e.message.isNotEmpty ? e.message : 'Error HTTP ${e.statusCode}';
+      final msg = e.message.isNotEmpty
+          ? e.message
+          : 'Error HTTP ${e.statusCode}';
       throw ProjectFailure(msg);
     } on RobleApiException catch (e) {
-      final msg = e.message.isNotEmpty ? e.message : 'Error desconocido del servidor';
+      final msg = e.message.isNotEmpty
+          ? e.message
+          : 'Error desconocido del servidor';
       throw ProjectFailure(msg);
     }
   }
@@ -157,7 +202,9 @@ class ProjectRepository implements IProjectRepository {
       final memberRows = await _source.readProjectMembers(projectId: projectId);
       for (final row in memberRows) {
         final pId = (row['project_id'] ?? row['projectId'])?.toString() ?? '';
-        final uId = (row['user_id'] ?? row['userId'] ?? row['_owner'])?.toString() ?? '';
+        final uId =
+            (row['user_id'] ?? row['userId'] ?? row['_owner'])?.toString() ??
+            '';
         if (pId.isEmpty) continue;
 
         final role = row['role'];
@@ -174,7 +221,9 @@ class ProjectRepository implements IProjectRepository {
         } else if (roleName.isNotEmpty) {
           displayName = 'Colaborador ($roleName)';
         } else {
-          displayName = uId.length > 8 ? 'Usuario ${uId.substring(0, 8)}' : 'Miembro';
+          displayName = uId.length > 8
+              ? 'Usuario ${uId.substring(0, 8)}'
+              : 'Miembro';
         }
 
         map.putIfAbsent(pId, () => []).add(displayName);
@@ -184,9 +233,13 @@ class ProjectRepository implements IProjectRepository {
   }
 
   // ─── Mappers ──────────────────────────────────────────────────────────────
-  Project _toProject(Map<String, dynamic> row, [Map<String, List<String>>? membersMap]) {
+  Project _toProject(
+    Map<String, dynamic> row, [
+    Map<String, List<String>>? membersMap,
+  ]) {
     final id = (row['_id'] ?? row['id'])?.toString() ?? '';
-    final owner = (row['_owner'] ?? row['owner'] ?? row['user_id'])?.toString() ?? '';
+    final owner =
+        (row['_owner'] ?? row['owner'] ?? row['user_id'])?.toString() ?? '';
 
     List<String> membersList = membersMap?[id] ?? [];
     if (membersList.isEmpty) {
@@ -239,8 +292,12 @@ class ProjectRepository implements IProjectRepository {
       userId: (row['user_id'] ?? row['_owner'])?.toString() ?? '',
       projectId: (row['project_id'])?.toString() ?? '',
       status: parsedStatus,
-      createdAt: row['createdAt'] != null ? DateTime.tryParse(row['createdAt'].toString()) : null,
-      updatedAt: row['updatedAt'] != null ? DateTime.tryParse(row['updatedAt'].toString()) : null,
+      createdAt: row['createdAt'] != null
+          ? DateTime.tryParse(row['createdAt'].toString())
+          : null,
+      updatedAt: row['updatedAt'] != null
+          ? DateTime.tryParse(row['updatedAt'].toString())
+          : null,
       reviewedBy: row['reviewed_by']?.toString(),
       reviewNote: row['reviewNote']?.toString(),
       owner: row['_owner']?.toString(),

@@ -47,8 +47,9 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   @override
   Future<Map<String, dynamic>?> readProjectById(String id) async {
     // getById no está disponible en lectura pública; publicRead filtra por _id.
-    if (!_client.readsPublicly)
+    if (!_client.readsPublicly) {
       return _client.db.getById(RobleClient.projects, id);
+    }
     final rows = await _client.db.publicRead(
       RobleClient.projects,
       filters: {'_id': id},
@@ -321,11 +322,15 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
     required String userId,
     Map<String, dynamic>? role,
   }) async {
-    final String rawUserId = userId.isNotEmpty ? userId : (_client.currentUserId ?? '');
+    final String rawUserId = userId.isNotEmpty
+        ? userId
+        : (_client.currentUserId ?? '');
     final roleMap = role ?? {'name': 'collaborator'};
 
     if (!_isValidUuid(projectId) || !_isValidUuid(rawUserId)) {
-      loggy.warning('addProjectMember omitido: projectId ($projectId) o userId ($rawUserId) no son UUIDs válidos');
+      loggy.warning(
+        'addProjectMember omitido: projectId ($projectId) o userId ($rawUserId) no son UUIDs válidos',
+      );
       return {
         '_id': 'local-member-${DateTime.now().millisecondsSinceEpoch}',
         'project_id': projectId,
@@ -345,14 +350,21 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       return await _client.db.create(RobleClient.projectMembers, payload);
     } catch (e) {
       loggy.error('addProjectMember falló: $e');
-      return {'_id': 'local-member-${DateTime.now().millisecondsSinceEpoch}', ...payload};
+      return {
+        '_id': 'local-member-${DateTime.now().millisecondsSinceEpoch}',
+        ...payload,
+      };
     }
   }
 
   @override
-  Future<List<Map<String, dynamic>>> readProjectMembers({String? projectId}) async {
+  Future<List<Map<String, dynamic>>> readProjectMembers({
+    String? projectId,
+  }) async {
     if (_client.readsPublicly) {
-      if (projectId != null && projectId.isNotEmpty && _isValidUuid(projectId)) {
+      if (projectId != null &&
+          projectId.isNotEmpty &&
+          _isValidUuid(projectId)) {
         try {
           return await _client.db.publicRead(
             RobleClient.projectMembers,
@@ -366,7 +378,9 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       return [];
     }
     try {
-      if (projectId != null && projectId.isNotEmpty && _isValidUuid(projectId)) {
+      if (projectId != null &&
+          projectId.isNotEmpty &&
+          _isValidUuid(projectId)) {
         final filtered = await _client.db.read(
           RobleClient.projectMembers,
           filters: {'project_id': projectId},
@@ -382,6 +396,88 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       return all;
     } catch (_) {}
     return [];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readSavedByUser(String userId) async {
+    if (userId.isEmpty) return [];
+    try {
+      final filtered = await _client.db.read(
+        RobleClient.projectSaved,
+        filters: {'user_id': userId},
+      );
+      if (filtered.isNotEmpty) return filtered;
+    } catch (_) {}
+    try {
+      final all = await _client.db.read(RobleClient.projectSaved);
+      return all
+          .where(
+            (r) =>
+                r['user_id']?.toString() == userId ||
+                _client.matchesUser(r['_owner']?.toString()),
+          )
+          .toList();
+    } catch (_) {}
+    return [];
+  }
+
+  @override
+  Future<Map<String, dynamic>> createSaved({
+    required String userId,
+    required String projectId,
+  }) async {
+    final existing = await readSavedByUser(userId);
+    final already = existing.firstWhere(
+      (r) => r['project_id']?.toString() == projectId,
+      orElse: () => const <String, dynamic>{},
+    );
+    if (already.isNotEmpty) return already;
+
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final payload = <String, dynamic>{
+      'user_id': userId,
+      'project_id': projectId,
+      'createdAt': nowIso,
+    };
+
+    // Igual que con las postulaciones: un id que no es UUID (proyectos demo)
+    // lo rechazaría la columna, así que no se va al servidor.
+    if (!_isValidUuid(userId) || !_isValidUuid(projectId)) {
+      loggy.warning(
+        'createSaved omitido: userId ($userId) o projectId ($projectId) no son UUIDs válidos',
+      );
+      return {
+        '_id': 'local-saved-${DateTime.now().microsecondsSinceEpoch}',
+        ...payload,
+      };
+    }
+
+    try {
+      loggy.debug('createSaved payload: $payload');
+      return await _client.db.create(RobleClient.projectSaved, payload);
+    } catch (e) {
+      loggy.error('createSaved falló: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteSaved({
+    required String userId,
+    required String projectId,
+  }) async {
+    final rows = await readSavedByUser(userId);
+    final matches = rows
+        .where((r) => r['project_id']?.toString() == projectId)
+        .toList();
+    if (matches.isEmpty) return;
+
+    for (final row in matches) {
+      final id = (row['_id'] ?? row['id'])?.toString() ?? '';
+      if (id.isEmpty || id.startsWith('local-saved-')) continue;
+      loggy.debug('deleteSaved id=$id');
+      await _client.db.delete(RobleClient.projectSaved, id);
+    }
   }
 
   bool _isValidUuid(String value) {

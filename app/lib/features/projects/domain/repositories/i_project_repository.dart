@@ -34,6 +34,16 @@ abstract class IProjectRepository {
     required String userId,
     Map<String, dynamic>? role,
   });
+
+  /// IDs de los proyectos que ese usuario tiene guardados (`project_saved`).
+  Future<List<String>> getSavedProjectIds(String userId);
+
+  /// Guarda un proyecto para el usuario. Idempotente: repetirlo no duplica.
+  Future<void> saveProject({required String userId, required String projectId});
+
+  /// Quita el proyecto de guardados del usuario.
+  Future<void> unsaveProject({
+    required String userId,
+    required String projectId,
+  });
 }
-
-

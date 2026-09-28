@@ -21,7 +21,6 @@ class _MockFailingRepository implements IProjectRepository {
   @override
   Future<Project?> getProjectById(String id) async => null;
 
-
   @override
   Future<Project> createProject({
     required String title,
@@ -48,7 +47,9 @@ class _MockFailingRepository implements IProjectRepository {
   }
 
   @override
-  Future<List<ProjectJoinRequest>> getJoinRequestsForProject(String projectId) async {
+  Future<List<ProjectJoinRequest>> getJoinRequestsForProject(
+    String projectId,
+  ) async {
     throw const ProjectFailure('Error de prueba');
   }
 
@@ -75,8 +76,28 @@ class _MockFailingRepository implements IProjectRepository {
   }) async {
     throw const ProjectFailure('Error de prueba');
   }
-}
 
+  @override
+  Future<List<String>> getSavedProjectIds(String userId) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<void> saveProject({
+    required String userId,
+    required String projectId,
+  }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+
+  @override
+  Future<void> unsaveProject({
+    required String userId,
+    required String projectId,
+  }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
+}
 
 void main() {
   group('DiscoverController', () {
@@ -92,14 +113,17 @@ void main() {
       expect(controller.projects.length, 3);
     });
 
-    test('captura ProjectFailure y asigna mensaje al estado de error', () async {
-      final controller = DiscoverController(_MockFailingRepository());
+    test(
+      'captura ProjectFailure y asigna mensaje al estado de error',
+      () async {
+        final controller = DiscoverController(_MockFailingRepository());
 
-      await controller.loadProjects();
+        await controller.loadProjects();
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.error.value, 'Error de prueba');
-      expect(controller.projects, isEmpty);
-    });
+        expect(controller.isLoading.value, isFalse);
+        expect(controller.error.value, 'Error de prueba');
+        expect(controller.projects, isEmpty);
+      },
+    );
   });
 }

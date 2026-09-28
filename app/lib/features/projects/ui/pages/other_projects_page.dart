@@ -214,21 +214,44 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                       'No tienes proyectos guardados sin postular.\n'
                       'Explora y guarda proyectos desde la pestaña Descubrir.',
                   emptyIcon: Icons.bookmark_border,
-                  buildTrailing: (project) => FilledButton(
-                    onPressed: () => showConfirmApplicationDialog(
-                      context: context,
-                      project: project,
-                    ),
-                    style: FilledButton.styleFrom(
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                  buildTrailing: (project) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Desguardar sin salir de la lista.
+                      IconButton(
+                        onPressed: () async {
+                          await _controller.toggleSaveProject(project);
+                        },
+                        tooltip: 'Quitar de guardados',
+                        icon: const Icon(
+                          Icons.bookmark_remove_outlined,
+                          size: 20,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                      const SizedBox(width: 4),
+                      FilledButton(
+                        onPressed: () => showConfirmApplicationDialog(
+                          context: context,
+                          project: project,
+                        ),
+                        style: FilledButton.styleFrom(
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                        ),
+                        child: const Text('Aplicar'),
                       ),
-                    ),
-                    child: const Text('Aplicar'),
+                    ],
                   ),
                 ),
                 _ProjectsCategoryList(

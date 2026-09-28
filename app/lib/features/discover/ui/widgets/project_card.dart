@@ -167,8 +167,11 @@ class _FavoriteButton extends StatelessWidget {
             size: 24,
           ),
           tooltip: saved ? 'Quitar de guardados' : '¡Me interesa!',
-          onPressed: (() {
-            final nowSaved = projectsController.toggleSaveProject(project);
+          onPressed: (() async {
+            final nowSaved = await projectsController.toggleSaveProject(
+              project,
+            );
+            if (!context.mounted) return;
             _showNotice(context, nowSaved);
           }).guarded('Para guardar proyectos necesitas una cuenta real.'),
         ),

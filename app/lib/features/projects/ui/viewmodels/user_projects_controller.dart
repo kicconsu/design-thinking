@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import 'package:imker/core/roble/roble_client.dart';
+import 'package:imker/core/roble/roble_config.dart';
 import 'package:imker/core/data/dummy_data.dart';
 import 'package:imker/core/utils/string_list.dart';
 
@@ -23,7 +24,7 @@ class UserProjectsController extends GetxController {
   final RxBool isCreating = false.obs;
   final RxBool isLoadingProjects = false.obs;
 
-  // Índice de la pestaña principal (0: Co-creados, 1: Otros proyectos)
+  // Índice de la pestaña principal (0: Mis proyectos, 1: Otros proyectos)
   final RxInt selectedMainTab = 0.obs;
 
   // Subcategoría actual de "Otros proyectos" (0: Guardados, 1: Pendientes, 2: Activos)
@@ -35,8 +36,52 @@ class UserProjectsController extends GetxController {
     super.onInit();
     fetchCoCreatedProjects();
     fetchUserApplications();
+    fetchSavedProjects();
     _seedActiveCollaborationDemo();
     _seedApplicantsDemo();
+  }
+
+  /// ¿Hay dónde persistir los guardados? Sin contrato (modo mock) se guarda
+  /// en el datasource en memoria; con contrato hace falta una sesión real,
+  /// porque el invitado no tiene permiso de escritura sobre sus filas.
+  bool get _canPersistSaved {
+    if (RobleConfig.contractId.isEmpty) return true;
+    final client = Get.isRegistered<RobleClient>()
+        ? Get.find<RobleClient>()
+        : null;
+    if (client == null) return false;
+    return client.db.isLoggedIn && !client.db.isAnonymous;
+  }
+
+  String get _currentUserId {
+    final client = Get.isRegistered<RobleClient>()
+        ? Get.find<RobleClient>()
+        : null;
+    if (client == null) return '';
+    if (RobleConfig.contractId.isEmpty) return 'demo-user';
+    return client.currentUserId ?? '';
+  }
+
+  /// Hidrata [savedProjects] desde `project_saved` al abrir la app.
+  /// Los proyectos de las postulaciones pendientes ya los carga
+  /// [fetchUserApplications], aquí sólo entran los guardados a mano.
+  Future<void> fetchSavedProjects() async {
+    if (!_canPersistSaved) return;
+    final userId = _currentUserId;
+    if (userId.isEmpty) return;
+    try {
+      final repository = Get.find<IProjectRepository>();
+      final ids = await repository.getSavedProjectIds(userId);
+      for (final id in ids) {
+        if (savedProjects.any((p) => p.id == id)) continue;
+        final project = await repository.getProjectById(id);
+        if (project != null && !savedProjects.any((p) => p.id == project.id)) {
+          savedProjects.add(project);
+        }
+      }
+    } catch (_) {
+      // Sin conexión se conserva lo que ya estuviera en memoria.
+    }
   }
 
   /// Carga desde Roble los proyectos creados por el usuario con la sesión activa.
@@ -219,11 +264,15 @@ class UserProjectsController extends GetxController {
           } catch (_) {}
         }
 
-        final applicantName = (profile?['name'] as String?)?.trim().isNotEmpty == true
+        final applicantName =
+            (profile?['name'] as String?)?.trim().isNotEmpty == true
             ? profile!['name'].toString().trim()
-            : (req.userId.length > 8 ? 'Usuario ${req.userId.substring(0, 8)}' : 'Aspirante');
+            : (req.userId.length > 8
+                  ? 'Usuario ${req.userId.substring(0, 8)}'
+                  : 'Aspirante');
 
-        final bio = (profile?['description'] as String?)?.trim().isNotEmpty == true
+        final bio =
+            (profile?['description'] as String?)?.trim().isNotEmpty == true
             ? profile!['description'].toString().trim()
             : 'Interesado en participar y colaborar activamente en este proyecto.';
 
@@ -243,7 +292,9 @@ class UserProjectsController extends GetxController {
           responseRateScore: 85,
           completedProjectsScore: 85,
           bio: bio,
-          skills: skills.isNotEmpty ? skills : ['Trabajo en equipo', 'Compromiso'],
+          skills: skills.isNotEmpty
+              ? skills
+              : ['Trabajo en equipo', 'Compromiso'],
           experience: const [],
           statusState: req.statusState,
         );
@@ -282,10 +333,15 @@ class UserProjectsController extends GetxController {
 
   /// Acepta o rechaza la solicitud de un aspirante conectando con Roble DB (tabla `project_join_request`).
   /// Si es aceptada, inserta además la fila correspondiente en `project_member`.
-  Future<bool> decideOnApplicant(Applicant applicant, {required bool accepted}) async {
+  Future<bool> decideOnApplicant(
+    Applicant applicant, {
+    required bool accepted,
+  }) async {
     try {
       final repository = Get.find<IProjectRepository>();
-      final client = Get.isRegistered<RobleClient>() ? Get.find<RobleClient>() : null;
+      final client = Get.isRegistered<RobleClient>()
+          ? Get.find<RobleClient>()
+          : null;
       final reviewerId = client?.currentUserId ?? '';
       final newStatus = accepted ? 'accepted' : 'rejected';
 
@@ -300,7 +356,11 @@ class UserProjectsController extends GetxController {
           await repository.addProjectMember(
             projectId: applicant.projectId,
             userId: applicant.userId,
-            role: {'name': applicant.requestedRole.isNotEmpty ? applicant.requestedRole : 'collaborator'},
+            role: {
+              'name': applicant.requestedRole.isNotEmpty
+                  ? applicant.requestedRole
+                  : 'collaborator',
+            },
           );
         } catch (_) {}
 
@@ -308,15 +368,23 @@ class UserProjectsController extends GetxController {
             ? '${applicant.name.trim()} (${applicant.requestedRole})'
             : 'Colaborador (${applicant.requestedRole})';
 
-        final idxCo = coCreatedProjects.indexWhere((p) => p.id == applicant.projectId);
+        final idxCo = coCreatedProjects.indexWhere(
+          (p) => p.id == applicant.projectId,
+        );
         if (idxCo != -1) {
           final p = coCreatedProjects[idxCo];
-          coCreatedProjects[idxCo] = p.copyWith(members: [...p.members, newMemberLabel]);
+          coCreatedProjects[idxCo] = p.copyWith(
+            members: [...p.members, newMemberLabel],
+          );
         }
-        final idxAct = activeProjects.indexWhere((p) => p.id == applicant.projectId);
+        final idxAct = activeProjects.indexWhere(
+          (p) => p.id == applicant.projectId,
+        );
         if (idxAct != -1) {
           final p = activeProjects[idxAct];
-          activeProjects[idxAct] = p.copyWith(members: [...p.members, newMemberLabel]);
+          activeProjects[idxAct] = p.copyWith(
+            members: [...p.members, newMemberLabel],
+          );
         }
       }
 
@@ -337,7 +405,8 @@ class UserProjectsController extends GetxController {
 
   bool isApplied(String projectId) => appliedProjectIds.contains(projectId);
 
-  /// Guarda un proyecto. Retorna true si se guardó con éxito, false si ya estaba guardado o no se pudo.
+  /// Guarda un proyecto en memoria. Sólo lo usa el flujo de postulación;
+  /// para alternar desde la pantalla hay que usar [toggleSaveProject].
   bool saveProject(Project project) {
     if (!isSaved(project.id)) {
       savedProjects.add(project);
@@ -346,15 +415,50 @@ class UserProjectsController extends GetxController {
     return false;
   }
 
-  /// Alterna el guardado de un proyecto. Retorna true si se guardó, false si se removió de guardados.
-  bool toggleSaveProject(Project project) {
-    if (isSaved(project.id)) {
+  /// Escribe o borra la fila en `project_saved`. Si no hay dónde persistir
+  /// (invitado, modo mock sin contrato) se comporta como sólo local.
+  Future<void> _persistSaved(Project project, {required bool saving}) async {
+    if (!_canPersistSaved) return;
+    final repository = Get.find<IProjectRepository>();
+    final userId = _currentUserId;
+    if (saving) {
+      await repository.saveProject(userId: userId, projectId: project.id);
+    } else {
+      await repository.unsaveProject(userId: userId, projectId: project.id);
+    }
+  }
+
+  /// Alterna el guardado de un proyecto y lo persiste en `project_saved`.
+  /// Retorna true si quedó guardado, false si se quitó de guardados.
+  ///
+  /// Si el servidor rechaza la operación se deshace el cambio optimista:
+  /// lo que se ve en pantalla siempre es lo que está guardado de verdad.
+  Future<bool> toggleSaveProject(Project project) async {
+    final wasSaved = isSaved(project.id);
+    if (wasSaved) {
       savedProjects.removeWhere((p) => p.id == project.id);
-      return false;
     } else {
       savedProjects.add(project);
-      return true;
     }
+
+    try {
+      await _persistSaved(project, saving: !wasSaved);
+    } catch (e) {
+      if (wasSaved) {
+        savedProjects.add(project);
+      } else {
+        savedProjects.removeWhere((p) => p.id == project.id);
+      }
+      Get.snackbar(
+        'No se pudo actualizar',
+        e is ProjectFailure
+            ? e.message
+            : 'No se pudo guardar el proyecto. Intenta de nuevo.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return wasSaved;
+    }
+    return !wasSaved;
   }
 
   /// Carga desde Roble las postulaciones del usuario.
@@ -362,7 +466,9 @@ class UserProjectsController extends GetxController {
   /// de las aceptadas (se muestran en "Activos / Colaborando").
   Future<void> fetchUserApplications() async {
     try {
-      final client = Get.isRegistered<RobleClient>() ? Get.find<RobleClient>() : null;
+      final client = Get.isRegistered<RobleClient>()
+          ? Get.find<RobleClient>()
+          : null;
       final userId = client?.currentUserId ?? '';
       if (userId.isEmpty) return;
 
@@ -389,7 +495,9 @@ class UserProjectsController extends GetxController {
         try {
           final project = await repository.getProjectById(projectId);
           if (project != null) {
-            activeProjects.removeWhere((p) => p.owner == 'demo-owner' || p.id == DummyData.solariaId);
+            activeProjects.removeWhere(
+              (p) => p.owner == 'demo-owner' || p.id == DummyData.solariaId,
+            );
             if (!activeProjects.any((p) => p.id == project.id)) {
               activeProjects.add(project);
             }
@@ -399,12 +507,15 @@ class UserProjectsController extends GetxController {
 
       // 2. Cargar proyectos pendientes en savedProjects (sección "Pendientes")
       final alreadySaved = savedProjects.map((p) => p.id).toSet();
-      final missingPendingIds = pendingIds.where((id) => !alreadySaved.contains(id)).toSet();
+      final missingPendingIds = pendingIds
+          .where((id) => !alreadySaved.contains(id))
+          .toSet();
 
       for (final projectId in missingPendingIds) {
         try {
           final project = await repository.getProjectById(projectId);
-          if (project != null && !savedProjects.any((p) => p.id == project.id)) {
+          if (project != null &&
+              !savedProjects.any((p) => p.id == project.id)) {
             savedProjects.add(project);
           }
         } catch (_) {}
@@ -415,14 +526,24 @@ class UserProjectsController extends GetxController {
   /// Postula al usuario a un proyecto conectando con la BD Roble (tabla `project_join_request`).
   /// Retorna true si se postuló con éxito.
   Future<bool> applyToProject(Project project) async {
+    // Queda guardado para que aparezca en la pestaña Guardados/Pendientes;
+    // si el servidor no lo acepta, se sigue guardando en memoria.
+    final alreadySaved = isSaved(project.id);
     saveProject(project);
+    if (!alreadySaved) {
+      try {
+        await _persistSaved(project, saving: true);
+      } catch (_) {}
+    }
     if (appliedProjectIds.contains(project.id)) {
       return false;
     }
 
     try {
       final repository = Get.find<IProjectRepository>();
-      final client = Get.isRegistered<RobleClient>() ? Get.find<RobleClient>() : null;
+      final client = Get.isRegistered<RobleClient>()
+          ? Get.find<RobleClient>()
+          : null;
       final userId = client?.currentUserId;
 
       await repository.createJoinRequest(
@@ -435,7 +556,9 @@ class UserProjectsController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error de postulación',
-        e is ProjectFailure ? e.message : 'No se pudo registrar la solicitud en el servidor.',
+        e is ProjectFailure
+            ? e.message
+            : 'No se pudo registrar la solicitud en el servidor.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return false;
