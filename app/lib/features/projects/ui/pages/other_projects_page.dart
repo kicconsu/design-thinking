@@ -57,6 +57,29 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
     }
   }
 
+  /// Chevron lateral de la cabecera: con [icon] en `null` devuelve un
+  /// placeholder del mismo ancho, para que el título quede siempre centrado
+  /// en la primera y en la última sección.
+  Widget _headerChevron(
+    BuildContext context, {
+    required IconData? icon,
+    String? tooltip,
+    VoidCallback? onTap,
+  }) {
+    if (icon == null) return const SizedBox(width: 44);
+    final button = IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 34, color: Theme.of(context).colorScheme.primary),
+      padding: EdgeInsets.zero,
+    );
+    return SizedBox(
+      width: 44,
+      child: (tooltip == null || tooltip.isEmpty)
+          ? button
+          : Tooltip(message: tooltip, child: button),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // UN SOLO Obx en el nivel superior que convierte los Rx en listas ordinarias.
@@ -75,85 +98,81 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
         _controller.activeCollaborationProjects,
       );
 
+      final labels = ['Guardados', 'Pendientes', 'Activos'];
+      final counts = [saved.length, pending.length, active.length];
+
       return Column(
         children: [
-          // Cabecera: Dropdown a la izquierda + dots de swipe a la derecha.
+          // Cabecera: el nombre de la sección gigante + chevrons a los lados.
           // Todo vive dentro del Obx superior — FUERA del PageView — así es seguro.
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+            child: Column(
               children: [
-                // PopupMenuButton: siempre abre hacia abajo desde el botón,
-                // sin el comportamiento de "subir" del DropdownButton estándar
-                Builder(
-                  builder: (btnContext) {
-                    final labels = [
-                      'Guardados (${saved.length})',
-                      'Pendientes (${pending.length})',
-                      'Activos (${active.length})',
-                    ];
-                    return PopupMenuButton<int>(
-                      // offset positivo en Y = abre justo debajo del botón
-                      offset: const Offset(0, 42),
-                      onSelected: _onCategorySelected,
-                      itemBuilder: (_) => [
-                        for (int i = 0; i < labels.length; i++)
-                          PopupMenuItem<int>(
-                            value: i,
-                            child: Text(
-                              labels[i],
-                              style: TextStyle(
-                                fontWeight: i == currentIndex
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                      ],
-                      child: SizedBox(
-                        width: 160,
-                        child: Container(
-                          height: 38,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(btnContext).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.black, width: 1.2),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  labels[currentIndex],
-                                  style: Theme.of(btnContext)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const Icon(Icons.arrow_drop_down, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Dots: feedback visual del swipe + toque directo
                 Row(
                   children: [
-                    Text(
-                      'Desliza',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.7),
+                    _headerChevron(
+                      context,
+                      icon: currentIndex > 0 ? Icons.chevron_left : null,
+                      tooltip: currentIndex > 0
+                          ? 'Sección anterior: ${labels[currentIndex - 1]}'
+                          : null,
+                      onTap: currentIndex > 0
+                          ? () => _onCategorySelected(currentIndex - 1)
+                          : null,
+                    ),
+                    Expanded(
+                      // El título cambia con la página: es la sección que se
+                      // está mirando, no un menú que haya que abrir.
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (child, animation) =>
+                            FadeTransition(opacity: animation, child: child),
+                        child: Column(
+                          key: ValueKey<int>(currentIndex),
+                          children: [
+                            Text(
+                              labels[currentIndex],
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                            Text(
+                              counts[currentIndex] == 1
+                                  ? '1 proyecto'
+                                  : '${counts[currentIndex]} proyectos',
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    ...List.generate(3, (dotIndex) {
+                    _headerChevron(
+                      context,
+                      icon: currentIndex < labels.length - 1
+                          ? Icons.chevron_right
+                          : null,
+                      tooltip: currentIndex < labels.length - 1
+                          ? 'Sección siguiente: ${labels[currentIndex + 1]}'
+                          : null,
+                      onTap: currentIndex < labels.length - 1
+                          ? () => _onCategorySelected(currentIndex + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Dots: feedback visual del swipe + toque directo
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ...List.generate(labels.length, (dotIndex) {
                       final isActive = dotIndex == currentIndex;
                       return GestureDetector(
                         onTap: () => _onCategorySelected(dotIndex),

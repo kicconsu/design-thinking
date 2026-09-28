@@ -15,7 +15,8 @@ class ProjectDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveProject = project ?? (Get.arguments is Project ? Get.arguments as Project : null);
+    final effectiveProject =
+        project ?? (Get.arguments is Project ? Get.arguments as Project : null);
     if (effectiveProject == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Proyecto')),
@@ -40,6 +41,10 @@ class ProjectDetailPage extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           children: [
             Text(projectItem.title, style: tt.headlineSmall),
+            if (projectItem.imageUrl.trim().isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _ProjectCover(url: projectItem.imageUrl),
+            ],
             const SizedBox(height: 20),
             _Section(
               title: 'Descripción',
@@ -80,9 +85,12 @@ class ProjectDetailPage extends StatelessWidget {
             const SizedBox(height: 32),
             Obx(() {
               final isOwner = userProjectsController.isOwner(projectItem);
-              final isPending = userProjectsController.isApplied(projectItem.id);
-              final isActive = userProjectsController.activeProjects
-                  .any((p) => p.id == projectItem.id);
+              final isPending = userProjectsController.isApplied(
+                projectItem.id,
+              );
+              final isActive = userProjectsController.activeProjects.any(
+                (p) => p.id == projectItem.id,
+              );
 
               if (isOwner) {
                 return Container(
@@ -113,17 +121,55 @@ class ProjectDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.zero,
                   ),
                 ),
-                onPressed: (() => showConfirmApplicationDialog(
+                onPressed:
+                    (() => showConfirmApplicationDialog(
                       context: context,
                       project: projectItem,
-                    )).guarded('Para postularte a un proyecto necesitas una cuenta real.'),
+                    )).guarded(
+                      'Para postularte a un proyecto necesitas una cuenta real.',
+                    ),
                 icon: const Icon(Icons.volunteer_activism_outlined),
                 label: const Text('¡Quiero colaborar!'),
               );
             }),
-
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Imagen de portada del proyecto entre el título y la descripción.
+class _ProjectCover extends StatelessWidget {
+  final String url;
+
+  const _ProjectCover({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      height: 180,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        border: Border.all(color: cs.outline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Center(
+          child: Icon(
+            Icons.broken_image_outlined,
+            size: 48,
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        loadingBuilder: (_, child, progress) {
+          if (progress == null) return child;
+          return const Center(child: CircularProgressIndicator());
+        },
       ),
     );
   }

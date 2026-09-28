@@ -9,7 +9,7 @@ import 'package:imker/features/projects/ui/widgets/projects_guest_gate.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 
 /// Página principal del feature Proyectos:
-/// Coordina la alternancia entre "Proyectos Co-creados" y "Otros Proyectos"
+/// Coordina la alternancia entre "Mis proyectos" y "Otros Proyectos"
 /// mediante un selector segmented tipo píldora inspirado en el diseño Imker.
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({super.key});
@@ -35,13 +35,14 @@ class ProjectsPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Obx(() {
                   final coCreatedCount = controller.coCreatedProjects.length;
-                  final othersCount = controller.savedProjects.length +
+                  final othersCount =
+                      controller.savedProjects.length +
                       controller.activeProjects.length;
 
                   return SegmentedTabSwitch(
                     selectedIndex: controller.selectedMainTab.value,
                     tabs: [
-                      'Co-creados ($coCreatedCount)',
+                      'Mis proyectos ($coCreatedCount)',
                       'Otros proyectos ($othersCount)',
                     ],
                     onTabSelected: (index) {

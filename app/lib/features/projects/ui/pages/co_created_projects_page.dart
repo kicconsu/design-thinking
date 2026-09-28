@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
 
-/// Vista para los proyectos que el usuario co-crea.
+/// Vista de "Mis proyectos": los proyectos que el usuario crea y lidera.
 /// Nota: El detalle de proyecto existente está reservado para otras categorías.
 class CoCreatedProjectsPage extends StatelessWidget {
   const CoCreatedProjectsPage({super.key});
@@ -21,10 +21,9 @@ class CoCreatedProjectsPage extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () => controller.fetchCoCreatedProjects(),
       child: Obx(() {
-        if (controller.isLoadingProjects.value && controller.coCreatedProjects.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+        if (controller.isLoadingProjects.value &&
+            controller.coCreatedProjects.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
         }
 
         final projects = controller.coCreatedProjects;
@@ -46,15 +45,33 @@ class CoCreatedProjectsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Aún no co-creas ningún proyecto.',
+                        'Aún no tienes proyectos propios.',
                         style: tt.bodyLarge,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Cuando crees o lideres iniciativas aparecerán aquí.',
-                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                        'Crea uno y desde ahí invitarás a quienes quieras colaborar.',
+                        style: tt.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                         textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        onPressed: () =>
+                            Get.to(() => const CreateProjectPage()),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Crear mi primer proyecto'),
                       ),
                     ],
                   ),
@@ -68,16 +85,32 @@ class CoCreatedProjectsPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Mis Proyectos Co-creados',
-                  style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    'Mis proyectos',
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.add_box_outlined),
-                  tooltip: 'Crear nuevo proyecto',
-                  onPressed: () => Get.to(() => const CreateProjectPage()),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: 'Crear proyecto',
+                  child: FilledButton.icon(
+                    onPressed: () => Get.to(() => const CreateProjectPage()),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nuevo'),
+                    style: FilledButton.styleFrom(
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -87,7 +120,8 @@ class CoCreatedProjectsPage extends StatelessWidget {
                 project: project,
                 trailing: RequestsButton(
                   count: controller.pendingApplicantsCount(project.id),
-                  onTap: () => Get.to(() => CollaborationRequestsPage(project: project)),
+                  onTap: () =>
+                      Get.to(() => CollaborationRequestsPage(project: project)),
                   cs: cs,
                 ),
               ),
@@ -98,4 +132,3 @@ class CoCreatedProjectsPage extends StatelessWidget {
     );
   }
 }
-

@@ -37,12 +37,12 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   final TextEditingController _miembroController = TextEditingController();
 
   /// Lista de carreras relacionadas ya agregadas al proyecto.
-  /// Se inicializa con datos de ejemplo iguales al mockup.
-  final List<String> _carreras = ['Ingeniería Civil', 'Ingeniería de Sistemas'];
+  /// Arranca vacía a propósito: nada de datos precargados.
+  final List<String> _carreras = [];
 
   /// Lista de conocimientos/habilidades requeridos ya agregados.
-  /// Se inicializa con datos de ejemplo iguales al mockup.
-  final List<String> _habilidades = ['Modelación', 'Diseño urbano'];
+  /// Arranca vacía a propósito: nada de datos precargados.
+  final List<String> _habilidades = [];
 
   @override
   void dispose() {
@@ -57,24 +57,29 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   }
 
   /// Toma el texto escrito en [_carreraController], lo agrega a
-  /// [_carreras] (si no está vacío) y limpia el campo.
-  void _addCarrera() {
-    final value = _carreraController.text.trim();
-    if (value.isEmpty) return;
-    setState(() {
-      _carreras.add(value);
-      _carreraController.clear();
-    });
-  }
+  /// [_carreras] (si no está vacío ni ya existía) y limpia el campo.
+  void _addCarrera() => _addTo(_carreras, _carreraController, 'carrera');
 
   /// Toma el texto escrito en [_habilidadController], lo agrega a
-  /// [_habilidades] (si no está vacío) y limpia el campo.
-  void _addHabilidad() {
-    final value = _habilidadController.text.trim();
+  /// [_habilidades] (si no está vacío ni ya existía) y limpia el campo.
+  void _addHabilidad() =>
+      _addTo(_habilidades, _habilidadController, 'conocimiento');
+
+  /// Regla común de las listas con chip: sin duplicados y sin vacíos.
+  void _addTo(List<String> target, TextEditingController field, String kind) {
+    final value = field.text.trim();
     if (value.isEmpty) return;
+    if (target.any((item) => item.toLowerCase() == value.toLowerCase())) {
+      Get.snackbar(
+        'Ya agregado',
+        'El $kind "$value" ya estaba en la lista.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
     setState(() {
-      _habilidades.add(value);
-      _habilidadController.clear();
+      target.add(value);
+      field.clear();
     });
   }
 
@@ -247,69 +252,32 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         const SizedBox(height: 14),
 
         // --- Carreras relacionadas ---
-        // Campo + botón "Añadir" para ir agregando carreras a la lista
-        // _carreras, mostradas debajo como chips con check para quitarlas.
-        _sectionCard(
+        _tagField(
           cs,
-          child: _labeledField(
-            cs,
-            tt,
-            label: 'Carreras relacionadas',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _addRow(
-                  cs,
-                  tt,
-                  controller: _carreraController,
-                  hint: 'Escribe una Carrera relacionada!',
-                  onAdd: _addCarrera,
-                ),
-                const SizedBox(height: 10),
-                ..._carreras.map(
-                  (c) => _checkChip(
-                    cs,
-                    tt,
-                    label: c,
-                    onRemove: () => setState(() => _carreras.remove(c)),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          tt,
+          label: 'Carreras relacionadas',
+          hint: 'Escribe una carrera relacionada',
+          emptyText: 'Todavía no has agregado ninguna carrera.',
+          controller: _carreraController,
+          values: _carreras,
+          valueKind: 'carrera',
+          onAdd: _addCarrera,
+          onRemove: (value) => setState(() => _carreras.remove(value)),
         ),
         const SizedBox(height: 14),
 
         // --- Conocimientos requeridos ---
-        // Misma dinámica que "Carreras relacionadas" pero sobre _habilidades.
-        _sectionCard(
+        _tagField(
           cs,
-          child: _labeledField(
-            cs,
-            tt,
-            label: 'Conocimientos requeridos',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _addRow(
-                  cs,
-                  tt,
-                  controller: _habilidadController,
-                  hint: 'Añade una Habilidad!',
-                  onAdd: _addHabilidad,
-                ),
-                const SizedBox(height: 10),
-                ..._habilidades.map(
-                  (h) => _checkChip(
-                    cs,
-                    tt,
-                    label: h,
-                    onRemove: () => setState(() => _habilidades.remove(h)),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          tt,
+          label: 'Conocimientos requeridos',
+          hint: 'Añade un conocimiento',
+          emptyText: 'Todavía no has agregado ningún conocimiento.',
+          controller: _habilidadController,
+          values: _habilidades,
+          valueKind: 'conocimiento',
+          onAdd: _addHabilidad,
+          onRemove: (value) => setState(() => _habilidades.remove(value)),
         ),
         const SizedBox(height: 14),
 
@@ -511,7 +479,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   /// agregar carreras, conocimientos e invitar miembros.
   ///
   /// [controller] guarda el texto escrito, [hint] es el placeholder y
-  /// [onAdd] se ejecuta al presionar el botón "Añadir".
+  /// [onAdd] se ejecuta al presionar el botón "Añadir" o al confirmar
+  /// con el teclado.
   Widget _addRow(
     ColorScheme cs,
     TextTheme tt, {
@@ -525,11 +494,13 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
           child: TextField(
             controller: controller,
             style: tt.bodyMedium?.copyWith(color: cs.onSecondaryContainer),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => onAdd(),
             decoration: _fieldDecoration(cs, tt, hint: hint),
           ),
         ),
         const SizedBox(width: 8),
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: onAdd,
           style: ElevatedButton.styleFrom(
             backgroundColor: cs.inversePrimary,
@@ -537,7 +508,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             shape: RoundedRectangleBorder(side: BorderSide(color: cs.outline)),
           ),
-          child: Text(
+          icon: const Icon(Icons.add, size: 18),
+          label: Text(
             'Añadir',
             style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
@@ -546,20 +518,95 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     );
   }
 
-  /// "Chip" que representa un elemento ya agregado (una carrera o un
-  /// conocimiento), con un botón de check a la derecha para eliminarlo
-  /// de la lista mediante [onRemove].
-  Widget _checkChip(
+  /// Campo con lista: arriba la fila de escritura (lo que se teclea),
+  /// abajo, en un contenedor con borde propio, lo que ya quedó agregado.
+  ///
+  /// Las dos zonas se separan a propósito para que nunca se confunda el
+  /// input de teclado con los datos ya puestos en el formulario.
+  Widget _tagField(
     ColorScheme cs,
     TextTheme tt, {
     required String label,
+    required String hint,
+    required String emptyText,
+    required TextEditingController controller,
+    required List<String> values,
+    required String valueKind,
+    required VoidCallback onAdd,
+    required ValueChanged<String> onRemove,
+  }) {
+    return _sectionCard(
+      cs,
+      child: _labeledField(
+        cs,
+        tt,
+        label: label,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Zona de escritura: se teclea aquí y se confirma con "Añadir".
+            _addRow(cs, tt, controller: controller, hint: hint, onAdd: onAdd),
+            const SizedBox(height: 12),
+            // Zona de datos ya agregados.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                border: Border.all(color: cs.outline),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.checklist,
+                        size: 16,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (values.isEmpty)
+                    Text(
+                      emptyText,
+                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                    )
+                  else
+                    ...values.map(
+                      (value) => _tagChip(
+                        cs,
+                        tt,
+                        label: value,
+                        valueKind: valueKind,
+                        onRemove: () => onRemove(value),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Chip de un elemento ya agregado: relleno distinto al del input y
+  /// un botón de cerrar explícito para quitarlo de la lista.
+  Widget _tagChip(
+    ColorScheme cs,
+    TextTheme tt, {
+    required String label,
+    required String valueKind,
     required VoidCallback onRemove,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.only(left: 12, right: 4, top: 4, bottom: 4),
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: cs.tertiaryContainer,
         border: Border.all(color: cs.outline),
       ),
       child: Row(
@@ -567,21 +614,16 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
           Expanded(
             child: Text(
               label,
-              style: tt.bodyMedium?.copyWith(color: cs.onSecondaryContainer),
+              style: tt.bodyMedium?.copyWith(color: cs.onTertiaryContainer),
             ),
           ),
-          // Tocar el check quita el elemento de la lista correspondiente.
-          GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: cs.inversePrimary,
-                border: Border.all(color: cs.outline),
-              ),
-              child: Icon(Icons.close, size: 16, color: cs.onPrimary),
-            ),
+          IconButton(
+            onPressed: onRemove,
+            tooltip: 'Quitar $valueKind',
+            icon: Icon(Icons.close, size: 18, color: cs.onTertiaryContainer),
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
         ],
       ),
