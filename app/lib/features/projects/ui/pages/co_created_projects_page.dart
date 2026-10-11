@@ -4,6 +4,7 @@ import 'package:imker/features/projects/ui/views/requests_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
 
@@ -85,6 +86,7 @@ class CoCreatedProjectsPage extends StatelessWidget {
             ...projects.map(
               (project) => ProjectTile(
                 project: project,
+                onTap: () => Get.find<ProjectManagementController>().open(project),
                 trailing: RequestsButton(
                   count: project.applicantsCount,
                   onTap: () => Get.to(() => CollaborationRequestsPage(project: project)),

@@ -1,0 +1,1998 @@
+diff -ruN a/app/lib/core/widgets/score_gauge.dart b/app/lib/core/widgets/score_gauge.dart
+--- a/app/lib/core/widgets/score_gauge.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/core/widgets/score_gauge.dart	2026-10-11 03:22:49.759308501 +0000
+@@ -0,0 +1,45 @@
++import 'package:flutter/material.dart';
++
++/// Medidor circular con el porcentaje al centro y una etiqueta debajo.
++///
++/// Se usa en los indicadores de confianza y en el progreso de un proyecto.
++class ScoreGauge extends StatelessWidget {
++  const ScoreGauge({super.key, required this.label, required this.value});
++
++  final String label;
++
++  /// Porcentaje de 0 a 100.
++  final int value;
++
++  @override
++  Widget build(BuildContext context) {
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    return SizedBox(
++      width: 90,
++      child: Column(
++        children: [
++          SizedBox(
++            width: 64,
++            height: 64,
++            child: Stack(
++              alignment: Alignment.center,
++              children: [
++                CircularProgressIndicator(
++                  value: value / 100,
++                  strokeWidth: 6,
++                  backgroundColor: cs.surfaceContainerHighest,
++                  color: cs.primary,
++                ),
++                Text('$value%', style: tt.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
++              ],
++            ),
++          ),
++          const SizedBox(height: 6),
++          Text(label, textAlign: TextAlign.center, style: tt.bodySmall),
++        ],
++      ),
++    );
++  }
++}
+diff -ruN a/app/lib/core/widgets/trust_indicators.dart b/app/lib/core/widgets/trust_indicators.dart
+--- a/app/lib/core/widgets/trust_indicators.dart	2026-10-09 21:44:10.413191381 +0000
++++ b/app/lib/core/widgets/trust_indicators.dart	2026-10-11 03:22:49.759295781 +0000
+@@ -1,5 +1,7 @@
+ import 'package:flutter/material.dart';
+ 
++import 'score_gauge.dart';
++
+ /// Sección de "Indicadores de confianza": el índice general de compromiso
+ /// más los tres medidores circulares (entrega a tiempo, tasa de respuesta,
+ /// proyectos completados).
+@@ -58,60 +60,12 @@
+         Row(
+           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+           children: [
+-            _ScoreGauge(label: 'Entrega a tiempo', value: onTimeScore, cs: cs, tt: tt),
+-            _ScoreGauge(label: 'Tasa de respuesta', value: responseRateScore, cs: cs, tt: tt),
+-            _ScoreGauge(
+-              label: 'Proyectos completados',
+-              value: completedProjectsScore,
+-              cs: cs,
+-              tt: tt,
+-            ),
++            ScoreGauge(label: 'Entrega a tiempo', value: onTimeScore),
++            ScoreGauge(label: 'Tasa de respuesta', value: responseRateScore),
++            ScoreGauge(label: 'Proyectos completados', value: completedProjectsScore),
+           ],
+         ),
+       ],
+     );
+   }
+ }
+-
+-class _ScoreGauge extends StatelessWidget {
+-  final String label;
+-  final int value;
+-  final ColorScheme cs;
+-  final TextTheme tt;
+-
+-  const _ScoreGauge({
+-    required this.label,
+-    required this.value,
+-    required this.cs,
+-    required this.tt,
+-  });
+-
+-  @override
+-  Widget build(BuildContext context) {
+-    return SizedBox(
+-      width: 90,
+-      child: Column(
+-        children: [
+-          SizedBox(
+-            width: 64,
+-            height: 64,
+-            child: Stack(
+-              alignment: Alignment.center,
+-              children: [
+-                CircularProgressIndicator(
+-                  value: value / 100,
+-                  strokeWidth: 6,
+-                  backgroundColor: cs.surfaceContainerHighest,
+-                  color: cs.primary,
+-                ),
+-                Text('$value%', style: tt.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+-              ],
+-            ),
+-          ),
+-          const SizedBox(height: 6),
+-          Text(label, textAlign: TextAlign.center, style: tt.bodySmall),
+-        ],
+-      ),
+-    );
+-  }
+-}
+diff -ruN a/app/lib/features/projects/data/datasources/i_project_data_source.dart b/app/lib/features/projects/data/datasources/i_project_data_source.dart
+--- a/app/lib/features/projects/data/datasources/i_project_data_source.dart	2026-10-09 21:44:10.414093347 +0000
++++ b/app/lib/features/projects/data/datasources/i_project_data_source.dart	2026-10-11 03:22:49.760445704 +0000
+@@ -3,6 +3,7 @@
+   Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId);
+   Future<Map<String, dynamic>?> readProjectById(String id);
+   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData);
++  Future<void> updateProject(String id, Map<String, dynamic> changes);
+ }
+ 
+ 
+diff -ruN a/app/lib/features/projects/data/datasources/in_memory_project_data_source.dart b/app/lib/features/projects/data/datasources/in_memory_project_data_source.dart
+--- a/app/lib/features/projects/data/datasources/in_memory_project_data_source.dart	2026-10-09 21:44:10.414082763 +0000
++++ b/app/lib/features/projects/data/datasources/in_memory_project_data_source.dart	2026-10-11 03:22:49.760429235 +0000
+@@ -32,5 +32,12 @@
+     _data.projects.add(row);
+     return row;
+   }
++
++  @override
++  Future<void> updateProject(String id, Map<String, dynamic> changes) async {
++    final index = _data.projects.indexWhere((r) => r['_id'] == id);
++    if (index == -1) return;
++    _data.projects[index] = {..._data.projects[index], ...changes};
++  }
+ }
+ 
+diff -ruN a/app/lib/features/projects/data/datasources/roble_project_data_source.dart b/app/lib/features/projects/data/datasources/roble_project_data_source.dart
+--- a/app/lib/features/projects/data/datasources/roble_project_data_source.dart	2026-10-09 21:44:10.414104349 +0000
++++ b/app/lib/features/projects/data/datasources/roble_project_data_source.dart	2026-10-11 03:22:49.760485949 +0000
+@@ -47,5 +47,10 @@
+   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async {
+     return await _client.db.create(RobleClient.projects, projectData);
+   }
++
++  @override
++  Future<void> updateProject(String id, Map<String, dynamic> changes) async {
++    await _client.db.update(RobleClient.projects, id, changes);
++  }
+ }
+ 
+diff -ruN a/app/lib/features/projects/data/repositories/project_repository.dart b/app/lib/features/projects/data/repositories/project_repository.dart
+--- a/app/lib/features/projects/data/repositories/project_repository.dart	2026-10-09 21:44:10.414155002 +0000
++++ b/app/lib/features/projects/data/repositories/project_repository.dart	2026-10-11 03:22:49.760518896 +0000
+@@ -52,6 +52,24 @@
+     return _toProject(resultRow);
+   }
+ 
++  @override
++  Future<void> updateProject({
++    required String id,
++    required String title,
++    required String description,
++    required List<String> jobs,
++    required List<String> skills,
++  }) async {
++    // Mismas convenciones que en createProject: listas envueltas en {"values": [...]}.
++    final changes = <String, dynamic>{
++      'title': title,
++      'description': description,
++      'jobs': {'values': jobs},
++      'skills': {'values': skills},
++    };
++    await _guard(() => _source.updateProject(id, changes));
++  }
++
+ 
+   // ─── Traducción de errores ────────────────────────────────────────────────
+   // Las excepciones se atrapan de más específica a más general; si no se
+diff -ruN a/app/lib/features/projects/domain/models/project.dart b/app/lib/features/projects/domain/models/project.dart
+--- a/app/lib/features/projects/domain/models/project.dart	2026-10-09 21:44:10.414200024 +0000
++++ b/app/lib/features/projects/domain/models/project.dart	2026-10-11 03:22:49.760584053 +0000
+@@ -26,6 +26,24 @@
+ 
+   bool get isOpen => status == 'open';
+ 
++  Project copyWith({
++    String? title,
++    String? description,
++    List<String>? jobs,
++    List<String>? skills,
++  }) => Project(
++    id: id,
++    owner: owner,
++    title: title ?? this.title,
++    imageUrl: imageUrl,
++    description: description ?? this.description,
++    jobs: jobs ?? this.jobs,
++    skills: skills ?? this.skills,
++    status: status,
++    members: members,
++    applicantsCount: applicantsCount,
++  );
++
+   @override
+   String toString() => 'Project(id: $id, title: $title, status: $status)';
+ }
+diff -ruN a/app/lib/features/projects/domain/models/project_task.dart b/app/lib/features/projects/domain/models/project_task.dart
+--- a/app/lib/features/projects/domain/models/project_task.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/domain/models/project_task.dart	2026-10-11 03:22:49.760596935 +0000
+@@ -0,0 +1,103 @@
++/// Estado de una tarea dentro del gabinete de tareas de un proyecto.
++enum TaskStatus { pending, inProgress, done }
++
++/// Ítem del checklist de progreso de una tarea.
++class Subtask {
++  const Subtask({required this.title, this.done = false});
++
++  final String title;
++  final bool done;
++
++  Subtask copyWith({String? title, bool? done}) =>
++      Subtask(title: title ?? this.title, done: done ?? this.done);
++}
++
++/// Comentario de una tarea. Es un árbol estilo Reddit: cada comentario puede
++/// tener respuestas anidadas.
++class TaskComment {
++  const TaskComment({
++    required this.id,
++    required this.author,
++    required this.body,
++    required this.createdAt,
++    this.score = 1,
++    this.userVote = 0,
++    this.replies = const [],
++  });
++
++  final String id;
++  final String author;
++  final String body;
++  final DateTime createdAt;
++
++  /// Puntaje total (votos a favor menos votos en contra).
++  final int score;
++
++  /// Voto del usuario activo: 1 a favor, -1 en contra, 0 sin voto.
++  final int userVote;
++  final List<TaskComment> replies;
++
++  /// Cantidad de comentarios en este hilo, contándose a sí mismo.
++  int get threadSize => 1 + replies.fold<int>(0, (sum, r) => sum + r.threadSize);
++
++  TaskComment copyWith({int? score, int? userVote, List<TaskComment>? replies}) =>
++      TaskComment(
++        id: id,
++        author: author,
++        body: body,
++        createdAt: createdAt,
++        score: score ?? this.score,
++        userVote: userVote ?? this.userVote,
++        replies: replies ?? this.replies,
++      );
++}
++
++/// Una tarea del gabinete de un proyecto.
++class ProjectTask {
++  const ProjectTask({
++    required this.id,
++    required this.projectId,
++    required this.title,
++    this.description = '',
++    this.status = TaskStatus.pending,
++    this.assignee,
++    this.subtasks = const [],
++    this.comments = const [],
++  });
++
++  final String id;
++  final String projectId;
++  final String title;
++  final String description;
++  final TaskStatus status;
++
++  /// Quién reservó la tarea (null mientras está pendiente).
++  final String? assignee;
++  final List<Subtask> subtasks;
++  final List<TaskComment> comments;
++
++  /// Avance de la tarea entre 0 y 1: completa si está terminada; si no, la
++  /// fracción de subtareas hechas.
++  double get progress {
++    if (status == TaskStatus.done) return 1;
++    if (subtasks.isEmpty) return 0;
++    return subtasks.where((s) => s.done).length / subtasks.length;
++  }
++
++  ProjectTask copyWith({
++    String? description,
++    TaskStatus? status,
++    String? assignee,
++    List<Subtask>? subtasks,
++    List<TaskComment>? comments,
++  }) => ProjectTask(
++    id: id,
++    projectId: projectId,
++    title: title,
++    description: description ?? this.description,
++    status: status ?? this.status,
++    assignee: assignee ?? this.assignee,
++    subtasks: subtasks ?? this.subtasks,
++    comments: comments ?? this.comments,
++  );
++}
+diff -ruN a/app/lib/features/projects/domain/repositories/i_project_repository.dart b/app/lib/features/projects/domain/repositories/i_project_repository.dart
+--- a/app/lib/features/projects/domain/repositories/i_project_repository.dart	2026-10-09 21:44:10.414674960 +0000
++++ b/app/lib/features/projects/domain/repositories/i_project_repository.dart	2026-10-11 03:22:49.760634329 +0000
+@@ -12,5 +12,14 @@
+     required List<String> skills,
+     String imageUrl = '',
+   });
++
++  /// Actualiza la información básica de un proyecto existente.
++  Future<void> updateProject({
++    required String id,
++    required String title,
++    required String description,
++    required List<String> jobs,
++    required List<String> skills,
++  });
+ }
+ 
+diff -ruN a/app/lib/features/projects/ui/pages/co_created_projects_page.dart b/app/lib/features/projects/ui/pages/co_created_projects_page.dart
+--- a/app/lib/features/projects/ui/pages/co_created_projects_page.dart	2026-10-09 21:44:10.414764921 +0000
++++ b/app/lib/features/projects/ui/pages/co_created_projects_page.dart	2026-10-11 03:22:49.760700343 +0000
+@@ -4,6 +4,7 @@
+ import 'package:flutter/material.dart';
+ import 'package:get/get.dart';
+ 
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
+ import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+ import 'package:imker/features/projects/ui/widgets/project_tile.dart';
+ 
+@@ -85,6 +86,7 @@
+             ...projects.map(
+               (project) => ProjectTile(
+                 project: project,
++                onTap: () => Get.find<ProjectManagementController>().open(project),
+                 trailing: RequestsButton(
+                   count: project.applicantsCount,
+                   onTap: () => Get.to(() => CollaborationRequestsPage(project: project)),
+diff -ruN a/app/lib/features/projects/ui/pages/project_management_view.dart b/app/lib/features/projects/ui/pages/project_management_view.dart
+--- a/app/lib/features/projects/ui/pages/project_management_view.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/pages/project_management_view.dart	2026-10-11 03:22:49.760754976 +0000
+@@ -0,0 +1,134 @@
++import 'package:flutter/material.dart';
++import 'package:get/get.dart';
++
++import 'package:imker/features/projects/domain/models/project.dart';
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
++import 'package:imker/features/projects/ui/widgets/management/project_info_panel.dart';
++import 'package:imker/features/projects/ui/widgets/management/task_cabinet_panel.dart';
++import 'package:imker/features/projects/ui/widgets/management/task_progress_panel.dart';
++
++/// Vista de gestión de un proyecto propio. Reemplaza el contenido de la
++/// pestaña Proyectos mientras hay un proyecto seleccionado.
++///
++/// Dentro del contenedor hay tres paneles apilados:
++///  - información (base, siempre debajo);
++///  - gabinete de tareas, que BAJA desde arriba al pulsar "Ver Tareas";
++///  - progreso de tarea, que SUBE desde abajo y reemplaza al gabinete.
++class ProjectManagementView extends StatelessWidget {
++  const ProjectManagementView({super.key});
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++    final cs = Theme.of(context).colorScheme;
++
++    return Obx(() {
++      final project = controller.selectedProject.value;
++      if (project == null) return const SizedBox.shrink();
++      final panel = controller.panel.value;
++
++      return Padding(
++        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
++        child: Column(
++          crossAxisAlignment: CrossAxisAlignment.stretch,
++          children: [
++            _ProjectNameBar(project: project, onBack: controller.close),
++            const SizedBox(height: 8),
++            Expanded(
++              child: Container(
++                decoration: BoxDecoration(border: Border.all(color: cs.outline, width: 1.5)),
++                // El recorte evita que los paneles se vean fuera del contenedor
++                // mientras se deslizan.
++                child: ClipRect(
++                  child: Stack(
++                    fit: StackFit.expand,
++                    children: [
++                      ProjectInfoPanel(key: ValueKey(project.id), project: project),
++                      _SlidingPanel(
++                        visible: panel != ManagementPanel.info,
++                        hiddenOffset: const Offset(0, -1), // fuera por arriba
++                        child: TaskCabinetPanel(key: ValueKey('cab-${project.id}'), projectId: project.id),
++                      ),
++                      _SlidingPanel(
++                        visible: panel == ManagementPanel.task,
++                        hiddenOffset: const Offset(0, 1), // fuera por abajo
++                        child: const TaskProgressPanel(),
++                      ),
++                    ],
++                  ),
++                ),
++              ),
++            ),
++          ],
++        ),
++      );
++    });
++  }
++}
++
++class _ProjectNameBar extends StatelessWidget {
++  const _ProjectNameBar({required this.project, required this.onBack});
++
++  final Project project;
++  final VoidCallback onBack;
++
++  /// "Kirche: Proyecto de renovación..." -> "KIRCHE".
++  String get _shortName {
++    final title = project.title;
++    final cut = title.indexOf(':');
++    return (cut == -1 ? title : title.substring(0, cut)).trim().toUpperCase();
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    return Row(
++      children: [
++        IconButton(
++          tooltip: 'Mis proyectos',
++          icon: const Icon(Icons.arrow_back),
++          onPressed: onBack,
++        ),
++        Expanded(
++          child: Container(
++            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
++            decoration: BoxDecoration(color: cs.surface, border: Border.all(color: cs.outline)),
++            child: Text(
++              _shortName,
++              textAlign: TextAlign.center,
++              maxLines: 1,
++              overflow: TextOverflow.ellipsis,
++              style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
++            ),
++          ),
++        ),
++        const SizedBox(width: 48),
++      ],
++    );
++  }
++}
++
++/// Desliza su hijo entre su posición normal y [hiddenOffset] (en fracciones
++/// de su propio tamaño). Oculto, no recibe toques.
++class _SlidingPanel extends StatelessWidget {
++  const _SlidingPanel({required this.visible, required this.hiddenOffset, required this.child});
++
++  final bool visible;
++  final Offset hiddenOffset;
++  final Widget child;
++
++  @override
++  Widget build(BuildContext context) {
++    return IgnorePointer(
++      ignoring: !visible,
++      child: AnimatedSlide(
++        offset: visible ? Offset.zero : hiddenOffset,
++        duration: const Duration(milliseconds: 380),
++        curve: Curves.easeInOutCubic,
++        child: child,
++      ),
++    );
++  }
++}
+diff -ruN a/app/lib/features/projects/ui/pages/projects_page.dart b/app/lib/features/projects/ui/pages/projects_page.dart
+--- a/app/lib/features/projects/ui/pages/projects_page.dart	2026-10-09 21:44:10.414793003 +0000
++++ b/app/lib/features/projects/ui/pages/projects_page.dart	2026-10-11 03:22:49.760728225 +0000
+@@ -4,6 +4,8 @@
+ import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
+ import 'package:imker/features/projects/ui/pages/co_created_projects_page.dart';
+ import 'package:imker/features/projects/ui/pages/other_projects_page.dart';
++import 'package:imker/features/projects/ui/pages/project_management_view.dart';
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
+ import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+ import 'package:imker/features/projects/ui/widgets/projects_guest_gate.dart';
+ import 'package:imker/core/widgets/segmented_tab_switch.dart';
+@@ -18,6 +20,7 @@
+   Widget build(BuildContext context) {
+     final auth = Get.find<AuthenticationController>();
+     final controller = Get.find<UserProjectsController>();
++    final management = Get.find<ProjectManagementController>();
+     final cs = Theme.of(context).colorScheme;
+ 
+     return ColoredBox(
+@@ -28,6 +31,11 @@
+             return const ProjectsGuestGate();
+           }
+ 
++          // Con un proyecto propio abierto, la pestaña muestra su gestión.
++          if (management.selectedProject.value != null) {
++            return const ProjectManagementView();
++          }
++
+           return Column(
+             children: [
+               // Selector segmented de pestañas principales (estilo imagen adjunta)
+diff -ruN a/app/lib/features/projects/ui/viewmodels/project_management_controller.dart b/app/lib/features/projects/ui/viewmodels/project_management_controller.dart
+--- a/app/lib/features/projects/ui/viewmodels/project_management_controller.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/viewmodels/project_management_controller.dart	2026-10-11 03:22:49.760807926 +0000
+@@ -0,0 +1,255 @@
++import 'package:get/get.dart';
++
++import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
++import 'package:imker/features/projects/domain/models/project.dart';
++import 'package:imker/features/projects/domain/models/project_task.dart';
++import 'package:imker/features/projects/domain/project_failure.dart';
++import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
++import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
++
++/// Panel visible dentro del contenedor de gestión de un proyecto.
++enum ManagementPanel { info, cabinet, task }
++
++/// Estado de la vista de gestión de un proyecto propio: información, gabinete
++/// de tareas y progreso de cada tarea.
++///
++/// Las tareas viven en memoria mientras dure la sesión: todavía no existe una
++/// tabla de tareas en Roble donde persistirlas.
++class ProjectManagementController extends GetxController {
++  final Rxn<Project> selectedProject = Rxn<Project>();
++  final Rx<ManagementPanel> panel = ManagementPanel.info.obs;
++  final RxnString selectedTaskId = RxnString();
++  final RxList<ProjectTask> tasks = <ProjectTask>[].obs;
++  final RxBool isSavingProject = false.obs;
++
++  final Set<String> _seededProjects = {};
++
++  // ─── Navegación ───────────────────────────────────────────────────────────
++
++  void open(Project project) {
++    _seedExampleTask(project.id);
++    panel.value = ManagementPanel.info;
++    selectedTaskId.value = null;
++    selectedProject.value = project;
++  }
++
++  void close() => selectedProject.value = null;
++
++  void showInfo() => panel.value = ManagementPanel.info;
++
++  void showCabinet() {
++    panel.value = ManagementPanel.cabinet;
++  }
++
++  void openTask(String taskId) {
++    selectedTaskId.value = taskId;
++    panel.value = ManagementPanel.task;
++  }
++
++  // ─── Consultas ────────────────────────────────────────────────────────────
++
++  List<ProjectTask> tasksOf(String projectId, TaskStatus status) =>
++      tasks.where((t) => t.projectId == projectId && t.status == status).toList();
++
++  ProjectTask? taskById(String? id) => tasks.firstWhereOrNull((t) => t.id == id);
++
++  List<ProjectTask> _allOf(String projectId) =>
++      tasks.where((t) => t.projectId == projectId).toList();
++
++  /// Porcentaje de finalización del proyecto: promedio del avance de sus tareas.
++  int completionPercent(String projectId) {
++    final all = _allOf(projectId);
++    if (all.isEmpty) return 0;
++    final sum = all.fold<double>(0, (acc, t) => acc + t.progress);
++    return (sum / all.length * 100).round();
++  }
++
++  /// Porcentaje de tareas que están actualmente en progreso.
++  int inProgressPercent(String projectId) {
++    final all = _allOf(projectId);
++    if (all.isEmpty) return 0;
++    final active = all.where((t) => t.status == TaskStatus.inProgress).length;
++    return (active / all.length * 100).round();
++  }
++
++  // ─── Tareas ───────────────────────────────────────────────────────────────
++
++  String get _userName {
++    final name = Get.find<AuthenticationController>().loggedName;
++    return name.isEmpty ? 'Tú' : name;
++  }
++
++  String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
++
++  void createTask({
++    required String projectId,
++    required String title,
++    String description = '',
++  }) {
++    tasks.add(
++      ProjectTask(id: _newId(), projectId: projectId, title: title, description: description),
++    );
++  }
++
++  /// Reserva una tarea pendiente para el usuario activo: pasa a "En progreso".
++  void reserveTask(String taskId) {
++    _update(taskId, (t) => t.copyWith(status: TaskStatus.inProgress, assignee: _userName));
++  }
++
++  /// Guarda descripción y checklist. Si todas las subtareas están hechas la
++  /// tarea queda terminada; si estaba terminada y se desmarca alguna, vuelve a
++  /// "En progreso".
++  void saveTask(String taskId, {required String description, required List<Subtask> subtasks}) {
++    _update(taskId, (t) {
++      final allDone = subtasks.isNotEmpty && subtasks.every((s) => s.done);
++      var status = t.status;
++      if (allDone) {
++        status = TaskStatus.done;
++      } else if (t.status == TaskStatus.done) {
++        status = TaskStatus.inProgress;
++      }
++      return t.copyWith(description: description, subtasks: subtasks, status: status);
++    });
++  }
++
++  void _update(String taskId, ProjectTask Function(ProjectTask) change) {
++    final index = tasks.indexWhere((t) => t.id == taskId);
++    if (index == -1) return;
++    tasks[index] = change(tasks[index]);
++  }
++
++  // ─── Comentarios ──────────────────────────────────────────────────────────
++
++  void addComment(String taskId, String body, {String? parentId}) {
++    final comment = TaskComment(
++      id: _newId(),
++      author: _userName,
++      body: body,
++      createdAt: DateTime.now(),
++      userVote: 1,
++    );
++    _update(taskId, (t) {
++      if (parentId == null) return t.copyWith(comments: [comment, ...t.comments]);
++      return t.copyWith(
++        comments: _mapTree(
++          t.comments,
++          parentId,
++          (c) => c.copyWith(replies: [...c.replies, comment]),
++        ),
++      );
++    });
++  }
++
++  /// Vota un comentario. Votar dos veces igual quita el voto, como en Reddit.
++  void voteComment(String taskId, String commentId, int direction) {
++    _update(taskId, (t) {
++      return t.copyWith(
++        comments: _mapTree(t.comments, commentId, (c) {
++          final next = c.userVote == direction ? 0 : direction;
++          return c.copyWith(score: c.score - c.userVote + next, userVote: next);
++        }),
++      );
++    });
++  }
++
++  List<TaskComment> _mapTree(
++    List<TaskComment> list,
++    String id,
++    TaskComment Function(TaskComment) change,
++  ) => [
++    for (final c in list)
++      if (c.id == id) change(c) else c.copyWith(replies: _mapTree(c.replies, id, change)),
++  ];
++
++  // ─── Información del proyecto ─────────────────────────────────────────────
++
++  /// Guarda la información básica. Devuelve null si salió bien o el mensaje de
++  /// error para mostrar en pantalla.
++  Future<String?> saveProjectInfo({
++    required String title,
++    required String description,
++    required List<String> jobs,
++    required List<String> skills,
++  }) async {
++    final project = selectedProject.value;
++    if (project == null) return 'No hay un proyecto seleccionado.';
++    try {
++      isSavingProject.value = true;
++      await Get.find<IProjectRepository>().updateProject(
++        id: project.id,
++        title: title,
++        description: description,
++        jobs: jobs,
++        skills: skills,
++      );
++      final updated = project.copyWith(
++        title: title,
++        description: description,
++        jobs: jobs,
++        skills: skills,
++      );
++      selectedProject.value = updated;
++      final owned = Get.find<UserProjectsController>().coCreatedProjects;
++      final index = owned.indexWhere((p) => p.id == project.id);
++      if (index != -1) owned[index] = updated;
++      return null;
++    } on ProjectFailure catch (e) {
++      return e.message;
++    } catch (_) {
++      return 'No se pudieron guardar los cambios.';
++    } finally {
++      isSavingProject.value = false;
++    }
++  }
++
++  // ─── Ejemplo ──────────────────────────────────────────────────────────────
++
++  /// Siembra una tarea de ejemplo (la del prototipo de Figma) la primera vez
++  /// que se abre un proyecto, hasta que exista una tabla de tareas real.
++  void _seedExampleTask(String projectId) {
++    if (!_seededProjects.add(projectId)) return;
++    if (_allOf(projectId).isNotEmpty) return;
++    final now = DateTime.now();
++    tasks.add(
++      ProjectTask(
++        id: 'example-$projectId',
++        projectId: projectId,
++        title: 'Implementación Roble para autenticación',
++        description:
++            'Integrar el SDK de Roble para el inicio de sesión, el registro y el manejo de la sesión del usuario.',
++        subtasks: const [
++          Subtask(title: 'Importar librerías', done: true),
++          Subtask(title: 'Implementar GET', done: true),
++          Subtask(title: 'Implementar POST'),
++          Subtask(title: 'Implementar PUT'),
++          Subtask(title: 'Implementar DELETE'),
++        ],
++        comments: [
++          TaskComment(
++            id: 'example-c1',
++            author: 'Laura Gómez',
++            body: '¿Ya definimos qué tablas vamos a necesitar para esto?',
++            createdAt: now.subtract(const Duration(hours: 5)),
++            score: 4,
++            replies: [
++              TaskComment(
++                id: 'example-c1-r1',
++                author: 'Pedro Jiménez',
++                body: 'Por ahora solo user_system y profile. Lo demás lo vemos en la reunión.',
++                createdAt: now.subtract(const Duration(hours: 3)),
++                score: 2,
++              ),
++            ],
++          ),
++          TaskComment(
++            id: 'example-c2',
++            author: 'Alberto Mendoza',
++            body: 'Recuerden manejar el refresh del token antes de hacer las pruebas.',
++            createdAt: now.subtract(const Duration(days: 1)),
++            score: 7,
++          ),
++        ],
++      ),
++    );
++  }
++}
+diff -ruN a/app/lib/features/projects/ui/widgets/management/checklist_editor.dart b/app/lib/features/projects/ui/widgets/management/checklist_editor.dart
+--- a/app/lib/features/projects/ui/widgets/management/checklist_editor.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/widgets/management/checklist_editor.dart	2026-10-11 03:22:49.761072724 +0000
+@@ -0,0 +1,124 @@
++import 'package:flutter/material.dart';
++
++/// Un ítem de [ChecklistEditor]: texto más si está marcado.
++class ChecklistEntry {
++  const ChecklistEntry(this.label, {this.checked = true});
++
++  final String label;
++  final bool checked;
++
++  ChecklistEntry copyWith({bool? checked}) =>
++      ChecklistEntry(label, checked: checked ?? this.checked);
++}
++
++/// Campo para añadir ítems más la lista de ítems con casilla de verificación.
++///
++/// Mantiene su propia lista y avisa de cada cambio con [onChanged]; el padre
++/// decide qué hacer con ella al guardar.
++class ChecklistEditor extends StatefulWidget {
++  const ChecklistEditor({
++    super.key,
++    required this.initial,
++    required this.hint,
++    required this.onChanged,
++    this.addedChecked = true,
++  });
++
++  final List<ChecklistEntry> initial;
++  final String hint;
++  final ValueChanged<List<ChecklistEntry>> onChanged;
++
++  /// Si los ítems recién añadidos nacen marcados.
++  final bool addedChecked;
++
++  @override
++  State<ChecklistEditor> createState() => _ChecklistEditorState();
++}
++
++class _ChecklistEditorState extends State<ChecklistEditor> {
++  final _input = TextEditingController();
++  late List<ChecklistEntry> _items = List.of(widget.initial);
++
++  @override
++  void dispose() {
++    _input.dispose();
++    super.dispose();
++  }
++
++  void _emit() => widget.onChanged(List.unmodifiable(_items));
++
++  void _add() {
++    final value = _input.text.trim();
++    if (value.isEmpty) return;
++    final exists = _items.any((e) => e.label.toLowerCase() == value.toLowerCase());
++    if (!exists) {
++      setState(() => _items = [..._items, ChecklistEntry(value, checked: widget.addedChecked)]);
++      _emit();
++    }
++    _input.clear();
++  }
++
++  void _toggle(int index, bool checked) {
++    setState(() => _items[index] = _items[index].copyWith(checked: checked));
++    _emit();
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final cs = Theme.of(context).colorScheme;
++
++    return Column(
++      crossAxisAlignment: CrossAxisAlignment.stretch,
++      children: [
++        Row(
++          children: [
++            Expanded(
++              child: TextField(
++                controller: _input,
++                onSubmitted: (_) => _add(),
++                decoration: InputDecoration(
++                  hintText: widget.hint,
++                  isDense: true,
++                  filled: true,
++                  fillColor: cs.surface,
++                  border: OutlineInputBorder(
++                    borderRadius: BorderRadius.zero,
++                    borderSide: BorderSide(color: cs.outline),
++                  ),
++                ),
++              ),
++            ),
++            const SizedBox(width: 8),
++            FilledButton(
++              style: FilledButton.styleFrom(
++                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
++              ),
++              onPressed: _add,
++              child: const Text('Añadir'),
++            ),
++          ],
++        ),
++        const SizedBox(height: 8),
++        for (var i = 0; i < _items.length; i++)
++          Container(
++            margin: const EdgeInsets.only(bottom: 6),
++            decoration: BoxDecoration(
++              color: cs.secondaryContainer,
++              border: Border.all(color: cs.outline),
++            ),
++            child: CheckboxListTile(
++              dense: true,
++              visualDensity: VisualDensity.compact,
++              controlAffinity: ListTileControlAffinity.trailing,
++              value: _items[i].checked,
++              onChanged: (v) => _toggle(i, v ?? false),
++              title: Text(
++                _items[i].label,
++                style: TextStyle(color: cs.onSecondaryContainer),
++              ),
++            ),
++          ),
++      ],
++    );
++  }
++}
+diff -ruN a/app/lib/features/projects/ui/widgets/management/management_panel_frame.dart b/app/lib/features/projects/ui/widgets/management/management_panel_frame.dart
+--- a/app/lib/features/projects/ui/widgets/management/management_panel_frame.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/widgets/management/management_panel_frame.dart	2026-10-11 03:22:49.760993728 +0000
+@@ -0,0 +1,97 @@
++import 'package:flutter/material.dart';
++
++/// Marco común de los paneles del contenedor de gestión: fondo opaco (para
++/// tapar lo que hay debajo mientras se desliza), título, pestañas opcionales,
++/// contenido que se desplaza y un botón fijo abajo.
++class ManagementPanelFrame extends StatelessWidget {
++  const ManagementPanelFrame({
++    super.key,
++    required this.title,
++    this.onBack,
++    this.tabs,
++    required this.body,
++    this.bottom,
++  });
++
++  final String title;
++  final VoidCallback? onBack;
++
++  /// Selector de pestañas que va bajo el título.
++  final Widget? tabs;
++  final Widget body;
++
++  /// Botón (o barra) fijo en la parte inferior.
++  final Widget? bottom;
++
++  @override
++  Widget build(BuildContext context) {
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    return ColoredBox(
++      color: cs.primaryContainer,
++      child: Column(
++        children: [
++          Padding(
++            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
++            child: Row(
++              children: [
++                SizedBox(
++                  width: 48,
++                  child: onBack == null
++                      ? null
++                      : IconButton(
++                          tooltip: 'Volver',
++                          icon: const Icon(Icons.arrow_back),
++                          onPressed: onBack,
++                        ),
++                ),
++                Expanded(
++                  child: Text(
++                    title,
++                    textAlign: TextAlign.center,
++                    style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
++                  ),
++                ),
++                const SizedBox(width: 48),
++              ],
++            ),
++          ),
++          if (tabs != null)
++            Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 0), child: tabs),
++          Expanded(
++            child: SingleChildScrollView(
++              padding: const EdgeInsets.all(12),
++              child: body,
++            ),
++          ),
++          if (bottom != null)
++            Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), child: bottom),
++        ],
++      ),
++    );
++  }
++}
++
++/// Botón de acción a todo el ancho con las esquinas cuadradas del diseño.
++class PanelButton extends StatelessWidget {
++  const PanelButton({super.key, required this.label, required this.onPressed, this.busy = false});
++
++  final String label;
++  final VoidCallback? onPressed;
++  final bool busy;
++
++  @override
++  Widget build(BuildContext context) {
++    return FilledButton(
++      style: FilledButton.styleFrom(
++        minimumSize: const Size.fromHeight(46),
++        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
++      ),
++      onPressed: busy ? null : onPressed,
++      child: busy
++          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
++          : Text(label),
++    );
++  }
++}
+diff -ruN a/app/lib/features/projects/ui/widgets/management/project_info_panel.dart b/app/lib/features/projects/ui/widgets/management/project_info_panel.dart
+--- a/app/lib/features/projects/ui/widgets/management/project_info_panel.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/widgets/management/project_info_panel.dart	2026-10-11 03:22:49.761009948 +0000
+@@ -0,0 +1,257 @@
++import 'package:flutter/material.dart';
++import 'package:get/get.dart';
++
++import 'package:imker/core/widgets/score_gauge.dart';
++import 'package:imker/core/widgets/segmented_tab_switch.dart';
++import 'package:imker/features/projects/domain/models/project.dart';
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
++import 'checklist_editor.dart';
++import 'management_panel_frame.dart';
++
++/// Panel "Información de Proyecto": progreso, información básica y miembros.
++class ProjectInfoPanel extends StatefulWidget {
++  const ProjectInfoPanel({super.key, required this.project});
++
++  final Project project;
++
++  @override
++  State<ProjectInfoPanel> createState() => _ProjectInfoPanelState();
++}
++
++class _ProjectInfoPanelState extends State<ProjectInfoPanel> {
++  int _tab = 0; // 0: Progreso, 1: Info. básica, 2: Miembros
++
++  final _title = TextEditingController();
++  final _description = TextEditingController();
++  late List<ChecklistEntry> _jobs;
++  late List<ChecklistEntry> _skills;
++
++  @override
++  void initState() {
++    super.initState();
++    _title.text = widget.project.title;
++    _description.text = widget.project.description;
++    _jobs = [for (final j in widget.project.jobs) ChecklistEntry(j)];
++    _skills = [for (final s in widget.project.skills) ChecklistEntry(s)];
++  }
++
++  @override
++  void dispose() {
++    _title.dispose();
++    _description.dispose();
++    super.dispose();
++  }
++
++  Future<void> _save() async {
++    final title = _title.text.trim();
++    if (title.isEmpty) {
++      Get.snackbar('Falta el nombre', 'El proyecto necesita un nombre.',
++          snackPosition: SnackPosition.BOTTOM);
++      return;
++    }
++    // Las casillas desmarcadas se descartan al guardar.
++    final error = await Get.find<ProjectManagementController>().saveProjectInfo(
++      title: title,
++      description: _description.text.trim(),
++      jobs: [for (final e in _jobs) if (e.checked) e.label],
++      skills: [for (final e in _skills) if (e.checked) e.label],
++    );
++    Get.snackbar(
++      error == null ? 'Listo' : 'Error',
++      error ?? 'Los cambios del proyecto se guardaron.',
++      snackPosition: SnackPosition.BOTTOM,
++    );
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++
++    return ManagementPanelFrame(
++      title: 'Información de Proyecto',
++      tabs: SegmentedTabSwitch(
++        tabs: const ['Progreso', 'Info. básica', 'Miembros'],
++        selectedIndex: _tab,
++        onTabSelected: (i) => setState(() => _tab = i),
++      ),
++      body: switch (_tab) {
++        0 => _ProgressTab(projectId: widget.project.id),
++        1 => _BasicInfoTab(
++          title: _title,
++          description: _description,
++          jobs: _jobs,
++          skills: _skills,
++          onJobsChanged: (v) => _jobs = v,
++          onSkillsChanged: (v) => _skills = v,
++        ),
++        _ => _MembersTab(members: widget.project.members),
++      },
++      bottom: switch (_tab) {
++        0 => PanelButton(label: 'Ver Tareas', onPressed: controller.showCabinet),
++        1 => Obx(
++          () => PanelButton(
++            label: 'Guardar Cambios',
++            busy: controller.isSavingProject.value,
++            onPressed: _save,
++          ),
++        ),
++        _ => null,
++      },
++    );
++  }
++}
++
++class _ProgressTab extends StatelessWidget {
++  const _ProgressTab({required this.projectId});
++
++  final String projectId;
++
++  // Todavía no hay fechas límite en las tareas, así que "Entregas a tiempo"
++  // es un valor fijo, igual que los indicadores de confianza del perfil.
++  static const _onTimePlaceholder = 83;
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    return Obx(() {
++      final completion = controller.completionPercent(projectId);
++      final inProgress = controller.inProgressPercent(projectId);
++
++      return Container(
++        padding: const EdgeInsets.all(12),
++        decoration: BoxDecoration(color: cs.surface, border: Border.all(color: cs.outline)),
++        child: Column(
++          crossAxisAlignment: CrossAxisAlignment.start,
++          children: [
++            Text('Progreso general', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
++            const SizedBox(height: 12),
++            Row(
++              children: [
++                Expanded(child: Text('Porcentaje de Finalización', style: tt.bodyMedium)),
++                Text('$completion%', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
++              ],
++            ),
++            const SizedBox(height: 4),
++            LinearProgressIndicator(
++              value: completion / 100,
++              minHeight: 8,
++              backgroundColor: cs.surfaceContainerHighest,
++              color: cs.primary,
++            ),
++            const SizedBox(height: 20),
++            Row(
++              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
++              children: [
++                ScoreGauge(label: 'Tareas en Progreso', value: inProgress),
++                const ScoreGauge(label: 'Entregas a Tiempo', value: _onTimePlaceholder),
++              ],
++            ),
++          ],
++        ),
++      );
++    });
++  }
++}
++
++class _BasicInfoTab extends StatelessWidget {
++  const _BasicInfoTab({
++    required this.title,
++    required this.description,
++    required this.jobs,
++    required this.skills,
++    required this.onJobsChanged,
++    required this.onSkillsChanged,
++  });
++
++  final TextEditingController title;
++  final TextEditingController description;
++  final List<ChecklistEntry> jobs;
++  final List<ChecklistEntry> skills;
++  final ValueChanged<List<ChecklistEntry>> onJobsChanged;
++  final ValueChanged<List<ChecklistEntry>> onSkillsChanged;
++
++  @override
++  Widget build(BuildContext context) {
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    InputDecoration box([String? hint]) => InputDecoration(
++      hintText: hint,
++      filled: true,
++      fillColor: cs.surface,
++      border: OutlineInputBorder(
++        borderRadius: BorderRadius.zero,
++        borderSide: BorderSide(color: cs.outline),
++      ),
++    );
++
++    Widget label(String text) => Padding(
++      padding: const EdgeInsets.only(top: 14, bottom: 6),
++      child: Text(text, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
++    );
++
++    return Column(
++      crossAxisAlignment: CrossAxisAlignment.stretch,
++      children: [
++        Text('Nombre del proyecto', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
++        const SizedBox(height: 6),
++        TextField(controller: title, decoration: box()),
++        label('Descripción'),
++        TextField(controller: description, minLines: 3, maxLines: 6, decoration: box()),
++        label('Carreras relacionadas'),
++        ChecklistEditor(
++          initial: jobs,
++          hint: 'Escribe una carrera relacionada',
++          onChanged: onJobsChanged,
++        ),
++        label('Conocimientos requeridos'),
++        ChecklistEditor(
++          initial: skills,
++          hint: 'Añade una habilidad',
++          onChanged: onSkillsChanged,
++        ),
++      ],
++    );
++  }
++}
++
++class _MembersTab extends StatelessWidget {
++  const _MembersTab({required this.members});
++
++  final List<String> members;
++
++  @override
++  Widget build(BuildContext context) {
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    if (members.isEmpty) {
++      return Text('Este proyecto todavía no tiene miembros.', style: tt.bodyMedium);
++    }
++
++    return Column(
++      children: [
++        for (final name in members)
++          Container(
++            margin: const EdgeInsets.only(bottom: 8),
++            padding: const EdgeInsets.all(10),
++            decoration: BoxDecoration(color: cs.surface, border: Border.all(color: cs.outline)),
++            child: Row(
++              children: [
++                CircleAvatar(
++                  radius: 18,
++                  backgroundColor: cs.tertiaryContainer,
++                  child: Icon(Icons.person, size: 20, color: cs.onTertiaryContainer),
++                ),
++                const SizedBox(width: 12),
++                Expanded(child: Text(name, style: tt.bodyLarge)),
++              ],
++            ),
++          ),
++      ],
++    );
++  }
++}
+diff -ruN a/app/lib/features/projects/ui/widgets/management/task_cabinet_panel.dart b/app/lib/features/projects/ui/widgets/management/task_cabinet_panel.dart
+--- a/app/lib/features/projects/ui/widgets/management/task_cabinet_panel.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/widgets/management/task_cabinet_panel.dart	2026-10-11 03:22:49.761027492 +0000
+@@ -0,0 +1,209 @@
++import 'package:flutter/material.dart';
++import 'package:get/get.dart';
++
++import 'package:imker/core/widgets/segmented_tab_switch.dart';
++import 'package:imker/features/projects/domain/models/project_task.dart';
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
++import 'management_panel_frame.dart';
++
++/// Panel "Gabinete de tareas": tareas pendientes, en progreso y terminadas.
++class TaskCabinetPanel extends StatefulWidget {
++  const TaskCabinetPanel({super.key, required this.projectId});
++
++  final String projectId;
++
++  @override
++  State<TaskCabinetPanel> createState() => _TaskCabinetPanelState();
++}
++
++class _TaskCabinetPanelState extends State<TaskCabinetPanel> {
++  static const _statuses = [TaskStatus.pending, TaskStatus.inProgress, TaskStatus.done];
++
++  int _tab = 0;
++
++  Future<void> _createTask() async {
++    final result = await Get.dialog<({String title, String description})>(const _NewTaskDialog());
++    if (result == null) return;
++    Get.find<ProjectManagementController>().createTask(
++      projectId: widget.projectId,
++      title: result.title,
++      description: result.description,
++    );
++    setState(() => _tab = 0);
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++
++    return ManagementPanelFrame(
++      title: 'Gabinete de tareas',
++      onBack: controller.showInfo,
++      tabs: SegmentedTabSwitch(
++        tabs: const ['Pendientes', 'En Progreso', 'Terminadas'],
++        selectedIndex: _tab,
++        onTabSelected: (i) => setState(() => _tab = i),
++      ),
++      body: Obx(() {
++        final status = _statuses[_tab];
++        final tasks = controller.tasksOf(widget.projectId, status);
++        if (tasks.isEmpty) {
++          return Padding(
++            padding: const EdgeInsets.only(top: 24),
++            child: Text(
++              switch (status) {
++                TaskStatus.pending => 'No hay tareas pendientes.',
++                TaskStatus.inProgress => 'No hay tareas en progreso.',
++                TaskStatus.done => 'Todavía no hay tareas terminadas.',
++              },
++              textAlign: TextAlign.center,
++              style: Theme.of(context).textTheme.bodyMedium,
++            ),
++          );
++        }
++        return Column(
++          children: [
++            for (final task in tasks)
++              _TaskCard(
++                task: task,
++                onTap: () => controller.openTask(task.id),
++                onReserve: () {
++                  controller.reserveTask(task.id);
++                  Get.snackbar(
++                    'Tarea reservada',
++                    'La encontrarás en "En Progreso".',
++                    snackPosition: SnackPosition.BOTTOM,
++                  );
++                },
++              ),
++          ],
++        );
++      }),
++      bottom: PanelButton(label: 'Crear tarea', onPressed: _createTask),
++    );
++  }
++}
++
++class _TaskCard extends StatelessWidget {
++  const _TaskCard({required this.task, required this.onTap, required this.onReserve});
++
++  final ProjectTask task;
++  final VoidCallback onTap;
++  final VoidCallback onReserve;
++
++  @override
++  Widget build(BuildContext context) {
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    return Container(
++      margin: const EdgeInsets.only(bottom: 10),
++      decoration: BoxDecoration(color: cs.surface, border: Border.all(color: cs.outline)),
++      child: InkWell(
++        onTap: onTap,
++        child: Padding(
++          padding: const EdgeInsets.all(12),
++          child: Column(
++            crossAxisAlignment: CrossAxisAlignment.stretch,
++            children: [
++              Text(
++                task.title,
++                textAlign: TextAlign.center,
++                style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
++              ),
++              if (task.subtasks.isNotEmpty) ...[
++                const SizedBox(height: 8),
++                LinearProgressIndicator(
++                  value: task.progress,
++                  minHeight: 5,
++                  backgroundColor: cs.surfaceContainerHighest,
++                  color: cs.primary,
++                ),
++              ],
++              if (task.assignee != null) ...[
++                const SizedBox(height: 6),
++                Text(
++                  'Reservada por ${task.assignee}',
++                  textAlign: TextAlign.center,
++                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
++                ),
++              ],
++              if (task.status == TaskStatus.pending) ...[
++                const SizedBox(height: 10),
++                Center(
++                  child: FilledButton(
++                    style: FilledButton.styleFrom(
++                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
++                    ),
++                    onPressed: onReserve,
++                    child: const Text('Reservar tarea'),
++                  ),
++                ),
++              ],
++            ],
++          ),
++        ),
++      ),
++    );
++  }
++}
++
++class _NewTaskDialog extends StatefulWidget {
++  const _NewTaskDialog();
++
++  @override
++  State<_NewTaskDialog> createState() => _NewTaskDialogState();
++}
++
++class _NewTaskDialogState extends State<_NewTaskDialog> {
++  final _title = TextEditingController();
++  final _description = TextEditingController();
++  bool _showError = false;
++
++  @override
++  void dispose() {
++    _title.dispose();
++    _description.dispose();
++    super.dispose();
++  }
++
++  void _submit() {
++    final title = _title.text.trim();
++    if (title.isEmpty) {
++      setState(() => _showError = true);
++      return;
++    }
++    Get.back(result: (title: title, description: _description.text.trim()));
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    return AlertDialog(
++      title: const Text('Crear tarea'),
++      content: Column(
++        mainAxisSize: MainAxisSize.min,
++        children: [
++          TextField(
++            controller: _title,
++            autofocus: true,
++            decoration: InputDecoration(
++              labelText: 'Nombre de la tarea',
++              errorText: _showError ? 'Escribe un nombre' : null,
++            ),
++          ),
++          const SizedBox(height: 12),
++          TextField(
++            controller: _description,
++            minLines: 2,
++            maxLines: 4,
++            decoration: const InputDecoration(labelText: 'Descripción (opcional)'),
++          ),
++        ],
++      ),
++      actions: [
++        TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
++        FilledButton(onPressed: _submit, child: const Text('Crear')),
++      ],
++    );
++  }
++}
+diff -ruN a/app/lib/features/projects/ui/widgets/management/task_comments_view.dart b/app/lib/features/projects/ui/widgets/management/task_comments_view.dart
+--- a/app/lib/features/projects/ui/widgets/management/task_comments_view.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/widgets/management/task_comments_view.dart	2026-10-11 03:22:49.761042517 +0000
+@@ -0,0 +1,291 @@
++import 'package:flutter/material.dart';
++import 'package:get/get.dart';
++
++import 'package:imker/features/projects/domain/models/project_task.dart';
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
++
++/// Comentarios de una tarea, al estilo de Reddit: hilos anidados, votos a
++/// favor/en contra, responder y colapsar un hilo.
++class TaskCommentsView extends StatefulWidget {
++  const TaskCommentsView({super.key, required this.taskId});
++
++  final String taskId;
++
++  @override
++  State<TaskCommentsView> createState() => _TaskCommentsViewState();
++}
++
++class _TaskCommentsViewState extends State<TaskCommentsView> {
++  final _input = TextEditingController();
++
++  @override
++  void dispose() {
++    _input.dispose();
++    super.dispose();
++  }
++
++  void _send() {
++    final text = _input.text.trim();
++    if (text.isEmpty) return;
++    Get.find<ProjectManagementController>().addComment(widget.taskId, text);
++    _input.clear();
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++
++    return Column(
++      crossAxisAlignment: CrossAxisAlignment.stretch,
++      children: [
++        TextField(
++          controller: _input,
++          minLines: 2,
++          maxLines: 5,
++          decoration: InputDecoration(
++            hintText: 'Añade un comentario...',
++            filled: true,
++            fillColor: cs.surface,
++            border: OutlineInputBorder(
++              borderRadius: BorderRadius.zero,
++              borderSide: BorderSide(color: cs.outline),
++            ),
++          ),
++        ),
++        const SizedBox(height: 6),
++        Align(
++          alignment: Alignment.centerRight,
++          child: FilledButton(
++            style: FilledButton.styleFrom(
++              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
++            ),
++            onPressed: _send,
++            child: const Text('Comentar'),
++          ),
++        ),
++        const SizedBox(height: 8),
++        Obx(() {
++          final comments = controller.taskById(widget.taskId)?.comments ?? const [];
++          final total = comments.fold<int>(0, (sum, c) => sum + c.threadSize);
++          if (comments.isEmpty) {
++            return Padding(
++              padding: const EdgeInsets.only(top: 16),
++              child: Text(
++                'Aún no hay comentarios. ¡Sé el primero!',
++                textAlign: TextAlign.center,
++                style: tt.bodyMedium,
++              ),
++            );
++          }
++          return Column(
++            crossAxisAlignment: CrossAxisAlignment.stretch,
++            children: [
++              Text(
++                '$total comentario${total == 1 ? '' : 's'}',
++                style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
++              ),
++              Divider(color: cs.outline),
++              for (final c in comments)
++                _CommentNode(key: ValueKey(c.id), taskId: widget.taskId, comment: c),
++            ],
++          );
++        }),
++      ],
++    );
++  }
++}
++
++class _CommentNode extends StatefulWidget {
++  const _CommentNode({super.key, required this.taskId, required this.comment});
++
++  final String taskId;
++  final TaskComment comment;
++
++  @override
++  State<_CommentNode> createState() => _CommentNodeState();
++}
++
++class _CommentNodeState extends State<_CommentNode> {
++  bool _collapsed = false;
++  bool _replying = false;
++  final _reply = TextEditingController();
++
++  @override
++  void dispose() {
++    _reply.dispose();
++    super.dispose();
++  }
++
++  void _sendReply() {
++    final text = _reply.text.trim();
++    if (text.isEmpty) return;
++    Get.find<ProjectManagementController>().addComment(
++      widget.taskId,
++      text,
++      parentId: widget.comment.id,
++    );
++    _reply.clear();
++    setState(() => _replying = false);
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++    final c = widget.comment;
++
++    final upColor = c.userVote == 1 ? cs.primary : cs.onSurfaceVariant;
++    final downColor = c.userVote == -1 ? cs.tertiary : cs.onSurfaceVariant;
++
++    return Padding(
++      padding: const EdgeInsets.only(top: 10),
++      child: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          // Encabezado: tocarlo colapsa o expande el hilo.
++          InkWell(
++            onTap: () => setState(() => _collapsed = !_collapsed),
++            child: Row(
++              children: [
++                CircleAvatar(
++                  radius: 11,
++                  backgroundColor: cs.tertiaryContainer,
++                  child: Text(
++                    c.author.isEmpty ? '?' : c.author[0].toUpperCase(),
++                    style: TextStyle(fontSize: 11, color: cs.onTertiaryContainer),
++                  ),
++                ),
++                const SizedBox(width: 8),
++                Flexible(
++                  child: Text(
++                    c.author,
++                    overflow: TextOverflow.ellipsis,
++                    style: tt.labelLarge?.copyWith(fontWeight: FontWeight.bold),
++                  ),
++                ),
++                Text(
++                  ' · ${_timeAgo(c.createdAt)}',
++                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
++                ),
++                if (_collapsed)
++                  Text(
++                    ' · ${c.threadSize} ${c.threadSize == 1 ? 'comentario' : 'comentarios'}',
++                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
++                  ),
++                const Spacer(),
++                Icon(
++                  _collapsed ? Icons.unfold_more : Icons.unfold_less,
++                  size: 16,
++                  color: cs.onSurfaceVariant,
++                ),
++              ],
++            ),
++          ),
++          if (!_collapsed)
++            Container(
++              margin: const EdgeInsets.only(left: 10, top: 4),
++              padding: const EdgeInsets.only(left: 12),
++              decoration: BoxDecoration(
++                border: Border(left: BorderSide(color: cs.outline.withValues(alpha: 0.6), width: 2)),
++              ),
++              child: Column(
++                crossAxisAlignment: CrossAxisAlignment.start,
++                children: [
++                  Text(c.body, style: tt.bodyMedium),
++                  const SizedBox(height: 4),
++                  Row(
++                    children: [
++                      IconButton(
++                        visualDensity: VisualDensity.compact,
++                        tooltip: 'A favor',
++                        icon: Icon(Icons.arrow_upward, size: 18, color: upColor),
++                        onPressed: () => controller.voteComment(widget.taskId, c.id, 1),
++                      ),
++                      Text(
++                        '${c.score}',
++                        style: tt.labelLarge?.copyWith(
++                          fontWeight: FontWeight.bold,
++                          color: c.userVote == 1
++                              ? cs.primary
++                              : c.userVote == -1
++                              ? cs.tertiary
++                              : null,
++                        ),
++                      ),
++                      IconButton(
++                        visualDensity: VisualDensity.compact,
++                        tooltip: 'En contra',
++                        icon: Icon(Icons.arrow_downward, size: 18, color: downColor),
++                        onPressed: () => controller.voteComment(widget.taskId, c.id, -1),
++                      ),
++                      TextButton.icon(
++                        onPressed: () => setState(() => _replying = !_replying),
++                        icon: const Icon(Icons.chat_bubble_outline, size: 16),
++                        label: const Text('Responder'),
++                      ),
++                    ],
++                  ),
++                  if (_replying)
++                    Padding(
++                      padding: const EdgeInsets.only(bottom: 6),
++                      child: Column(
++                        crossAxisAlignment: CrossAxisAlignment.stretch,
++                        children: [
++                          TextField(
++                            controller: _reply,
++                            autofocus: true,
++                            minLines: 1,
++                            maxLines: 4,
++                            decoration: InputDecoration(
++                              hintText: 'Responder a ${c.author}...',
++                              isDense: true,
++                              filled: true,
++                              fillColor: cs.surface,
++                              border: OutlineInputBorder(
++                                borderRadius: BorderRadius.zero,
++                                borderSide: BorderSide(color: cs.outline),
++                              ),
++                            ),
++                          ),
++                          Row(
++                            mainAxisAlignment: MainAxisAlignment.end,
++                            children: [
++                              TextButton(
++                                onPressed: () => setState(() => _replying = false),
++                                child: const Text('Cancelar'),
++                              ),
++                              FilledButton(
++                                style: FilledButton.styleFrom(
++                                  shape: const RoundedRectangleBorder(
++                                    borderRadius: BorderRadius.zero,
++                                  ),
++                                ),
++                                onPressed: _sendReply,
++                                child: const Text('Responder'),
++                              ),
++                            ],
++                          ),
++                        ],
++                      ),
++                    ),
++                  for (final reply in c.replies)
++                    _CommentNode(key: ValueKey(reply.id), taskId: widget.taskId, comment: reply),
++                ],
++              ),
++            ),
++        ],
++      ),
++    );
++  }
++}
++
++String _timeAgo(DateTime date) {
++  final diff = DateTime.now().difference(date);
++  if (diff.inMinutes < 1) return 'ahora';
++  if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
++  if (diff.inHours < 24) return 'hace ${diff.inHours} h';
++  return 'hace ${diff.inDays} d';
++}
+diff -ruN a/app/lib/features/projects/ui/widgets/management/task_progress_panel.dart b/app/lib/features/projects/ui/widgets/management/task_progress_panel.dart
+--- a/app/lib/features/projects/ui/widgets/management/task_progress_panel.dart	1970-01-01 00:00:00.000000000 +0000
++++ b/app/lib/features/projects/ui/widgets/management/task_progress_panel.dart	2026-10-11 03:22:49.761057857 +0000
+@@ -0,0 +1,139 @@
++import 'package:flutter/material.dart';
++import 'package:get/get.dart';
++
++import 'package:imker/core/widgets/segmented_tab_switch.dart';
++import 'package:imker/features/projects/domain/models/project_task.dart';
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
++import 'checklist_editor.dart';
++import 'management_panel_frame.dart';
++import 'task_comments_view.dart';
++
++/// Panel "Progreso de tarea": descripción + checklist, y comentarios.
++///
++/// Recuerda la última tarea abierta para poder seguir dibujándola mientras el
++/// panel se desliza hacia afuera, cuando [ProjectManagementController.selectedTaskId]
++/// ya volvió a null.
++class TaskProgressPanel extends StatefulWidget {
++  const TaskProgressPanel({super.key});
++
++  @override
++  State<TaskProgressPanel> createState() => _TaskProgressPanelState();
++}
++
++class _TaskProgressPanelState extends State<TaskProgressPanel> {
++  String? _lastTaskId;
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++
++    return Obx(() {
++      final current = controller.selectedTaskId.value;
++      if (current != null) _lastTaskId = current;
++      final task = controller.taskById(_lastTaskId);
++      if (task == null) return const SizedBox.shrink();
++      // La clave reinicia el borrador al abrir otra tarea.
++      return _TaskProgressContent(key: ValueKey(task.id), taskId: task.id);
++    });
++  }
++}
++
++class _TaskProgressContent extends StatefulWidget {
++  const _TaskProgressContent({super.key, required this.taskId});
++
++  final String taskId;
++
++  @override
++  State<_TaskProgressContent> createState() => _TaskProgressContentState();
++}
++
++class _TaskProgressContentState extends State<_TaskProgressContent> {
++  final _description = TextEditingController();
++  late List<ChecklistEntry> _items;
++  int _tab = 0; // 0: Descripción, 1: Comentarios
++
++  @override
++  void initState() {
++    super.initState();
++    final task = Get.find<ProjectManagementController>().taskById(widget.taskId)!;
++    _description.text = task.description;
++    _items = [for (final s in task.subtasks) ChecklistEntry(s.title, checked: s.done)];
++  }
++
++  @override
++  void dispose() {
++    _description.dispose();
++    super.dispose();
++  }
++
++  void _save() {
++    final controller = Get.find<ProjectManagementController>();
++    controller.saveTask(
++      widget.taskId,
++      description: _description.text.trim(),
++      subtasks: [for (final e in _items) Subtask(title: e.label, done: e.checked)],
++    );
++    final done = controller.taskById(widget.taskId)?.status == TaskStatus.done;
++    Get.snackbar(
++      'Tarea guardada',
++      done ? 'Completaste todas las subtareas: la tarea pasó a "Terminadas".' : 'Tus cambios se guardaron.',
++      snackPosition: SnackPosition.BOTTOM,
++    );
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final controller = Get.find<ProjectManagementController>();
++    final cs = Theme.of(context).colorScheme;
++    final tt = Theme.of(context).textTheme;
++    final task = controller.taskById(widget.taskId)!;
++
++    return ManagementPanelFrame(
++      title: 'Progreso de tarea',
++      onBack: controller.showCabinet,
++      tabs: SegmentedTabSwitch(
++        tabs: const ['Descripción', 'Comentarios'],
++        selectedIndex: _tab,
++        onTabSelected: (i) => setState(() => _tab = i),
++      ),
++      body: _tab == 0
++          ? Column(
++              crossAxisAlignment: CrossAxisAlignment.stretch,
++              children: [
++                Text(task.title, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
++                Divider(color: cs.outline),
++                const SizedBox(height: 8),
++                Text('Descripción', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
++                const SizedBox(height: 6),
++                TextField(
++                  controller: _description,
++                  minLines: 3,
++                  maxLines: 6,
++                  decoration: InputDecoration(
++                    filled: true,
++                    fillColor: cs.surface,
++                    border: OutlineInputBorder(
++                      borderRadius: BorderRadius.zero,
++                      borderSide: BorderSide(color: cs.outline),
++                    ),
++                  ),
++                ),
++                const SizedBox(height: 16),
++                Text(
++                  'Checklist de progreso',
++                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
++                ),
++                const SizedBox(height: 6),
++                ChecklistEditor(
++                  initial: _items,
++                  hint: 'Escribe una subtarea',
++                  addedChecked: false,
++                  onChanged: (v) => _items = List.of(v),
++                ),
++              ],
++            )
++          : TaskCommentsView(taskId: widget.taskId),
++      bottom: _tab == 0 ? PanelButton(label: 'Guardar', onPressed: _save) : null,
++    );
++  }
++}
+diff -ruN a/app/lib/routes/app_pages.dart b/app/lib/routes/app_pages.dart
+--- a/app/lib/routes/app_pages.dart	2026-10-09 21:44:10.414982529 +0000
++++ b/app/lib/routes/app_pages.dart	2026-10-11 03:22:49.761109762 +0000
+@@ -9,6 +9,7 @@
+ import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
+ import 'package:imker/features/profile/profile_dependencies.dart';
+ import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
++import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
+ import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+ import 'package:imker/routes/app_routes.dart';
+ 
+@@ -35,6 +36,7 @@
+   void dependencies() {
+     Get.lazyPut(() => HomeViewModel(), fenix: true);
+     Get.lazyPut(() => UserProjectsController(), fenix: true);
++    Get.lazyPut(() => ProjectManagementController(), fenix: true);
+     registerDiscover();
+     registerProfile();
+   }
+diff -ruN a/app/test/features/discover/discover_controller_test.dart b/app/test/features/discover/discover_controller_test.dart
+--- a/app/test/features/discover/discover_controller_test.dart	2026-10-11 03:22:49.757414130 +0000
++++ b/app/test/features/discover/discover_controller_test.dart	2026-10-11 03:22:49.762607962 +0000
+@@ -31,6 +31,17 @@
+   }) async {
+     throw const ProjectFailure('Error de prueba');
+   }
++
++  @override
++  Future<void> updateProject({
++    required String id,
++    required String title,
++    required String description,
++    required List<String> jobs,
++    required List<String> skills,
++  }) async {
++    throw const ProjectFailure('Error de prueba');
++  }
+ }
+ 
+ 
+diff -ruN a/app/test/features/projects/project_repository_test.dart b/app/test/features/projects/project_repository_test.dart
+--- a/app/test/features/projects/project_repository_test.dart	2026-10-11 03:22:49.757444440 +0000
++++ b/app/test/features/projects/project_repository_test.dart	2026-10-11 03:22:49.762637927 +0000
+@@ -22,6 +22,9 @@
+   @override
+   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
+       throw exception;
++
++  @override
++  Future<void> updateProject(String id, Map<String, dynamic> changes) async => throw exception;
+ }
+ 
+ class _SingleProjectDataSource implements IProjectDataSource {
+@@ -40,6 +43,9 @@
+   @override
+   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
+       {'_id': 'created-id', '_owner': 'test-owner', ...projectData};
++
++  @override
++  Future<void> updateProject(String id, Map<String, dynamic> changes) async {}
+ }
+ 
+ 

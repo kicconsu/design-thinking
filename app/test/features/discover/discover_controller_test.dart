@@ -31,6 +31,17 @@ class _MockFailingRepository implements IProjectRepository {
   }) async {
     throw const ProjectFailure('Error de prueba');
   }
+
+  @override
+  Future<void> updateProject({
+    required String id,
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+  }) async {
+    throw const ProjectFailure('Error de prueba');
+  }
 }
 
 

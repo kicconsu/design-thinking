@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'score_gauge.dart';
+
 /// Sección de "Indicadores de confianza": el índice general de compromiso
 /// más los tres medidores circulares (entrega a tiempo, tasa de respuesta,
 /// proyectos completados).
@@ -58,60 +60,12 @@ class TrustIndicators extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _ScoreGauge(label: 'Entrega a tiempo', value: onTimeScore, cs: cs, tt: tt),
-            _ScoreGauge(label: 'Tasa de respuesta', value: responseRateScore, cs: cs, tt: tt),
-            _ScoreGauge(
-              label: 'Proyectos completados',
-              value: completedProjectsScore,
-              cs: cs,
-              tt: tt,
-            ),
+            ScoreGauge(label: 'Entrega a tiempo', value: onTimeScore),
+            ScoreGauge(label: 'Tasa de respuesta', value: responseRateScore),
+            ScoreGauge(label: 'Proyectos completados', value: completedProjectsScore),
           ],
         ),
       ],
-    );
-  }
-}
-
-class _ScoreGauge extends StatelessWidget {
-  final String label;
-  final int value;
-  final ColorScheme cs;
-  final TextTheme tt;
-
-  const _ScoreGauge({
-    required this.label,
-    required this.value,
-    required this.cs,
-    required this.tt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 90,
-      child: Column(
-        children: [
-          SizedBox(
-            width: 64,
-            height: 64,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: value / 100,
-                  strokeWidth: 6,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  color: cs.primary,
-                ),
-                Text('$value%', style: tt.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(label, textAlign: TextAlign.center, style: tt.bodySmall),
-        ],
-      ),
     );
   }
 }

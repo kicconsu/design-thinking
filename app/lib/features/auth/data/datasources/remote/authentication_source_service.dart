@@ -224,12 +224,7 @@ class AuthenticationSourceService
         }
       }
 
-      final primaryId =
-          (profile['user_id'] ??
-                  profile['_owner'] ??
-                  profile['id'] ??
-                  profile['_id'])
-              ?.toString();
+      final primaryId = profile['user_id'];
       _client.currentUserId = primaryId;
       _client.currentUserEmail = profile['email']?.toString();
     } catch (_) {}

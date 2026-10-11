@@ -32,5 +32,12 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     _data.projects.add(row);
     return row;
   }
+
+  @override
+  Future<void> updateProject(String id, Map<String, dynamic> changes) async {
+    final index = _data.projects.indexWhere((r) => r['_id'] == id);
+    if (index == -1) return;
+    _data.projects[index] = {..._data.projects[index], ...changes};
+  }
 }
 

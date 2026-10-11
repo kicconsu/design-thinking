@@ -52,6 +52,24 @@ class ProjectRepository implements IProjectRepository {
     return _toProject(resultRow);
   }
 
+  @override
+  Future<void> updateProject({
+    required String id,
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+  }) async {
+    // Mismas convenciones que en createProject: listas envueltas en {"values": [...]}.
+    final changes = <String, dynamic>{
+      'title': title,
+      'description': description,
+      'jobs': {'values': jobs},
+      'skills': {'values': skills},
+    };
+    await _guard(() => _source.updateProject(id, changes));
+  }
+
 
   // ─── Traducción de errores ────────────────────────────────────────────────
   // Las excepciones se atrapan de más específica a más general; si no se

@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/projects/ui/pages/co_created_projects_page.dart';
 import 'package:imker/features/projects/ui/pages/other_projects_page.dart';
+import 'package:imker/features/projects/ui/pages/project_management_view.dart';
+import 'package:imker/features/projects/ui/viewmodels/project_management_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/projects_guest_gate.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
@@ -18,6 +20,7 @@ class ProjectsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Get.find<AuthenticationController>();
     final controller = Get.find<UserProjectsController>();
+    final management = Get.find<ProjectManagementController>();
     final cs = Theme.of(context).colorScheme;
 
     return ColoredBox(
@@ -26,6 +29,11 @@ class ProjectsPage extends StatelessWidget {
         child: Obx(() {
           if (auth.isAnonymous) {
             return const ProjectsGuestGate();
+          }
+
+          // Con un proyecto propio abierto, la pestaña muestra su gestión.
+          if (management.selectedProject.value != null) {
+            return const ProjectManagementView();
           }
 
           return Column(

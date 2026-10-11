@@ -22,6 +22,9 @@ class _FailingDataSource implements IProjectDataSource {
   @override
   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
       throw exception;
+
+  @override
+  Future<void> updateProject(String id, Map<String, dynamic> changes) async => throw exception;
 }
 
 class _SingleProjectDataSource implements IProjectDataSource {
@@ -40,6 +43,9 @@ class _SingleProjectDataSource implements IProjectDataSource {
   @override
   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async =>
       {'_id': 'created-id', '_owner': 'test-owner', ...projectData};
+
+  @override
+  Future<void> updateProject(String id, Map<String, dynamic> changes) async {}
 }
 
 

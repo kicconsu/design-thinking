@@ -23,7 +23,7 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
     required List<String> skills,
   }) async {
     final rows = await _client.db.read(RobleClient.profileTable);
-    final own = _findOwnRow(rows);
+    final own = await _findOwnRow(rows);
 
     final payload = {
       'description': bio,
@@ -38,7 +38,7 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
         'ProfileDataSource: updating row _id=${own['_id']} _owner=${own['_owner']} '
         'currentUserId=${_client.currentUserId}',
       );
-      await _client.db.update(RobleClient.profileTable, own['_id'].toString(), payload);
+      await _client.db.update(RobleClient.profileTable, own['_id'], payload);
       return {...own, ...payload};
     }
 
@@ -55,9 +55,10 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
     });
   }
 
-  Map<String, dynamic>? _findOwnRow(List<Map<String, dynamic>> rows) {
-    final userId = _client.currentUserId;
-    if (userId == null) {
+  Future<Map<String, dynamic>?> _findOwnRow(List<Map<String, dynamic>> rows) async {
+    final current = await _client.db.currentUser();
+      final userId = current['userId']?.toString() ?? _client.currentUserId ?? '';
+    if (userId == '') {
       loggy.warning(
         'ProfileDataSource: currentUserId es null — no se puede identificar la fila propia '
         'con certeza, usando la primera fila de ${rows.length} recibidas.',

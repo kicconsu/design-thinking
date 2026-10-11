@@ -47,5 +47,10 @@ class RobleProjectDataSource implements IProjectDataSource {
   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData) async {
     return await _client.db.create(RobleClient.projects, projectData);
   }
+
+  @override
+  Future<void> updateProject(String id, Map<String, dynamic> changes) async {
+    await _client.db.update(RobleClient.projects, id, changes);
+  }
 }
 
