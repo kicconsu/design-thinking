@@ -9,6 +9,11 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     : _data = data ?? DummyData.instance;
 
   final DummyData _data;
+
+  /// Quién "tiene la sesión" en pruebas y en modo sin backend.
+  @override
+  String currentUserId = 'demo-user';
+
   final List<Map<String, dynamic>> _joinRequests = [];
   final List<Map<String, dynamic>> _projectMembers = [];
   final List<Map<String, dynamic>> _saved = [];

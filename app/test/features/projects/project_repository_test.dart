@@ -7,6 +7,9 @@ import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:roble/roble.dart';
 
 class _FailingDataSource implements IProjectDataSource {
+  @override
+  String get currentUserId => '';
+
   _FailingDataSource(this.exception);
   final Object exception;
 
@@ -111,6 +114,9 @@ class _FailingDataSource implements IProjectDataSource {
 }
 
 class _SingleProjectDataSource implements IProjectDataSource {
+  @override
+  String get currentUserId => '';
+
   _SingleProjectDataSource(this.row);
   final Map<String, dynamic> row;
 

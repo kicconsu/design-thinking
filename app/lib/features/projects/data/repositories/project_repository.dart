@@ -68,6 +68,14 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     final missing = emails
         .where((email) => !invitees.containsKey(email))
         .toList();
+    // Quien crea el proyecto ya es su miembro `owner`: invitarse no tiene
+    // sentido. Se compara por `user_id`, no por el texto del correo.
+    final me = _source.currentUserId;
+    if (me.isNotEmpty && invitees.values.contains(me)) {
+      throw const ProjectFailure(
+        'No puedes invitarte a tu propio proyecto: ya eres su creador.',
+      );
+    }
     if (missing.isNotEmpty) {
       throw ProjectFailure(
         'No existe una cuenta para ${missing.length == 1 ? 'el correo' : 'los correos'}: '
@@ -298,7 +306,13 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     final rows = await _guard(() => _source.readInvitationsForUser(userId));
     return rows
         .map(_toInvitation)
-        .where((i) => i.isPending && i.projectId.isNotEmpty)
+        .where(
+          (i) =>
+              i.isPending &&
+              i.projectId.isNotEmpty &&
+              // Una invitación de uno mismo (anterior al bloqueo) no cuenta.
+              i.invitedBy != userId,
+        )
         .toList();
   }
 
