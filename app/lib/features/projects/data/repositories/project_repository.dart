@@ -6,6 +6,7 @@ import 'package:roble/roble.dart';
 import 'package:imker/core/data/dummy_data.dart';
 import 'package:imker/core/utils/string_list.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/domain/models/project_join_request.dart';
 
 import '../../domain/project_failure.dart';
@@ -290,6 +291,57 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
       () => _source.deleteSaved(userId: userId, projectId: projectId),
     );
   }
+
+  // ─── Invitaciones ─────────────────────────────────────────────────────────
+  @override
+  Future<List<ProjectInvitation>> getPendingInvitations(String userId) async {
+    final rows = await _guard(() => _source.readInvitationsForUser(userId));
+    return rows
+        .map(_toInvitation)
+        .where((i) => i.isPending && i.projectId.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  Future<void> respondToInvitation({
+    required String invitationId,
+    required bool accept,
+  }) async {
+    await _guard(
+      () => _source.updateInvitationStatus(
+        invitationId: invitationId,
+        status: accept ? 'accepted' : 'declined',
+      ),
+    );
+  }
+
+  @override
+  Future<List<String>> getMemberProjectIds(String userId) async {
+    final rows = await _guard(() => _source.readMembershipsByUser(userId));
+    return [
+      for (final r in rows)
+        if (_roleName(r['role']) != 'owner' &&
+            (r['project_id']?.toString() ?? '').isNotEmpty)
+          r['project_id'].toString(),
+    ];
+  }
+
+  String _roleName(Object? role) {
+    if (role is Map) return (role['name'] ?? '').toString();
+    return role?.toString() ?? '';
+  }
+
+  ProjectInvitation _toInvitation(Map<String, dynamic> row) =>
+      ProjectInvitation(
+        id: (row['_id'] ?? row['id'])?.toString() ?? '',
+        projectId: row['project_id']?.toString() ?? '',
+        userId: row['user_id']?.toString() ?? '',
+        email: row['email']?.toString() ?? '',
+        status: row['status']?.toString() ?? 'pending',
+        createdAt: DateTime.tryParse(row['createdAt']?.toString() ?? ''),
+        respondedAt: DateTime.tryParse(row['respondedAt']?.toString() ?? ''),
+        invitedBy: row['_owner']?.toString(),
+      );
 
   // ─── Traducción de errores ────────────────────────────────────────────────
   // Las excepciones se atrapan de más específica a más general; si no se

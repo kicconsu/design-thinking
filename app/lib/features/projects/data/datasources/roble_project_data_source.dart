@@ -506,6 +506,46 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> readInvitationsForUser(
+    String userId,
+  ) async {
+    if (!_isValidUuid(userId)) return [];
+    return _client.db.read(
+      RobleClient.projectInvitation,
+      filters: {'user_id': userId},
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateInvitationStatus({
+    required String invitationId,
+    required String status,
+  }) async {
+    final payload = <String, dynamic>{
+      'status': status,
+      'respondedAt': DateTime.now().toUtc().toIso8601String(),
+    };
+    loggy.debug('updateInvitationStatus id=$invitationId payload: $payload');
+    await _client.db.update(
+      RobleClient.projectInvitation,
+      invitationId,
+      payload,
+    );
+    return {'_id': invitationId, ...payload};
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readMembershipsByUser(
+    String userId,
+  ) async {
+    if (!_isValidUuid(userId)) return [];
+    return _client.db.read(
+      RobleClient.projectMembers,
+      filters: {'user_id': userId},
+    );
+  }
+
+  @override
   Future<void> deleteProjectCascade(String projectId) async {
     if (!_isValidUuid(projectId)) return;
 

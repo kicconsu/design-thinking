@@ -52,4 +52,16 @@ abstract class IProjectDataSource {
   /// y el proyecto. Lo usa el repositorio para deshacerlo todo si alguna
   /// invitación no se pudo enviar.
   Future<void> deleteProjectCascade(String projectId);
+
+  /// Invitaciones dirigidas a ese usuario (`project_invitation.user_id`).
+  Future<List<Map<String, dynamic>>> readInvitationsForUser(String userId);
+
+  /// Marca la invitación como `accepted` o `declined` y fija `respondedAt`.
+  Future<Map<String, dynamic>> updateInvitationStatus({
+    required String invitationId,
+    required String status,
+  });
+
+  /// Filas de `project_member` de ese usuario, en cualquier proyecto.
+  Future<List<Map<String, dynamic>>> readMembershipsByUser(String userId);
 }

@@ -1,4 +1,5 @@
 import '../models/project.dart';
+import '../models/project_invitation.dart';
 import '../models/project_join_request.dart';
 
 abstract class IProjectRepository {
@@ -51,4 +52,16 @@ abstract class IProjectRepository {
     required String userId,
     required String projectId,
   });
+
+  /// Invitaciones `pending` dirigidas a ese usuario.
+  Future<List<ProjectInvitation>> getPendingInvitations(String userId);
+
+  /// Responde una invitación: `accepted` o `declined`.
+  Future<void> respondToInvitation({
+    required String invitationId,
+    required bool accept,
+  });
+
+  /// IDs de proyectos donde ese usuario es miembro sin ser su creador.
+  Future<List<String>> getMemberProjectIds(String userId);
 }

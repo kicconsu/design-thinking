@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
+import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
@@ -20,7 +22,24 @@ class OtherProjectsPage extends StatefulWidget {
 class _OtherProjectsPageState extends State<OtherProjectsPage> {
   late final PageController _pageController;
   final UserProjectsController _controller = Get.find<UserProjectsController>();
+  final InvitationsController _invitations = Get.find<InvitationsController>();
   bool _isAnimatingPage = false;
+
+  /// Invitaciones con una respuesta en vuelo: evita el doble toque.
+  final Set<String> _responding = {};
+
+  static const _invitationsIndex = 3;
+
+  Future<void> _respond(ProjectInvitation invitation, bool accept) async {
+    if (!_responding.add(invitation.id)) return;
+    setState(() {});
+    final error = await _invitations.respond(invitation, accept: accept);
+    _responding.remove(invitation.id);
+    if (mounted) setState(() {});
+    if (error != null) {
+      Get.snackbar('Error', error, snackPosition: SnackPosition.BOTTOM);
+    }
+  }
 
   @override
   void initState() {
@@ -43,6 +62,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
       return;
     }
     _controller.otherProjectsCategoryIndex.value = index;
+    if (index == _invitationsIndex) _invitations.fetch();
     if (_pageController.hasClients) {
       _isAnimatingPage = true;
       _pageController
@@ -98,8 +118,23 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
         _controller.activeCollaborationProjects,
       );
 
-      final labels = ['Guardados', 'Pendientes', 'Activos'];
-      final counts = [saved.length, pending.length, active.length];
+      // Snapshots no reactivos de las invitaciones y de su proyecto.
+      final invitations = List<ProjectInvitation>.from(
+        _invitations.invitations,
+      );
+      final invitedProjects = <Project>[
+        for (final inv in invitations)
+          if (_invitations.projects[inv.projectId] != null)
+            _invitations.projects[inv.projectId]!,
+      ];
+
+      final labels = ['Guardados', 'Pendientes', 'Activos', 'Invitaciones'];
+      final counts = [
+        saved.length,
+        pending.length,
+        active.length,
+        invitedProjects.length,
+      ];
 
       return Column(
         children: [
@@ -203,6 +238,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
               onPageChanged: (index) {
                 if (!_isAnimatingPage) {
                   _controller.otherProjectsCategoryIndex.value = index;
+                  if (index == _invitationsIndex) _invitations.fetch();
                 }
               },
               // Los children NO tienen Obx — reciben datos planos y son widgets puros.
@@ -287,6 +323,56 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                         .onSecondaryContainer,
                     borderColor: Theme.of(context).colorScheme.outline,
                   ),
+                ),
+                _ProjectsCategoryList(
+                  key: const ValueKey('invitations'),
+                  projects: invitedProjects,
+                  emptyText:
+                      'No tienes invitaciones pendientes.\n'
+                      'Cuando alguien te invite a su proyecto, aparecerá aquí.',
+                  emptyIcon: Icons.mail_outline,
+                  buildTrailing: (project) {
+                    final invitation = invitations.firstWhere(
+                      (i) => i.projectId == project.id,
+                    );
+                    final busy = _responding.contains(invitation.id);
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        OutlinedButton(
+                          onPressed: busy
+                              ? null
+                              : () => _respond(invitation, false),
+                          style: OutlinedButton.styleFrom(
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                          ),
+                          child: const Text('Rechazar'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: busy
+                              ? null
+                              : () => _respond(invitation, true),
+                          style: FilledButton.styleFrom(
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                          ),
+                          child: const Text('Aceptar'),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
