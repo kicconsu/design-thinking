@@ -114,6 +114,10 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     required String userId,
     Map<String, dynamic>? role,
   }) async {
+    final existing = _projectMembers.where(
+      (r) => r['project_id'] == projectId && r['user_id'] == userId,
+    );
+    if (existing.isNotEmpty) return existing.first;
     final row = {
       '_id': 'member-${DateTime.now().millisecondsSinceEpoch}',
       'project_id': projectId,
