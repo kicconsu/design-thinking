@@ -8,12 +8,16 @@ import 'package:imker/features/projects/ui/widgets/project_status_label.dart';
 class ProjectTile extends StatelessWidget {
   final Project project;
   final Widget? trailing;
+
+  /// Fila propia bajo la información, para acciones que no caben en [trailing].
+  final Widget? bottom;
   final VoidCallback? onTap;
 
   const ProjectTile({
     super.key,
     required this.project,
     this.trailing,
+    this.bottom,
     this.onTap,
   });
 
@@ -70,6 +74,7 @@ class ProjectTile extends StatelessWidget {
                   ),
                 ],
               ),
+              if (bottom != null) ...[const SizedBox(height: 10), bottom!],
             ],
           ),
         ),

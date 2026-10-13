@@ -231,6 +231,15 @@ class UserProjectsController extends GetxController {
     }
   }
 
+  /// Añade un proyecto a "Activos" (p. ej. tras aceptar una invitación).
+  void addActiveProject(Project project) {
+    if (activeProjects.any((p) => p.id == project.id)) return;
+    activeProjects.removeWhere(
+      (p) => p.owner == 'demo-owner' || p.id == DummyData.solariaId,
+    );
+    activeProjects.add(project);
+  }
+
   bool isSaved(String projectId) =>
       savedProjects.any((project) => project.id == projectId);
 
@@ -312,10 +321,16 @@ class UserProjectsController extends GetxController {
 
       final repository = Get.find<IProjectRepository>();
       final requests = await repository.getJoinRequestsByUser(userId);
-      if (requests.isEmpty) return;
 
       final pendingIds = <String>{};
+      // Colaboro donde me aceptaron la solicitud y donde acepté una
+      // invitación: ambas terminan en una fila de `project_member`.
       final acceptedIds = <String>{};
+      try {
+        acceptedIds.addAll(await repository.getMemberProjectIds(userId));
+      } on ProjectFailure {
+        // Sin membresías se sigue con lo que digan las solicitudes.
+      }
 
       for (final req in requests) {
         final state = req.statusState.toLowerCase();
@@ -332,14 +347,7 @@ class UserProjectsController extends GetxController {
       for (final projectId in acceptedIds) {
         try {
           final project = await repository.getProjectById(projectId);
-          if (project != null) {
-            activeProjects.removeWhere(
-              (p) => p.owner == 'demo-owner' || p.id == DummyData.solariaId,
-            );
-            if (!activeProjects.any((p) => p.id == project.id)) {
-              activeProjects.add(project);
-            }
-          }
+          if (project != null) addActiveProject(project);
         } catch (_) {}
       }
 
