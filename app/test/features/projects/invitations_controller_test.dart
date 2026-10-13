@@ -8,6 +8,7 @@ import 'package:imker/features/projects/data/repositories/project_repository.dar
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
 /// Falla las primeras [failures] veces que se responde una invitación.
 class _FlakySource extends InMemoryProjectDataSource {
@@ -184,4 +185,19 @@ void main() {
       expect(await repository.getMemberProjectIds('ana-id'), [projectId]);
     },
   );
+
+  test('al aceptar, el proyecto entra en Activos sin recargar', () async {
+    await setUpWith(InMemoryProjectDataSource(DummyData()));
+    Get.put<IProjectRepository>(repository);
+    final projects = Get.put(UserProjectsController());
+    final controller = InvitationsController(
+      repository: repository,
+      currentUserId: () => 'ana-id',
+    );
+    await controller.fetch();
+
+    await controller.respond(controller.invitations.single, accept: true);
+
+    expect(projects.activeProjects.map((p) => p.id), contains(projectId));
+  });
 }

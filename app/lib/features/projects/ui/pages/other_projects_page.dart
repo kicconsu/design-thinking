@@ -30,6 +30,15 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
 
   static const _invitationsIndex = 3;
 
+  /// Recarga lo que muestran las cuatro secciones.
+  Future<void> _refresh() async {
+    await Future.wait([
+      _controller.fetchUserApplications(),
+      _controller.fetchSavedProjects(),
+      _invitations.fetch(),
+    ]);
+  }
+
   Future<void> _respond(ProjectInvitation invitation, bool accept) async {
     if (!_responding.add(invitation.id)) return;
     setState(() {});
@@ -245,6 +254,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
               children: [
                 _ProjectsCategoryList(
                   key: const ValueKey('saved'),
+                  onRefresh: _refresh,
                   projects: saved,
                   emptyText:
                       'No tienes proyectos guardados sin postular.\n'
@@ -292,6 +302,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                 ),
                 _ProjectsCategoryList(
                   key: const ValueKey('pending'),
+                  onRefresh: _refresh,
                   projects: pending,
                   emptyText:
                       'No tienes postulaciones pendientes de validación.\n'
@@ -309,6 +320,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                 ),
                 _ProjectsCategoryList(
                   key: const ValueKey('active'),
+                  onRefresh: _refresh,
                   projects: active,
                   emptyText:
                       'Aún no tienes colaboraciones activas.\n'
@@ -326,49 +338,53 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                 ),
                 _ProjectsCategoryList(
                   key: const ValueKey('invitations'),
+                  onRefresh: _refresh,
                   projects: invitedProjects,
                   emptyText:
                       'No tienes invitaciones pendientes.\n'
                       'Cuando alguien te invite a su proyecto, aparecerá aquí.',
                   emptyIcon: Icons.mail_outline,
-                  buildTrailing: (project) {
+                  buildBottom: (project) {
                     final invitation = invitations.firstWhere(
                       (i) => i.projectId == project.id,
                     );
                     final busy = _responding.contains(invitation.id);
                     return Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        OutlinedButton(
-                          onPressed: busy
-                              ? null
-                              : () => _respond(invitation, false),
-                          style: OutlinedButton.styleFrom(
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: busy
+                                ? null
+                                : () => _respond(invitation, false),
+                            style: OutlinedButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            child: const Text('Rechazar'),
                           ),
-                          child: const Text('Rechazar'),
                         ),
                         const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: busy
-                              ? null
-                              : () => _respond(invitation, true),
-                          style: FilledButton.styleFrom(
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: busy
+                                ? null
+                                : () => _respond(invitation, true),
+                            style: FilledButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            child: const Text('Aceptar'),
                           ),
-                          child: const Text('Aceptar'),
                         ),
                       ],
                     );
@@ -391,14 +407,18 @@ class _ProjectsCategoryList extends StatelessWidget {
   final List<Project> projects;
   final String emptyText;
   final IconData emptyIcon;
-  final Widget Function(Project project) buildTrailing;
+  final Widget Function(Project project)? buildTrailing;
+  final Widget Function(Project project)? buildBottom;
+  final Future<void> Function() onRefresh;
 
   const _ProjectsCategoryList({
     super.key,
     required this.projects,
     required this.emptyText,
     required this.emptyIcon,
-    required this.buildTrailing,
+    required this.onRefresh,
+    this.buildTrailing,
+    this.buildBottom,
   });
 
   @override
@@ -406,41 +426,43 @@ class _ProjectsCategoryList extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    if (projects.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                emptyIcon,
-                size: 56,
-                color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                emptyText,
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: projects.length,
-      itemBuilder: (context, index) {
-        final project = projects[index];
-        return ProjectTile(
-          project: project,
-          onTap: () => Get.to(() => ProjectDetailPage(project: project)),
-          trailing: buildTrailing(project),
-        );
-      },
+    // Siempre desplazable, también vacía: es lo que permite recargar.
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: projects.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(32),
+              children: [
+                const SizedBox(height: 48),
+                Icon(
+                  emptyIcon,
+                  size: 56,
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  emptyText,
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            )
+          : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: projects.length,
+              itemBuilder: (context, index) {
+                final project = projects[index];
+                return ProjectTile(
+                  project: project,
+                  onTap: () =>
+                      Get.to(() => ProjectDetailPage(project: project)),
+                  trailing: buildTrailing?.call(project),
+                  bottom: buildBottom?.call(project),
+                );
+              },
+            ),
     );
   }
 }
