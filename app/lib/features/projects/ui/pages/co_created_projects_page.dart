@@ -4,6 +4,7 @@ import 'package:imker/features/projects/ui/views/requests_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
 
@@ -15,6 +16,7 @@ class CoCreatedProjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<UserProjectsController>();
+    final requests = Get.find<CollaborationRequestsController>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -119,7 +121,7 @@ class CoCreatedProjectsPage extends StatelessWidget {
               (project) => ProjectTile(
                 project: project,
                 trailing: RequestsButton(
-                  count: controller.pendingApplicantsCount(project.id),
+                  count: requests.pendingCount(project.id),
                   onTap: () =>
                       Get.to(() => CollaborationRequestsPage(project: project)),
                   cs: cs,

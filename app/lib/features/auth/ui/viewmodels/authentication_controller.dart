@@ -32,6 +32,7 @@ class AuthenticationController extends GetxController with UiLoggy {
   bool get isAnonymous => _isAnonymous.value;
   String get loggedEmail => _loggedUser.value?.email ?? '';
   String get loggedName => _loggedUser.value?.name ?? '';
+  String get loggedUserId => _loggedUser.value?.id ?? '';
 
   @override
   void onInit() {

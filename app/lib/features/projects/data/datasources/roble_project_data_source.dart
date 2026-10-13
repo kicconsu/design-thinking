@@ -282,17 +282,13 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
 
   @override
   Future<Map<String, dynamic>?> readUserProfile(String userId) async {
-    try {
-      final rows = await _client.readPublicOrPrivate(RobleClient.profileTable);
-      for (final r in rows) {
-        if (r['_owner']?.toString() == userId ||
-            r['_id']?.toString() == userId ||
-            r['user_id']?.toString() == userId) {
-          return r;
-        }
-      }
-    } catch (_) {}
-    return null;
+    if (userId.isEmpty) return null;
+    final rows = await _client.readPublicOrPrivate(
+      RobleClient.profileTable,
+      filters: {'_owner': userId},
+    );
+    // Nunca se devuelve "la primera fila": solo la que es de esa persona.
+    return rows.where((r) => r['_owner']?.toString() == userId).firstOrNull;
   }
 
   @override

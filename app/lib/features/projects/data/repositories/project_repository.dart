@@ -345,6 +345,8 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
         String displayName;
         if (roleName == 'owner' || roleName == 'creador') {
           displayName = 'Creador del proyecto';
+        } else if (roleName == 'member' || roleName == 'collaborator') {
+          displayName = 'Colaborador';
         } else if (roleName.isNotEmpty) {
           displayName = 'Colaborador ($roleName)';
         } else {

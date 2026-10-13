@@ -3,12 +3,11 @@ import 'package:get/get.dart';
 import 'package:imker/core/roble/roble_client.dart';
 import 'package:imker/core/roble/roble_config.dart';
 import 'package:imker/core/data/dummy_data.dart';
-import 'package:imker/core/utils/string_list.dart';
 
 import '../../domain/models/project.dart';
-import '../../domain/models/applicant.dart';
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
+import 'collaboration_requests_controller.dart';
 
 /// Mantiene el estado de los proyectos del usuario: los que co-crea,
 /// los guardados, las postulaciones pendientes y las colaboraciones activas.
@@ -29,7 +28,6 @@ class UserProjectsController extends GetxController {
 
   // Subcategoría actual de "Otros proyectos" (0: Guardados, 1: Pendientes, 2: Activos)
   final RxInt otherProjectsCategoryIndex = 0.obs;
-  final RxList<Applicant> applicants = <Applicant>[].obs;
 
   @override
   void onInit() {
@@ -38,7 +36,6 @@ class UserProjectsController extends GetxController {
     fetchUserApplications();
     fetchSavedProjects();
     _seedActiveCollaborationDemo();
-    _seedApplicantsDemo();
   }
 
   /// ¿Hay dónde persistir los guardados? Sin contrato (modo mock) se guarda
@@ -122,7 +119,11 @@ class UserProjectsController extends GetxController {
         final combined = [...localOnly, ...ownerMatched];
         if (combined.isNotEmpty) {
           coCreatedProjects.assignAll(combined);
-          await fetchJoinRequestsForCoCreatedProjects();
+          if (Get.isRegistered<CollaborationRequestsController>()) {
+            await Get.find<CollaborationRequestsController>().fetchForProjects(
+              combined.map((p) => p.id),
+            );
+          }
           return;
         }
       }
@@ -213,195 +214,20 @@ class UserProjectsController extends GetxController {
   // Proyectos donde el usuario ya trabaja activamente
   List<Project> get activeCollaborationProjects => activeProjects;
 
-  // Placeholder mientras no exista el flujo real de postulación con backend.
-  void _seedApplicantsDemo() {
-    applicants.add(
-      const Applicant(
-        id: 'valentina-rios',
-        projectId: DummyData.kircheId,
-        name: 'Valentina Ríos',
-        academicInfo: 'Ingeniería de Sistemas - Universidad de la Costa',
-        requestedRole: 'Analista de datos',
-        appliedAgo: 'hace 5h',
-        commonProjects: 1,
-        commitmentScore: 83,
-        onTimeScore: 83,
-        responseRateScore: 83,
-        completedProjectsScore: 83,
-        bio: 'Especializada en análisis y minería de datos. Me gustan los proyectos con impacto real. He contribuido a dos startups universitarias como consultora.',
-        skills: ['Python', 'Jupyter', 'PowerBI', 'SQL', 'R'],
-        experience: [
-          ApplicantProjectExperience(
-            title: 'EcoMobility',
-            status: 'Completado',
-            description: 'Rediseñé la experiencia de usuario para una app de carpooling en Bogotá. Entregamos a tiempo y logramos un NPS de 72.',
-            peerEvaluation: 4.2,
-          ),
-          ApplicantProjectExperience(
-            title: 'Mercado Vivo',
-            status: 'Incompleto',
-            description: 'Proyecto interdisciplinario con estudiantes de Administración y Comunicación. Diseñé el sistema de identidad visual y los flujos de la plataforma.',
-            peerEvaluation: 4.5,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Carga las solicitudes de colaboración desde Roble DB para un proyecto específico.
-  Future<void> fetchJoinRequestsForProject(String projectId) async {
+  /// Vuelve a leer un proyecto (p. ej. tras aceptar a alguien) y actualiza
+  /// las listas donde aparece.
+  Future<void> refreshProject(String projectId) async {
     try {
-      final repository = Get.find<IProjectRepository>();
-      final requests = await repository.getJoinRequestsForProject(projectId);
-
-      for (final req in requests) {
-        // Solo mostrar solicitudes en estado 'pending'
-        if (req.statusState.toLowerCase() != 'pending') {
-          applicants.removeWhere((a) => a.id == req.id);
-          continue;
-        }
-
-        // Cargar perfil del aspirante
-        Map<String, dynamic>? profile;
-        if (req.userId.isNotEmpty) {
-          try {
-            profile = await repository.getUserProfile(req.userId);
-          } catch (_) {}
-        }
-
-        final applicantName =
-            (profile?['name'] as String?)?.trim().isNotEmpty == true
-            ? profile!['name'].toString().trim()
-            : (req.userId.length > 8
-                  ? 'Usuario ${req.userId.substring(0, 8)}'
-                  : 'Aspirante');
-
-        final bio =
-            (profile?['description'] as String?)?.trim().isNotEmpty == true
-            ? profile!['description'].toString().trim()
-            : 'Interesado en participar y colaborar activamente en este proyecto.';
-
-        final skills = decodeStringList(profile?['skills']);
-
-        final newApplicant = Applicant(
-          id: req.id,
-          projectId: req.projectId,
-          userId: req.userId,
-          name: applicantName,
-          academicInfo: 'Estudiante / Colaborador',
-          requestedRole: 'Colaborador',
-          appliedAgo: _formatAgo(req.createdAt),
-          commonProjects: 1,
-          commitmentScore: 85,
-          onTimeScore: 85,
-          responseRateScore: 85,
-          completedProjectsScore: 85,
-          bio: bio,
-          skills: skills.isNotEmpty
-              ? skills
-              : ['Trabajo en equipo', 'Compromiso'],
-          experience: const [],
-          statusState: req.statusState,
-        );
-
-        final existingIdx = applicants.indexWhere((a) => a.id == req.id);
-        if (existingIdx != -1) {
-          applicants[existingIdx] = newApplicant;
-        } else {
-          applicants.add(newApplicant);
-        }
-      }
-    } catch (_) {}
-  }
-
-  /// Carga las solicitudes de colaboración para todos los proyectos co-creados.
-  Future<void> fetchJoinRequestsForCoCreatedProjects() async {
-    for (final p in coCreatedProjects) {
-      await fetchJoinRequestsForProject(p.id);
-    }
-  }
-
-  String _formatAgo(DateTime? date) {
-    if (date == null) return 'Recientemente';
-    final diff = DateTime.now().difference(date);
-    if (diff.inMinutes < 1) return 'hace un momento';
-    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes}m';
-    if (diff.inHours < 24) return 'hace ${diff.inHours}h';
-    return 'hace ${diff.inDays}d';
-  }
-
-  List<Applicant> applicantsFor(String projectId) =>
-      applicants.where((a) => a.projectId == projectId).toList();
-
-  int pendingApplicantsCount(String projectId) =>
-      applicantsFor(projectId).length;
-
-  /// Acepta o rechaza la solicitud de un aspirante conectando con Roble DB (tabla `project_join_request`).
-  /// Si es aceptada, inserta además la fila correspondiente en `project_member`.
-  Future<bool> decideOnApplicant(
-    Applicant applicant, {
-    required bool accepted,
-  }) async {
-    try {
-      final repository = Get.find<IProjectRepository>();
-      final client = Get.isRegistered<RobleClient>()
-          ? Get.find<RobleClient>()
-          : null;
-      final reviewerId = client?.currentUserId ?? '';
-      final newStatus = accepted ? 'accepted' : 'rejected';
-
-      await repository.updateJoinRequestStatus(
-        requestId: applicant.id,
-        status: newStatus,
-        reviewedBy: reviewerId,
+      final fresh = await Get.find<IProjectRepository>().getProjectById(
+        projectId,
       );
-
-      if (accepted) {
-        try {
-          await repository.addProjectMember(
-            projectId: applicant.projectId,
-            userId: applicant.userId,
-            role: {
-              'name': applicant.requestedRole.isNotEmpty
-                  ? applicant.requestedRole
-                  : 'collaborator',
-            },
-          );
-        } catch (_) {}
-
-        final newMemberLabel = applicant.name.trim().isNotEmpty
-            ? '${applicant.name.trim()} (${applicant.requestedRole})'
-            : 'Colaborador (${applicant.requestedRole})';
-
-        final idxCo = coCreatedProjects.indexWhere(
-          (p) => p.id == applicant.projectId,
-        );
-        if (idxCo != -1) {
-          final p = coCreatedProjects[idxCo];
-          coCreatedProjects[idxCo] = p.copyWith(
-            members: [...p.members, newMemberLabel],
-          );
-        }
-        final idxAct = activeProjects.indexWhere(
-          (p) => p.id == applicant.projectId,
-        );
-        if (idxAct != -1) {
-          final p = activeProjects[idxAct];
-          activeProjects[idxAct] = p.copyWith(
-            members: [...p.members, newMemberLabel],
-          );
-        }
+      if (fresh == null) return;
+      for (final list in [coCreatedProjects, activeProjects]) {
+        final i = list.indexWhere((p) => p.id == projectId);
+        if (i != -1) list[i] = fresh;
       }
-
-      applicants.removeWhere((a) => a.id == applicant.id);
-      return true;
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        e is ProjectFailure ? e.message : 'No se pudo actualizar la solicitud.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
+    } on ProjectFailure {
+      // Se conserva lo que ya estuviera en pantalla.
     }
   }
 

@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
-import '../viewmodels/user_projects_controller.dart';
+import '../viewmodels/collaboration_requests_controller.dart';
 import 'applicant_detail_page.dart';
 
 /// Pantalla "Requests" del flujo de Figma: lista las solicitudes de
@@ -14,20 +14,21 @@ class CollaborationRequestsPage extends StatefulWidget {
   const CollaborationRequestsPage({super.key, required this.project});
 
   @override
-  State<CollaborationRequestsPage> createState() => _CollaborationRequestsPageState();
+  State<CollaborationRequestsPage> createState() =>
+      _CollaborationRequestsPageState();
 }
 
 class _CollaborationRequestsPageState extends State<CollaborationRequestsPage> {
   @override
   void initState() {
     super.initState();
-    final controller = Get.find<UserProjectsController>();
-    controller.fetchJoinRequestsForProject(widget.project.id);
+    final controller = Get.find<CollaborationRequestsController>();
+    controller.fetchForProject(widget.project.id);
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<UserProjectsController>();
+    final controller = Get.find<CollaborationRequestsController>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -41,7 +42,7 @@ class _CollaborationRequestsPageState extends State<CollaborationRequestsPage> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => controller.fetchJoinRequestsForProject(widget.project.id),
+          onRefresh: () => controller.fetchForProject(widget.project.id),
           child: Obx(() {
             final applicants = controller.applicantsFor(widget.project.id);
             return ListView(
@@ -49,13 +50,12 @@ class _CollaborationRequestsPageState extends State<CollaborationRequestsPage> {
               children: [
                 Text(
                   'Solicitudes de colaboración',
-                  style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: tt.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  widget.project.title,
-                  style: tt.titleMedium,
-                ),
+                Text(widget.project.title, style: tt.titleMedium),
                 Text(
                   'Revisa cada perfil antes de decidir',
                   style: tt.bodySmall,
@@ -122,7 +122,9 @@ class _ApplicantTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     applicant.name,
-                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Text(applicant.appliedAgo, style: tt.bodySmall),
@@ -146,30 +148,34 @@ class _ApplicantTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${applicant.commonProjects} en común',
-                  style: tt.bodySmall,
-                ),
+                if (applicant.commonProjects > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '${applicant.commonProjects} en común',
+                    style: tt.bodySmall,
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              child: LinearProgressIndicator(
-                value: applicant.commitmentScore / 100,
-                minHeight: 8,
-                backgroundColor: cs.surfaceContainerHighest,
-                color: cs.primary,
+            if (applicant.commitmentScore > 0) ...[
+              const SizedBox(height: 10),
+              ClipRRect(
+                child: LinearProgressIndicator(
+                  value: applicant.commitmentScore / 100,
+                  minHeight: 8,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  color: cs.primary,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'Compromiso ${applicant.commitmentScore}%',
-                style: tt.bodySmall,
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Compromiso ${applicant.commitmentScore}%',
+                  style: tt.bodySmall,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
