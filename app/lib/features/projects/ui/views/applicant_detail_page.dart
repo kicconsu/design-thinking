@@ -3,9 +3,10 @@ import 'package:get/get.dart';
 
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/core/widgets/trust_indicators.dart';
+
 import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
-import '../viewmodels/user_projects_controller.dart';
+import '../viewmodels/collaboration_requests_controller.dart';
 import 'request_decision_result_page.dart';
 
 /// Pantallas "Requests-Profile" / "Requests-Profile-Projects" del flujo de
@@ -33,12 +34,15 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     try {
-      final success = await Get.find<UserProjectsController>().decideOnApplicant(
+      final error = await Get.find<CollaborationRequestsController>().decide(
         widget.applicant,
+        project: widget.project,
         accepted: accepted,
       );
-      if (success) {
+      if (error == null) {
         Get.to(() => RequestDecisionResultPage(accepted: accepted));
+      } else {
+        Get.snackbar('Error', error, snackPosition: SnackPosition.BOTTOM);
       }
     } finally {
       if (mounted) {
@@ -127,20 +131,21 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.people_outline,
-                        size: 16,
-                        color: cs.onPrimaryContainer,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${applicant.commonProjects} colaborador${applicant.commonProjects == 1 ? '' : 'es'} en común contigo',
-                        style: tt.bodySmall,
-                      ),
-                    ],
-                  ),
+                  if (applicant.commonProjects > 0)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.people_outline,
+                          size: 16,
+                          color: cs.onPrimaryContainer,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${applicant.commonProjects} colaborador${applicant.commonProjects == 1 ? '' : 'es'} en común contigo',
+                          style: tt.bodySmall,
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 16),
                   SegmentedTabSwitch(
                     tabs: [
@@ -226,13 +231,15 @@ class _GeneralProfileTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TrustIndicators(
-          commitmentScore: applicant.commitmentScore,
-          onTimeScore: applicant.onTimeScore,
-          responseRateScore: applicant.responseRateScore,
-          completedProjectsScore: applicant.completedProjectsScore,
-        ),
-        const SizedBox(height: 24),
+        if (applicant.commitmentScore > 0) ...[
+          TrustIndicators(
+            commitmentScore: applicant.commitmentScore,
+            onTimeScore: applicant.onTimeScore,
+            responseRateScore: applicant.responseRateScore,
+            completedProjectsScore: applicant.completedProjectsScore,
+          ),
+          const SizedBox(height: 24),
+        ],
         Text(
           'Sobre esta persona',
           style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -301,6 +308,8 @@ class _ProjectsTab extends StatelessWidget {
           style: tt.bodySmall,
         ),
         const SizedBox(height: 16),
+        if (applicant.experience.isEmpty)
+          Text('Aún no hay proyectos registrados.', style: tt.bodyMedium),
         ...applicant.experience.map(
           (exp) => Container(
             margin: const EdgeInsets.only(bottom: 12),

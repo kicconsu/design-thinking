@@ -308,7 +308,7 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
         throw const ProjectFailure('No tienes permiso para ver esto.');
       }
       if (e.statusCode == 404) {
-        throw const ProjectFailure('No se encontró el proyecto.');
+        throw const ProjectFailure('No se encontró el registro.');
       }
       // Para 400 y otros, mostrar el mensaje real del servidor para facilitar diagnóstico.
       final msg = e.message.isNotEmpty
@@ -345,6 +345,8 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
         String displayName;
         if (roleName == 'owner' || roleName == 'creador') {
           displayName = 'Creador del proyecto';
+        } else if (roleName == 'member' || roleName == 'collaborator') {
+          displayName = 'Colaborador';
         } else if (roleName.isNotEmpty) {
           displayName = 'Colaborador ($roleName)';
         } else {

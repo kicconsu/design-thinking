@@ -182,17 +182,8 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
         exactPayload,
       );
     } catch (e) {
-      // Loguear el error completo para diagnosticar el 400 de Roble DB
-      loggy.error('createJoinRequest falló (400?): $e');
-      return {
-        '_id': 'local-req-${DateTime.now().millisecondsSinceEpoch}',
-        '_owner': rawUserId,
-        'user_id': rawUserId,
-        'project_id': rawProjectId,
-        'status': statusMap,
-        'createdAt': nowIso,
-        'updatedAt': nowIso,
-      };
+      loggy.error('createJoinRequest falló: $e');
+      rethrow;
     }
   }
 
@@ -267,8 +258,8 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
     String? reviewNote,
   }) async {
     final nowIso = DateTime.now().toUtc().toIso8601String();
+    // `_id` viaja en la URL: es inmutable y no va en el cuerpo.
     final payload = <String, dynamic>{
-      '_id': requestId,
       'status': {'state': status},
       'reviewed_by': reviewedBy,
       'updatedAt': nowIso,
@@ -282,38 +273,22 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
         requestId,
         payload,
       );
-      return payload;
+      return {'_id': requestId, ...payload};
     } on RobleApiHttpException catch (e) {
-      if (e.statusCode == 404) {
-        loggy.warning(
-          'updateJoinRequestStatus: El servidor de Roble devolvió 404 porque la fila pertenece al aspirante (_owner != usuario actual). '
-          'Se procesa la decisión ($status) en la aplicación localmente.',
-        );
-        return payload;
-      }
-      loggy.error(
-        'updateJoinRequestStatus HTTP error ${e.statusCode}: ${e.message}',
-      );
-      rethrow;
-    } catch (e) {
-      loggy.error('updateJoinRequestStatus falló: $e');
+      loggy.error('updateJoinRequestStatus HTTP ${e.statusCode}: ${e.message}');
       rethrow;
     }
   }
 
   @override
   Future<Map<String, dynamic>?> readUserProfile(String userId) async {
-    try {
-      final rows = await _client.readPublicOrPrivate(RobleClient.profileTable);
-      for (final r in rows) {
-        if (r['_owner']?.toString() == userId ||
-            r['_id']?.toString() == userId ||
-            r['user_id']?.toString() == userId) {
-          return r;
-        }
-      }
-    } catch (_) {}
-    return null;
+    if (userId.isEmpty) return null;
+    final rows = await _client.readPublicOrPrivate(
+      RobleClient.profileTable,
+      filters: {'_owner': userId},
+    );
+    // Nunca se devuelve "la primera fila": solo la que es de esa persona.
+    return rows.where((r) => r['_owner']?.toString() == userId).firstOrNull;
   }
 
   @override
@@ -339,6 +314,18 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       };
     }
 
+    // ROBLE no tiene unicidad: si ya es miembro no se vuelve a insertar, así
+    // reintentar una aceptación que falló a medias no duplica a nadie.
+    // Lectura estricta: si falla, la excepción sube y no se inserta a ciegas.
+    final current = await _client.db.read(
+      RobleClient.projectMembers,
+      filters: {'project_id': projectId},
+    );
+    final existing = current
+        .where((r) => r['user_id']?.toString() == rawUserId)
+        .firstOrNull;
+    if (existing != null) return existing;
+
     final payload = <String, dynamic>{
       'project_id': projectId,
       'user_id': rawUserId,
@@ -350,10 +337,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       return await _client.db.create(RobleClient.projectMembers, payload);
     } catch (e) {
       loggy.error('addProjectMember falló: $e');
-      return {
-        '_id': 'local-member-${DateTime.now().millisecondsSinceEpoch}',
-        ...payload,
-      };
+      rethrow;
     }
   }
 
@@ -538,9 +522,10 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   /// Un fallo aquí deja costras, pero no impide deshacer la creación.
   Future<void> _deleteRowsWhere(String table, String projectId) async {
     try {
-      final rows = await _client.db.read(table, filters: {
-        'project_id': projectId,
-      });
+      final rows = await _client.db.read(
+        table,
+        filters: {'project_id': projectId},
+      );
       for (final row in rows) {
         final id = (row['_id'] ?? row['id'])?.toString() ?? '';
         if (id.isEmpty) continue;

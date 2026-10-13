@@ -1,7 +1,6 @@
-import 'dart:convert';
-
 import 'package:roble/roble.dart';
 
+import 'package:imker/core/utils/career_label.dart';
 import 'package:imker/core/utils/string_list.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import '../../domain/profile_failure.dart';
@@ -63,7 +62,7 @@ class ProfileRepository implements IProfileRepository {
 
   // ─── Mapper ───────────────────────────────────────────────────────────────
   UserProfile _toProfile(Map<String, dynamic> row) => UserProfile(
-    academicInfo: _formatCareer(row['career']),
+    academicInfo: formatCareer(row['career']),
     bio: (row['description'] as String?) ?? '',
     skills: decodeStringList(row['skills']),
     // Placeholder hasta que exista un algoritmo real de reputación.
@@ -72,31 +71,4 @@ class ProfileRepository implements IProfileRepository {
     responseRateScore: 83,
     completedProjectsScore: 83,
   );
-
-  /// `career` no tiene todavía una convención definida por el equipo de
-  /// backend: puede llegar como texto plano o como un objeto
-  /// `{"program": ..., "institution": ...}`. Se manejan ambos casos y,
-  /// si no calza ninguno, se muestra vacío en vez de fallar.
-  static String _formatCareer(Object? value) {
-    if (value == null) return '';
-    Object? raw = value;
-    if (raw is String) {
-      final trimmed = raw.trim();
-      if (trimmed.isEmpty) return '';
-      try {
-        raw = jsonDecode(trimmed);
-      } catch (_) {
-        return trimmed;
-      }
-    }
-    if (raw is Map) {
-      final program = (raw['program'] as String?)?.trim() ?? '';
-      final institution = (raw['institution'] as String?)?.trim() ?? '';
-      if (program.isEmpty && institution.isEmpty) return '';
-      if (program.isEmpty) return institution;
-      if (institution.isEmpty) return program;
-      return '$program - $institution';
-    }
-    return '';
-  }
 }
