@@ -19,6 +19,7 @@ class ProfileView extends StatelessWidget {
     this.isOwn = false,
     this.projects = const [],
     this.onOpenSettings,
+    this.onComplete,
     this.onOpenProject,
     this.onOpenIndicators,
     this.onOpenHistory,
@@ -29,6 +30,10 @@ class ProfileView extends StatelessWidget {
   final bool isOwn;
   final List<Project> projects;
   final VoidCallback? onOpenSettings;
+
+  /// Lleva a completar el perfil; la tarjeta solo sale en el perfil propio
+  /// incompleto.
+  final VoidCallback? onComplete;
   final ValueChanged<Project>? onOpenProject;
   final VoidCallback? onOpenIndicators;
   final VoidCallback? onOpenHistory;
@@ -51,6 +56,10 @@ class ProfileView extends StatelessWidget {
           isOwn: isOwn,
           onOpenSettings: onOpenSettings,
         ),
+        if (isOwn && !profile.isComplete && onComplete != null) ...[
+          const SizedBox(height: 12),
+          _CompleteProfileCard(onPressed: onComplete!),
+        ],
         const SizedBox(height: 28),
         _Section(
           title: isOwn ? 'Sobre ti' : 'Sobre mí',
@@ -384,6 +393,58 @@ class _WideButton extends StatelessWidget {
       onPressed: onPressed,
       icon: Icon(icon, size: 20),
       label: Text(label),
+    );
+  }
+}
+
+/// Invita a completar carrera y habilidades; se oculta cuando ya están.
+class _CompleteProfileCard extends StatelessWidget {
+  const _CompleteProfileCard({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Material(
+      color: cs.tertiaryContainer,
+      shape: Border.all(color: cs.onTertiaryContainer),
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.auto_awesome_outlined, color: cs.onTertiaryContainer),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Completa tu perfil',
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onTertiaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Agrega tu carrera y tus habilidades para que te conozcan.',
+                      style: tt.bodySmall?.copyWith(
+                        color: cs.onTertiaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: cs.onTertiaryContainer),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

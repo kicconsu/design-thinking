@@ -35,7 +35,7 @@ class _RegisterPageState extends State<RegisterPage> with UiLoggy {
         'Bienvenido a Imker',
         snackPosition: SnackPosition.BOTTOM,
       );
-      Get.offAllNamed(AppRoutes.home);
+      Get.offAllNamed(AppRoutes.onboarding);
     } else {
       Get.snackbar('Error', _auth.error.value, snackPosition: SnackPosition.BOTTOM);
     }
@@ -54,8 +54,10 @@ class _RegisterPageState extends State<RegisterPage> with UiLoggy {
     return Scaffold(
       appBar: AppBar(title: const Text('Crear cuenta')),
       body: SafeArea(
-        child: Padding(
+        // Con el teclado abierto el formulario no cabe: se desliza.
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Form(
             key: _formKey,
             child: Column(
