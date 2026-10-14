@@ -55,6 +55,8 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
     return PersonProfilePage(
       userId: applicant.userId,
       name: applicant.name,
+      projectId: widget.project.id,
+      showTrust: true,
       header: _RequestHeader(
         projectTitle: widget.project.title,
         appliedAgo: applicant.appliedAgo,

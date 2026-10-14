@@ -10,8 +10,8 @@ class UserProfile {
     this.institution = '',
     this.bio = '',
     this.skills = const [],
-    // Los indicadores de confianza salen del historial de colaboración, que
-    // todavía no existe: sin historial valen 0 y no se muestran.
+    // Los indicadores de confianza salen del historial de colaboración (ver
+    // `features/trust`): sin historial valen 0 y no se muestran.
     this.commitmentScore = 0,
     this.onTimeScore = 0,
     this.responseRateScore = 0,
@@ -50,15 +50,20 @@ class UserProfile {
     String? institution,
     String? bio,
     List<String>? skills,
+    int? commitmentScore,
+    int? onTimeScore,
+    int? responseRateScore,
+    int? completedProjectsScore,
   }) => UserProfile(
     name: name,
     program: program ?? this.program,
     institution: institution ?? this.institution,
     bio: bio ?? this.bio,
     skills: skills ?? this.skills,
-    commitmentScore: commitmentScore,
-    onTimeScore: onTimeScore,
-    responseRateScore: responseRateScore,
-    completedProjectsScore: completedProjectsScore,
+    commitmentScore: commitmentScore ?? this.commitmentScore,
+    onTimeScore: onTimeScore ?? this.onTimeScore,
+    responseRateScore: responseRateScore ?? this.responseRateScore,
+    completedProjectsScore:
+        completedProjectsScore ?? this.completedProjectsScore,
   );
 }

@@ -121,6 +121,11 @@ class _FailingDataSource implements IProjectDataSource {
   @override
   Future<List<Map<String, dynamic>>> readMembershipsByUser(String userId) async =>
       throw exception;
+
+  @override
+  Future<List<Map<String, dynamic>>> readProjectsParticipatedBy(
+    String userId,
+  ) async => throw exception;
 }
 
 class _SingleProjectDataSource implements IProjectDataSource {
@@ -273,6 +278,11 @@ class _SingleProjectDataSource implements IProjectDataSource {
 
   @override
   Future<List<Map<String, dynamic>>> readMembershipsByUser(String userId) async => [];
+
+  @override
+  Future<List<Map<String, dynamic>>> readProjectsParticipatedBy(
+    String userId,
+  ) async => [];
 }
 
 void main() {
