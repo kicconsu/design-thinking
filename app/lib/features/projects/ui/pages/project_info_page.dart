@@ -11,6 +11,7 @@ import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_basic_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/project_basic_info_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_progress_tab.dart';
