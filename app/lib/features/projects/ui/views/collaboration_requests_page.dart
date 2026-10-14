@@ -130,52 +130,8 @@ class _ApplicantTile extends StatelessWidget {
                 Text(applicant.appliedAgo, style: tt.bodySmall),
               ],
             ),
-            Text(applicant.academicInfo, style: tt.bodySmall),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(color: cs.secondaryContainer),
-                  child: Text(
-                    applicant.requestedRole,
-                    style: TextStyle(
-                      color: cs.onSecondaryContainer,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                if (applicant.commonProjects > 0) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '${applicant.commonProjects} en común',
-                    style: tt.bodySmall,
-                  ),
-                ],
-              ],
-            ),
-            if (applicant.commitmentScore > 0) ...[
-              const SizedBox(height: 10),
-              ClipRRect(
-                child: LinearProgressIndicator(
-                  value: applicant.commitmentScore / 100,
-                  minHeight: 8,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  color: cs.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Compromiso ${applicant.commitmentScore}%',
-                  style: tt.bodySmall,
-                ),
-              ),
-            ],
+            if (applicant.academicInfo.isNotEmpty)
+              Text(applicant.academicInfo, style: tt.bodySmall),
           ],
         ),
       ),
