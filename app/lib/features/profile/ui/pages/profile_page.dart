@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/widgets/segmented_tab_switch.dart';
-import 'package:imker/core/widgets/trust_indicators.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
-import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
-import 'package:imker/features/projects/ui/widgets/project_tile.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
+import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/routes/app_routes.dart';
-import '../viewmodels/profile_controller.dart';
-import 'edit_profile_page.dart';
 
-/// Pantalla "Profiles" del flujo de Figma: perfil del propio usuario, con
-/// pestañas de perfil general y proyectos, y acceso a editar el perfil.
+import '../viewmodels/profile_controller.dart';
+import '../widgets/profile_view.dart';
+import 'collaboration_history_page.dart';
+import 'edit_profile_page.dart';
+import 'profile_projects_page.dart';
+import 'settings_page.dart';
+import 'trust_indicators_page.dart';
+
+/// Pestaña Perfil: la presentación del propio perfil (lo que verá otra
+/// persona) con acceso a editarlo, a ajustes y al detalle de cada sección.
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -47,30 +50,32 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class _ProfileContent extends StatefulWidget {
+class _ProfileContent extends StatelessWidget {
   const _ProfileContent();
 
-  @override
-  State<_ProfileContent> createState() => _ProfileContentState();
-}
-
-class _ProfileContentState extends State<_ProfileContent> {
-  int _tab = 0; // 0: Perfil General, 1: Proyectos
+  Future<void> _refresh() async {
+    final projects = Get.find<UserProjectsController>();
+    await Future.wait([
+      Get.find<ProfileController>().loadProfile(),
+      projects.fetchCoCreatedProjects(),
+      projects.fetchUserApplications(),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = Get.find<AuthenticationController>();
     final profileController = Get.find<ProfileController>();
     final projectsController = Get.find<UserProjectsController>();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
 
     return Obx(() {
-      if (profileController.isLoading.value && profileController.profile == null) {
+      if (profileController.isLoading.value &&
+          profileController.profile == null) {
         return const Center(child: CircularProgressIndicator());
       }
 
-      if (profileController.error.value != null && profileController.profile == null) {
+      if (profileController.error.value != null &&
+          profileController.profile == null) {
         return _MessageState(
           icon: Icons.cloud_off,
           message: profileController.error.value!,
@@ -79,149 +84,40 @@ class _ProfileContentState extends State<_ProfileContent> {
         );
       }
 
-      final profile = profileController.profile;
-      final myProjects = <Project>[
-        ...projectsController.coCreatedProjects,
-        ...projectsController.activeProjects,
-      ];
+      final profile = profileController.profile ?? const UserProfile();
+      final created = projectsController.coCreatedProjects.toList();
+      final collaborating = projectsController.activeProjects.toList();
+      final myProjects = [...created, ...collaborating];
 
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        children: [
-          Text('Mi Perfil', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: cs.tertiaryContainer,
-                child: Icon(Icons.person, color: cs.onTertiaryContainer, size: 30),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      auth.loggedName,
-                      style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    if (profile != null && profile.academicInfo.isNotEmpty)
-                      Text(profile.academicInfo, style: tt.bodySmall),
-                  ],
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          children: [
+            ProfileView(
+              name: auth.loggedName,
+              profile: profile,
+              isOwn: true,
+              projects: myProjects,
+              onOpenSettings: () => Get.to(() => const SettingsPage()),
+              onEdit: () => Get.to(() => const EditProfilePage()),
+              onOpenProject: (p) => Get.to(() => ProjectDetailPage(project: p)),
+              onOpenProjects: () =>
+                  Get.to(() => ProfileProjectsPage(projects: myProjects)),
+              onOpenIndicators: () =>
+                  Get.to(() => TrustIndicatorsPage(profile: profile)),
+              onOpenHistory: () => Get.to(
+                () => CollaborationHistoryPage(
+                  created: created,
+                  collaborating: collaborating,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SegmentedTabSwitch(
-            tabs: ['Perfil General', 'Proyectos (${myProjects.length})'],
-            selectedIndex: _tab,
-            onTabSelected: (i) => setState(() => _tab = i),
-          ),
-          const SizedBox(height: 16),
-          if (_tab == 0)
-            _GeneralTab(profile: profile, cs: cs, tt: tt)
-          else
-            _ProjectsTab(projects: myProjects, tt: tt),
-          const SizedBox(height: 24),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
-            onPressed: () => Get.to(() => const EditProfilePage()),
-            child: const Text('Editar Perfil'),
-          ),
-        ],
+          ],
+        ),
       );
     });
-  }
-}
-
-class _GeneralTab extends StatelessWidget {
-  final UserProfile? profile;
-  final ColorScheme cs;
-  final TextTheme tt;
-
-  const _GeneralTab({required this.profile, required this.cs, required this.tt});
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = this.profile;
-    if (profile == null) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (profile.hasTrustHistory) ...[
-          TrustIndicators(
-            commitmentScore: profile.commitmentScore,
-            onTimeScore: profile.onTimeScore,
-            responseRateScore: profile.responseRateScore,
-            completedProjectsScore: profile.completedProjectsScore,
-          ),
-          const SizedBox(height: 24),
-        ],
-        Text('Sobre ti', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: cs.surface, border: Border.all(color: cs.outline)),
-          child: Text(
-            profile.bio.isNotEmpty ? profile.bio : 'Aún no has escrito nada sobre ti.',
-            style: tt.bodyMedium,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text('Habilidades', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        if (profile.skills.isEmpty)
-          Text('Aún no agregas habilidades.', style: tt.bodyMedium)
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: profile.skills
-                .map(
-                  (s) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: cs.secondaryContainer,
-                      border: Border.all(color: cs.outline),
-                    ),
-                    child: Text(s, style: TextStyle(color: cs.onSecondaryContainer)),
-                  ),
-                )
-                .toList(),
-          ),
-      ],
-    );
-  }
-}
-
-class _ProjectsTab extends StatelessWidget {
-  final List<Project> projects;
-  final TextTheme tt;
-
-  const _ProjectsTab({required this.projects, required this.tt});
-
-  @override
-  Widget build(BuildContext context) {
-    if (projects.isEmpty) {
-      return Text('Todavía no participas en ningún proyecto.', style: tt.bodyMedium);
-    }
-    return Column(
-      children: projects
-          .map(
-            (p) => ProjectTile(
-              project: p,
-              onTap: () => Get.toNamed(AppRoutes.projectDetail, arguments: p),
-            ),
-          )
-          .toList(),
-    );
   }
 }
 
@@ -249,7 +145,11 @@ class _MessageState extends StatelessWidget {
           children: [
             Icon(icon, size: 72, color: cs.primary),
             const SizedBox(height: 16),
-            Text(message, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             FilledButton(onPressed: onPressed, child: Text(buttonLabel)),
           ],

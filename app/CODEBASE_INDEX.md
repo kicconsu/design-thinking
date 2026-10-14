@@ -107,8 +107,16 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   vacía (`clear()`) al salir.
 - [`lib/features/profile/ui/widgets/profile_form_fields.dart`](lib/features/profile/ui/widgets/profile_form_fields.dart) —
   Formulario compartido (carrera, institución, resumen, habilidades).
+- [`lib/features/profile/ui/widgets/profile_view.dart`](lib/features/profile/ui/widgets/profile_view.dart) —
+  Presentación de un perfil (cabecera, sobre mí, habilidades, proyectos,
+  indicadores, historial). Sin GetX: sirve para el perfil propio y, a futuro,
+  para el de otra persona. `core/widgets/profile_avatar.dart` pone iniciales
+  (o la foto cuando haya `imageUrl`).
 - [`lib/features/profile/ui/pages/profile_page.dart`](lib/features/profile/ui/pages/profile_page.dart),
-  [`edit_profile_page.dart`](lib/features/profile/ui/pages/edit_profile_page.dart) —
+  [`edit_profile_page.dart`](lib/features/profile/ui/pages/edit_profile_page.dart),
+  [`settings_page.dart`](lib/features/profile/ui/pages/settings_page.dart)
+  (ajustes y cerrar sesión), `profile_projects_page.dart`,
+  `trust_indicators_page.dart`, `collaboration_history_page.dart` —
   Pantallas.
 
 ## Projects / Discover / Home
@@ -132,6 +140,7 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 - `test/features/profile/profile_controller_test.dart` — Carga, guardado,
   `clear()` y descarte de cargas de una sesión anterior.
 - `test/features/profile/profile_form_test.dart` — Formulario compartido.
+- `test/features/profile/profile_view_test.dart` — `ProfileView`, avatar y ajustes.
 - `test/features/projects/project_repository_test.dart`,
   `test/features/discover/discover_controller_test.dart` — Mapeo y errores.
 - `test/core/string_list_test.dart` — Lectura de columnas jsonb con array

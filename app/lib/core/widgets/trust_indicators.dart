@@ -13,12 +13,16 @@ class TrustIndicators extends StatelessWidget {
   final int responseRateScore;
   final int completedProjectsScore;
 
+  /// Falso cuando quien lo usa ya pone su propio título (p. ej. una tarjeta).
+  final bool showTitle;
+
   const TrustIndicators({
     super.key,
     required this.commitmentScore,
     required this.onTimeScore,
     required this.responseRateScore,
     required this.completedProjectsScore,
+    this.showTitle = true,
   });
 
   @override
@@ -29,11 +33,13 @@ class TrustIndicators extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Indicadores de confianza',
-          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
+        if (showTitle) ...[
+          Text(
+            'Indicadores de confianza',
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+        ],
         Row(
           children: [
             Expanded(
