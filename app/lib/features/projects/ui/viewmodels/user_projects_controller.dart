@@ -298,6 +298,14 @@ class UserProjectsController extends GetxController {
     _putActive(project);
   }
 
+  /// La persona salió del proyecto: deja de ser activo y de estar guardado
+  /// (salir borra también el guardado en el servidor).
+  void leftProject(String projectId) {
+    activeProjects.removeWhere((p) => p.id == projectId);
+    savedProjects.removeWhere((p) => p.id == projectId);
+    appliedProjectIds.remove(projectId);
+  }
+
   /// Altas hechas a mano desde la app (no leídas del servidor). Una recarga
   /// que empezó antes de una de ellas no puede podar la lista.
   int _manualActiveAdds = 0;

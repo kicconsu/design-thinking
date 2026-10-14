@@ -17,7 +17,7 @@ class ProfileView extends StatelessWidget {
     required this.name,
     required this.profile,
     this.isOwn = false,
-    this.projects = const [],
+    this.projects,
     this.onOpenSettings,
     this.onComplete,
     this.onOpenProject,
@@ -28,7 +28,11 @@ class ProfileView extends StatelessWidget {
   final String name;
   final UserProfile profile;
   final bool isOwn;
-  final List<Project> projects;
+
+  /// Proyectos de la persona; `null` si no se conocen (el perfil de otra
+  /// persona): entonces no se muestran la cifra ni la sección, para no afirmar
+  /// «ningún proyecto» sin saberlo.
+  final List<Project>? projects;
   final VoidCallback? onOpenSettings;
 
   /// Lleva a completar el perfil; la tarjeta solo sale en el perfil propio
@@ -52,7 +56,7 @@ class ProfileView extends StatelessWidget {
         _Header(
           name: name,
           profile: profile,
-          projectCount: projects.length,
+          projectCount: projects?.length,
           isOwn: isOwn,
           onOpenSettings: onOpenSettings,
         ),
@@ -114,37 +118,39 @@ class ProfileView extends StatelessWidget {
                   ],
                 ),
         ),
-        const SizedBox(height: 28),
-        _Section(
-          title: 'Proyectos',
-          child: projects.isEmpty
-              ? Text(
-                  isOwn
-                      ? 'Todavía no participas en ningún proyecto.'
-                      : 'Todavía no participa en ningún proyecto.',
-                  style: muted,
-                )
-              : Column(
-                  children: [
-                    for (final p in projects.take(_previewCount))
-                      ProjectTile(
-                        project: p,
-                        onTap: onOpenProject == null
-                            ? null
-                            : () => onOpenProject!(p),
-                      ),
-                  ],
-                ),
-        ),
-        if (onOpenHistory != null) ...[
-          const SizedBox(height: 4),
-          _WideButton(
-            icon: Icons.history,
-            label: projects.length > _previewCount
-                ? 'Historial de colaboración (${projects.length})'
-                : 'Historial de colaboración',
-            onPressed: onOpenHistory!,
+        if (projects case final list?) ...[
+          const SizedBox(height: 28),
+          _Section(
+            title: 'Proyectos',
+            child: list.isEmpty
+                ? Text(
+                    isOwn
+                        ? 'Todavía no participas en ningún proyecto.'
+                        : 'Todavía no participa en ningún proyecto.',
+                    style: muted,
+                  )
+                : Column(
+                    children: [
+                      for (final p in list.take(_previewCount))
+                        ProjectTile(
+                          project: p,
+                          onTap: onOpenProject == null
+                              ? null
+                              : () => onOpenProject!(p),
+                        ),
+                    ],
+                  ),
           ),
+          if (onOpenHistory != null) ...[
+            const SizedBox(height: 4),
+            _WideButton(
+              icon: Icons.history,
+              label: list.length > _previewCount
+                  ? 'Historial de colaboración (${list.length})'
+                  : 'Historial de colaboración',
+              onPressed: onOpenHistory!,
+            ),
+          ],
         ],
         const SizedBox(height: 28),
         _Section(
@@ -206,14 +212,14 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.name,
     required this.profile,
-    required this.projectCount,
+    this.projectCount,
     required this.isOwn,
     this.onOpenSettings,
   });
 
   final String name;
   final UserProfile profile;
-  final int projectCount;
+  final int? projectCount;
   final bool isOwn;
   final VoidCallback? onOpenSettings;
 
@@ -316,11 +322,13 @@ class _Header extends StatelessWidget {
             ),
             child: Row(
               children: [
-                stat(
-                  '$projectCount',
-                  projectCount == 1 ? 'Proyecto' : 'Proyectos',
-                ),
-                divider,
+                if (projectCount != null) ...[
+                  stat(
+                    '$projectCount',
+                    projectCount == 1 ? 'Proyecto' : 'Proyectos',
+                  ),
+                  divider,
+                ],
                 stat(
                   '${profile.skills.length}',
                   profile.skills.length == 1 ? 'Habilidad' : 'Habilidades',

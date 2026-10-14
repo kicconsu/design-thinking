@@ -53,9 +53,8 @@ class CollaborationRequestsController extends GetxController {
       final requests = await _repository.getJoinRequestsForProject(projectId);
       // Quien ya colabora (p. ej. entró por una invitación) no necesita que se
       // le acepte nada.
-      final members = (await _repository.getActiveMemberUserIds(
-        projectId,
-      )).toSet();
+      final members = (await _repository.getActiveMemberUserIds(projectId))
+          .toSet();
       final loaded = <Applicant>[];
       for (final req in requests) {
         if (req.statusState.toLowerCase() != 'pending') continue;

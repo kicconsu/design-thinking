@@ -546,6 +546,39 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   }
 
   @override
+  Future<int> endMembership(
+    String projectId,
+    String userId,
+    String status,
+  ) async {
+    if (!_isValidUuid(projectId) || !_isValidUuid(userId)) return 0;
+    // Lectura estricta (no `readProjectMembers`, que traga errores): si no se
+    // puede leer no se sabe qué cerrar y la operación tiene que fallar.
+    final rows = await _client.db.read(
+      RobleClient.projectMembers,
+      filters: {'project_id': projectId},
+    );
+    final active = rows.where(
+      (r) =>
+          r['user_id']?.toString() == userId &&
+          (r['status']?.toString() ?? 'active') == 'active',
+    );
+    final leftAt = DateTime.now().toUtc().toIso8601String();
+    var ended = 0;
+    for (final row in active) {
+      final id = (row['_id'] ?? row['id'])?.toString() ?? '';
+      if (id.isEmpty || id.startsWith('local-')) continue;
+      loggy.debug('endMembership id=$id status=$status');
+      await _client.db.update(RobleClient.projectMembers, id, {
+        'status': status,
+        'leftAt': leftAt,
+      });
+      ended++;
+    }
+    return ended;
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> readMembershipsByUser(
     String userId,
   ) async {

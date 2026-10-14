@@ -18,6 +18,19 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
   Future<Map<String, dynamic>?> readMyProfile() => _readOwnRow(action: 'leer');
 
   @override
+  Future<Map<String, dynamic>?> readProfileOf(String userId) async {
+    if (userId.isEmpty) return null;
+    final rows = await _client.db.read(
+      RobleClient.profileTable,
+      filters: {'_owner': userId},
+    );
+    for (final row in rows) {
+      if (row['_owner']?.toString() == userId) return row;
+    }
+    return null;
+  }
+
+  @override
   Future<Map<String, dynamic>?> ensureMyProfile({required String name}) async {
     final userId = _client.currentUserId;
     if (userId == null || userId.isEmpty) {

@@ -6,6 +6,10 @@ abstract class IProfileDataSource {
   /// propia, no hay fila.
   Future<Map<String, dynamic>?> readMyProfile();
 
+  /// Fila de la tabla `profile` de [userId] (cualquier persona), o `null` si no
+  /// tiene. Es solo lectura: para ver el perfil de otra persona.
+  Future<Map<String, dynamic>?> readProfileOf(String userId);
+
   /// Devuelve la fila propia y, si no existe, la crea con [name].
   ///
   /// Es la que se llama al entrar en la app para que ningún usuario se quede

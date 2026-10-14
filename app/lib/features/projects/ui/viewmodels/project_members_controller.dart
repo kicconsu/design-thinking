@@ -5,6 +5,8 @@ import 'package:imker/core/roble/session_user.dart';
 import '../../domain/models/project_member.dart';
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
+import 'member_exit.dart';
+import 'user_projects_controller.dart';
 
 /// Estado de la pestaña Miembros de un proyecto. Una instancia por entrada.
 class ProjectMembersController extends GetxController {
@@ -46,5 +48,25 @@ class ProjectMembersController extends GetxController {
       loaded.value = true;
       isLoading.value = false;
     }
+  }
+
+  /// La persona con la sesión sale del proyecto. Devuelve null si salió bien
+  /// o el mensaje de error. Ya fuera, libera sus tareas sin terminar y saca el
+  /// proyecto de sus listas.
+  Future<String?> leave() async {
+    final userId = currentUserId;
+    try {
+      await Get.find<IProjectRepository>().leaveProject(
+        projectId: projectId,
+        userId: userId,
+      );
+    } on ProjectFailure catch (e) {
+      return e.message;
+    }
+    await releaseTasksOf(projectId, userId);
+    if (Get.isRegistered<UserProjectsController>()) {
+      Get.find<UserProjectsController>().leftProject(projectId);
+    }
+    return null;
   }
 }
