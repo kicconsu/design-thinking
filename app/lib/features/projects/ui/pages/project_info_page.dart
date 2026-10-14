@@ -5,15 +5,20 @@ import 'package:imker/core/widgets/imker_app_bar.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
+import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
+import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_progress_tab.dart';
 import 'package:imker/features/tasks/ui/pages/task_board_page.dart';
 
 /// Información de un proyecto del que el usuario es parte (lo creó o colabora
 /// en él): pestañas Progreso, Info. básica y Miembros.
 class ProjectInfoPage extends StatefulWidget {
-  const ProjectInfoPage({super.key, required this.project});
+  const ProjectInfoPage({super.key, required this.project, this.currentUserId});
 
   final Project project;
+
+  /// Sustituye a la sesión real: solo para pruebas.
+  final String Function()? currentUserId;
 
   @override
   State<ProjectInfoPage> createState() => _ProjectInfoPageState();
@@ -23,6 +28,7 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
   static const _tabs = ['Progreso', 'Info. básica', 'Miembros'];
 
   late final ProjectInfoController _controller;
+  late final ProjectMembersController _members;
   late final String _tag;
   int _tab = 0;
 
@@ -32,11 +38,19 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
     // Un controlador por entrada: abrir otro proyecto no hereda el anterior.
     _tag = '${widget.project.id}#${identityHashCode(this)}';
     _controller = Get.put(ProjectInfoController(widget.project), tag: _tag);
+    _members = Get.put(
+      ProjectMembersController(
+        widget.project.id,
+        currentUserId: widget.currentUserId,
+      ),
+      tag: _tag,
+    );
   }
 
   @override
   void dispose() {
     Get.delete<ProjectInfoController>(tag: _tag, force: true);
+    Get.delete<ProjectMembersController>(tag: _tag, force: true);
     super.dispose();
   }
 
@@ -50,7 +64,10 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
       appBar: const ImkerAppBar(),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _controller.reload,
+          onRefresh: () => Future.wait([
+            _controller.reload(),
+            if (_tab == 2) _members.load(),
+          ]),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
@@ -92,7 +109,7 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
                     SegmentedTabSwitch(
                       tabs: _tabs,
                       selectedIndex: _tab,
-                      onTabSelected: (i) => setState(() => _tab = i),
+                      onTabSelected: _selectTab,
                       borderRadius: 4,
                     ),
                     const SizedBox(height: 16),
@@ -126,12 +143,27 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
     if (mounted) _controller.reload();
   }
 
+  void _selectTab(int index) {
+    setState(() => _tab = index);
+    // Los miembros se leen la primera vez que se abre la pestaña.
+    if (index == 2 && !_members.loaded.value) _members.load();
+  }
+
   Widget _tabBody(Project project) {
     switch (_tab) {
       case 0:
         return ProjectProgressTab(progress: project.progress);
+      case 2:
+        return ProjectMembersTab(
+          members: _members.members.toList(),
+          isLoading: _members.isLoading.value,
+          loaded: _members.loaded.value,
+          error: _members.error.value,
+          isMe: _members.isMe,
+          onRetry: _members.load,
+        );
       default:
-        // Las otras dos pestañas llegan en sus propias ramas.
+        // La pestaña Info. básica llega en su propia rama.
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Center(

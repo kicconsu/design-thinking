@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_member.dart';
 import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/domain/models/project_join_request.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
@@ -21,6 +22,9 @@ class _MockFailingRepository implements IProjectRepository {
 
   @override
   Future<List<String>> getMemberProjectIds(String userId) async => [];
+
+  @override
+  Future<List<ProjectMember>> getProjectMembers(String projectId) async => [];
 
   @override
   Future<int> cancelPendingJoinRequests({

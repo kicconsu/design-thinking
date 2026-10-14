@@ -1,4 +1,5 @@
 import '../models/project.dart';
+import '../models/project_member.dart';
 import '../models/project_invitation.dart';
 import '../models/project_join_request.dart';
 
@@ -61,6 +62,12 @@ abstract class IProjectRepository {
     required String invitationId,
     required bool accept,
   });
+
+  /// Quienes están en el proyecto ahora (`status` activo), con su nombre y
+  /// carrera del perfil. El creador va primero y luego por fecha de ingreso.
+  /// Un perfil que no se pueda leer no tumba la lista: ese miembro sale con un
+  /// nombre genérico.
+  Future<List<ProjectMember>> getProjectMembers(String projectId);
 
   /// IDs de proyectos donde ese usuario es miembro sin ser su creador.
   Future<List<String>> getMemberProjectIds(String userId);
