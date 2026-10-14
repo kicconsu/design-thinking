@@ -7,32 +7,47 @@ import 'package:imker/features/profile/domain/profile_failure.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/tasks/domain/repositories/i_task_repository.dart';
 
+import '../../domain/models/project.dart';
 import '../../domain/models/project_member.dart';
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
 import 'member_exit.dart';
 
-/// Estado de la ficha de un miembro: su perfil (solo lectura), lo que ha hecho
-/// en este proyecto y, para el creador, la acción de quitarlo. Una instancia
-/// por ficha abierta.
-class MemberProfileController extends GetxController {
+/// Estado de la ficha de una persona: su perfil (solo lectura) y en qué anda
+/// (sus proyectos). Si se abre desde un proyecto y es miembro de él ([member]
+/// y [projectId]), añade lo que ha hecho ahí y, para el creador, la acción de
+/// quitarla. Una instancia por ficha abierta.
+class PersonProfileController extends GetxController {
   /// [viewerIsCreator]: quien mira es el creador del proyecto.
   /// [currentUserId] sustituye a la sesión real: solo para pruebas.
-  MemberProfileController({
-    required this.member,
-    required this.projectId,
+  PersonProfileController({
+    required this.userId,
+    required this.name,
+    this.projectId,
+    this.member,
     this.viewerIsCreator = false,
     String Function()? currentUserId,
   }) : _userIdOverride = currentUserId;
 
-  final ProjectMember member;
-  final String projectId;
+  final String userId;
+  final String name;
+
+  /// Proyecto desde el que se abrió la ficha, si fue desde uno.
+  final String? projectId;
+
+  /// La persona como miembro de [projectId]; null si no lo es o se abrió fuera
+  /// de un proyecto (feed, solicitudes, invitaciones).
+  final ProjectMember? member;
   final bool viewerIsCreator;
   final String Function()? _userIdOverride;
 
   final Rxn<UserProfile> profile = Rxn<UserProfile>();
   final RxBool isLoading = false.obs;
   final RxnString error = RxnString();
+
+  /// En qué anda: sus proyectos creados y activos; null si no se pudieron leer
+  /// (entonces no se muestra la sección en vez de decir «ninguno»).
+  final Rxn<List<Project>> projects = Rxn<List<Project>>();
 
   /// Tareas de esta persona en el proyecto; null si no se pudieron leer.
   final RxnInt tasksDone = RxnInt();
@@ -42,10 +57,15 @@ class MemberProfileController extends GetxController {
 
   String get currentUserId => (_userIdOverride ?? sessionUserId)();
 
-  bool get isMe => currentUserId.isNotEmpty && member.userId == currentUserId;
+  bool get isMe => currentUserId.isNotEmpty && userId == currentUserId;
 
   /// El creador puede quitar a un colaborador; a sí mismo y a otro creador no.
-  bool get canRemove => viewerIsCreator && !isMe && !member.isOwner;
+  bool get canRemove =>
+      viewerIsCreator &&
+      projectId != null &&
+      member != null &&
+      !isMe &&
+      !member!.isOwner;
 
   @override
   void onReady() {
@@ -57,7 +77,7 @@ class MemberProfileController extends GetxController {
     if (isLoading.value) return;
     isLoading.value = true;
     try {
-      await Future.wait([_loadProfile(), _loadTasks()]);
+      await Future.wait([_loadProfile(), _loadProjects(), _loadTasks()]);
     } finally {
       isLoading.value = false;
     }
@@ -65,26 +85,38 @@ class MemberProfileController extends GetxController {
 
   Future<void> _loadProfile() async {
     try {
-      profile.value = await Get.find<IProfileRepository>().getProfileOf(
-        member.userId,
-      );
+      profile.value = await Get.find<IProfileRepository>().getProfileOf(userId);
       error.value = null;
     } on ProfileFailure catch (e) {
       error.value = e.message;
     } catch (e) {
       error.value = errorMessage(
         e,
-        fallback: 'No se pudo cargar el perfil de ${member.name}.',
+        fallback: 'No se pudo cargar el perfil de $name.',
       );
+    }
+  }
+
+  /// Sin proyectos legibles la ficha no muestra esa sección.
+  Future<void> _loadProjects() async {
+    if (!Get.isRegistered<IProjectRepository>()) return;
+    try {
+      projects.value = await Get.find<IProjectRepository>().getProjectsOfPerson(
+        userId,
+      );
+    } on ProjectFailure {
+      projects.value = null;
     }
   }
 
   /// Sin tareas legibles la ficha simplemente no muestra esa parte.
   Future<void> _loadTasks() async {
+    final pid = projectId;
+    if (pid == null || member == null) return;
     if (!Get.isRegistered<ITaskRepository>()) return;
     try {
-      final tasks = await Get.find<ITaskRepository>().getTasks(projectId);
-      final mine = tasks.where((t) => t.assigneeId == member.userId);
+      final tasks = await Get.find<ITaskRepository>().getTasks(pid);
+      final mine = tasks.where((t) => t.assigneeId == userId);
       tasksDone.value = mine.where((t) => t.isDone).length;
       tasksDoing.value = mine.where((t) => !t.isDone).length;
     } on ProjectFailure {
@@ -96,16 +128,17 @@ class MemberProfileController extends GetxController {
   /// El creador quita a esta persona. Devuelve null si salió bien o el
   /// mensaje de error. Ya fuera, libera sus tareas sin terminar.
   Future<String?> remove() async {
-    if (!canRemove) return 'No puedes quitar a esta persona.';
+    final pid = projectId;
+    if (!canRemove || pid == null) return 'No puedes quitar a esta persona.';
     if (isRemoving.value) return null;
     isRemoving.value = true;
     try {
       await Get.find<IProjectRepository>().removeMember(
-        projectId: projectId,
-        memberUserId: member.userId,
+        projectId: pid,
+        memberUserId: userId,
         requestedBy: currentUserId,
       );
-      await releaseTasksOf(projectId, member.userId);
+      await releaseTasksOf(pid, userId);
       return null;
     } on ProjectFailure catch (e) {
       return e.message;

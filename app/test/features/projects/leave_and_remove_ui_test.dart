@@ -9,7 +9,7 @@ import 'package:imker/features/projects/data/datasources/in_memory_project_data_
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project_member.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
-import 'package:imker/features/projects/ui/pages/member_profile_page.dart';
+import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/pages/project_info_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/tasks/data/datasources/in_memory_task_data_source.dart';
@@ -81,7 +81,9 @@ void main() {
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
         GetMaterialApp(
-          home: MemberProfilePage(
+          home: PersonProfilePage(
+            userId: member.userId,
+            name: member.name,
             member: member,
             projectId: _projectId,
             viewerIsCreator: viewerIsCreator,

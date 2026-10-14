@@ -4,7 +4,10 @@ import 'package:get/get.dart';
 import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/models/project_relation.dart';
+import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
+import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 
 /// Pantalla de detalle de proyecto: permite ver la descripción completa,
@@ -54,17 +57,7 @@ class ProjectDetailPage extends StatelessWidget {
             const SizedBox(height: 20),
             _Section(
               title: 'Integrantes',
-              child: projectItem.members.isEmpty
-                  ? Text(
-                      'Aún no hay integrantes definidos.',
-                      style: tt.bodyMedium,
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: projectItem.members
-                          .map((m) => Text('• $m', style: tt.bodyMedium))
-                          .toList(),
-                    ),
+              child: _MembersSection(projectId: projectItem.id),
             ),
             const SizedBox(height: 20),
             _Section(
@@ -145,6 +138,56 @@ class ProjectDetailPage extends StatelessWidget {
               );
             }),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Quién está en el proyecto, con su papel; tocar a alguien abre su ficha. Un
+/// controlador por entrada, para no heredar los miembros de otro proyecto.
+class _MembersSection extends StatefulWidget {
+  const _MembersSection({required this.projectId});
+
+  final String projectId;
+
+  @override
+  State<_MembersSection> createState() => _MembersSectionState();
+}
+
+class _MembersSectionState extends State<_MembersSection> {
+  late final ProjectMembersController _members;
+  late final String _tag;
+
+  @override
+  void initState() {
+    super.initState();
+    _tag = '${widget.projectId}#${identityHashCode(this)}';
+    _members = Get.put(ProjectMembersController(widget.projectId), tag: _tag)
+      ..load();
+  }
+
+  @override
+  void dispose() {
+    Get.delete<ProjectMembersController>(tag: _tag, force: true);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => ProjectMembersTab(
+        members: _members.members.toList(),
+        isLoading: _members.isLoading.value,
+        loaded: _members.loaded.value,
+        error: _members.error.value,
+        isMe: _members.isMe,
+        onRetry: _members.load,
+        onOpenMember: (m) => openPersonProfile(
+          userId: m.userId,
+          name: m.name,
+          projectId: widget.projectId,
+          member: m,
         ),
       ),
     );

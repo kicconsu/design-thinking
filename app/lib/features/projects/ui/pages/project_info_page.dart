@@ -6,9 +6,12 @@ import 'package:imker/core/widgets/imker_bottom_nav_bar.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_member.dart';
+import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_basic_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/project_basic_info_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_progress_tab.dart';
@@ -243,7 +246,9 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
   /// Si en la ficha se quitó a alguien, la lista se recarga al volver.
   Future<void> _openMember(ProjectMember member) async {
     final removed = await Get.to<bool>(
-      () => MemberProfilePage(
+      () => PersonProfilePage(
+        userId: member.userId,
+        name: member.name,
         member: member,
         projectId: widget.project.id,
         viewerIsCreator: _isCreator,

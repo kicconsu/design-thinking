@@ -7,7 +7,7 @@ import 'package:imker/features/profile/domain/profile_failure.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/widgets/profile_view.dart';
 import 'package:imker/features/projects/domain/models/project_member.dart';
-import 'package:imker/features/projects/ui/pages/member_profile_page.dart';
+import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 
 class _FakeProfiles implements IProfileRepository {
@@ -67,11 +67,16 @@ void main() {
     });
   });
 
-  group('MemberProfilePage', () {
+  group('PersonProfilePage', () {
     testWidgets('muestra el perfil de esa persona', (tester) async {
       await tester.pumpWidget(
         const GetMaterialApp(
-          home: MemberProfilePage(member: _ana, projectId: 'p1'),
+          home: PersonProfilePage(
+            userId: 'ana-id',
+            name: 'Ana Pérez',
+            projectId: 'p1',
+            member: _ana,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -87,7 +92,12 @@ void main() {
       profiles.failure = const ProfileFailure('Sin conexión. Verifica tu red.');
       await tester.pumpWidget(
         const GetMaterialApp(
-          home: MemberProfilePage(member: _ana, projectId: 'p1'),
+          home: PersonProfilePage(
+            userId: 'ana-id',
+            name: 'Ana Pérez',
+            projectId: 'p1',
+            member: _ana,
+          ),
         ),
       );
       await tester.pumpAndSettle();

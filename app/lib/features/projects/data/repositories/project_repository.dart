@@ -687,6 +687,20 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
   }
 
   @override
+  Future<List<Project>> getProjectsOfPerson(String userId) async {
+    if (userId.isEmpty) return const [];
+    final created = await getProjectsByOwner(userId);
+    final createdIds = {for (final p in created) p.id};
+    final collaborating = <Project>[];
+    for (final id in await getMemberProjectIds(userId)) {
+      if (createdIds.contains(id)) continue;
+      final project = await getProjectById(id);
+      if (project != null) collaborating.add(project);
+    }
+    return [...created, ...collaborating];
+  }
+
+  @override
   Future<List<String>> getMemberProjectIds(String userId) async {
     final rows = await _guard(() => _source.readMembershipsByUser(userId));
     return {
