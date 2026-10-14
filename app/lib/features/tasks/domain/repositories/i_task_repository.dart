@@ -6,14 +6,17 @@ import '../models/task_status.dart';
 abstract class ITaskRepository {
   Future<List<ProjectTask>> getTasks(String projectId);
 
-  /// Crea la tarea (siempre `todo`) y recalcula el progreso del proyecto.
+  /// Crea la tarea (siempre `todo`) y recalcula el progreso y el total de
+  /// tareas del proyecto.
   Future<ProjectTask> createTask({
     required String projectId,
     required String title,
     String description = '',
   });
 
-  /// Cambia el estado y recalcula el progreso del proyecto.
+  /// Cambia el estado y recalcula el progreso del proyecto. Si la tarea tiene
+  /// responsable y pasa a (o deja de estar) terminada, recalcula también las
+  /// terminadas de esa persona.
   Future<ProjectTask> updateTaskStatus({
     required ProjectTask task,
     required TaskStatus status,
@@ -25,6 +28,9 @@ abstract class ITaskRepository {
   ///
   /// Roble no tiene escrituras condicionales: esto reduce la ventana de
   /// carrera, pero no la elimina del todo.
+  ///
+  /// Suma una a las tareas tomadas de [userId] en el proyecto, salvo que la
+  /// tarea ya fuera suya.
   Future<ProjectTask> reserveTask({
     required ProjectTask task,
     required String userId,
@@ -53,17 +59,22 @@ abstract class ITaskRepository {
   /// quedan sin responsable y vuelven a `todo`. Las terminadas no se tocan:
   /// siguen a nombre de quien las hizo. Devuelve cuántas liberó.
   ///
-  /// El progreso del proyecto no cambia (solo cuentan las terminadas).
+  /// El progreso del proyecto no cambia (solo cuentan las terminadas) y las
+  /// tareas tomadas de [userId] tampoco bajan: lo que soltó sigue contando como
+  /// tomado, para que su tasa de respuesta lo refleje.
   Future<int> releaseUnfinishedTasks({
     required String projectId,
     required String userId,
   });
 
-  /// Borra la tarea y recalcula el progreso del proyecto.
+  /// Borra la tarea y recalcula el progreso y el total de tareas del
+  /// proyecto. Si tenía responsable, esa persona deja de tenerla como tomada y
+  /// se recalculan sus terminadas.
   Future<void> deleteTask(ProjectTask task);
 
   /// Vuelve a contar las tareas del proyecto y guarda el porcentaje en
-  /// `project.progress`. Devuelve el valor calculado.
+  /// `project.progress` y el conteo en `project.total_tasks`. Devuelve el
+  /// porcentaje calculado.
   ///
   /// Siempre cuenta desde cero, nunca suma ni resta sobre lo guardado: si dos
   /// personas cambian tareas a la vez, la siguiente llamada lo corrige sola.

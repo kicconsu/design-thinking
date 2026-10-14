@@ -131,7 +131,8 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   `IProjectDataSource.endMembership`. El creador no puede salir ni ser
   quitado. Salir también borra el `project_saved` propio. Son repetibles.
 - `ITaskRepository.releaseUnfinishedTasks` libera las tareas `todo`/`doing` de
-  quien se va; las terminadas se conservan a su nombre. No cambia el progreso.
+  quien se va; las terminadas se conservan a su nombre. No cambia el progreso
+  ni `tasks_taken`: lo soltado sigue contando como tomado.
 - Salir: menú ⋮ en la tarjeta del título de `ProjectInfoPage` (el creador no lo
   ve). Quitar: botón en `MemberProfilePage` (ficha del miembro, se abre desde
   la pestaña Miembros), solo para el creador sobre colaboradores.
@@ -172,7 +173,13 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 - `features/tasks` — Tareas (`task`) y progreso. `TaskRepository` recalcula
   `project.progress` (tareas `done` / total) tras crear, cambiar de estado o
   borrar una tarea, y reserva tareas (`assignee_id`) sin pisar a quien se
-  adelantó. `TaskBoardPage` es el gabinete y `TaskProgressPage` el progreso
+  adelantó. También mantiene los contadores que alimentan las métricas de
+  confianza: `project.total_tasks` (se recalcula con el progreso) y, en
+  `project_member`, `tasks_taken` (incremental: +1 al reservar, -1 al borrar la
+  tarea) y `tasks_finished` (se recalcula desde `task` al terminar o reabrir;
+  con varias estancias, cada fila anota solo lo nuevo: regla en
+  `domain/models/member_stay.dart`). Los contadores son derivados: si fallan
+  la tarea no se deshace. `TaskBoardPage` es el gabinete y `TaskProgressPage` el progreso
   de una tarea: descripción y checklist (`task.checklist`, jsonb; lo edita
   solo quien la reservó; completarlo termina la tarea y desmarcarlo la
   reabre) y comentarios (`contribution`, planos: sin respuestas ni votos).

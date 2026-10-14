@@ -4,6 +4,11 @@ import 'i_task_data_source.dart';
 class InMemoryTaskDataSource implements ITaskDataSource {
   final List<Map<String, dynamic>> _tasks = [];
   final Map<String, double> progressByProject = {};
+  final Map<String, int> totalTasksByProject = {};
+
+  /// Filas de `project_member` (con `_id`, `project_id`, `user_id`, `status`,
+  /// `joinedAt`, `tasks_taken`, `tasks_finished`). Las pruebas las siembran.
+  final List<Map<String, dynamic>> members = [];
   final List<Map<String, dynamic>> _contributions = [];
   int _seq = 0;
 
@@ -52,7 +57,37 @@ class InMemoryTaskDataSource implements ITaskDataSource {
   }
 
   @override
-  Future<void> writeProjectProgress(String projectId, double progress) async {
+  Future<void> writeProjectTaskStats(
+    String projectId, {
+    required double progress,
+    required int totalTasks,
+  }) async {
     progressByProject[projectId] = progress;
+    totalTasksByProject[projectId] = totalTasks;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readMemberStays(
+    String projectId,
+    String userId,
+  ) async => [
+    for (final m in members)
+      if (m['project_id'] == projectId && m['user_id'] == userId)
+        Map<String, dynamic>.from(m),
+  ];
+
+  @override
+  Future<void> writeMemberCounters(
+    String memberRowId, {
+    int? taken,
+    int? finished,
+  }) async {
+    final i = members.indexWhere((m) => m['_id'] == memberRowId);
+    if (i == -1) throw StateError('Miembro $memberRowId no existe');
+    members[i] = {
+      ...members[i],
+      'tasks_taken': ?taken,
+      'tasks_finished': ?finished,
+    };
   }
 }
