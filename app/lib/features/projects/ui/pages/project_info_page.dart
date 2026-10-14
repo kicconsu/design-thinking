@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:imker/core/widgets/imker_app_bar.dart';
+import 'package:imker/core/widgets/imker_bottom_nav_bar.dart';
+import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
@@ -62,6 +64,11 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
     return Scaffold(
       backgroundColor: cs.primaryContainer,
       appBar: const ImkerAppBar(),
+      // Estas páginas cuelgan de la pestaña Proyectos (índice 1).
+      bottomNavigationBar: ImkerBottomNavBar(
+        currentIndex: 1,
+        onTap: (index) => Get.find<HomeViewModel>().openTab(index),
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => Future.wait([

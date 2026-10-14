@@ -250,6 +250,8 @@ void main() {
       await pump(tester, task, 'ana');
 
       await tester.enterText(find.byType(TextField).at(1), 'Implementar GET');
+      await tester.ensureVisible(find.text('Añadir'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Añadir'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(CheckboxListTile));
