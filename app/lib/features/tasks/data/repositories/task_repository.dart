@@ -5,6 +5,7 @@ import 'package:roble/roble.dart';
 
 import 'package:imker/features/projects/domain/project_failure.dart';
 
+import '../../domain/models/member_stay.dart';
 import '../../domain/models/project_task.dart';
 import '../../domain/models/subtask.dart';
 import '../../domain/models/task_comment.dart';
@@ -37,7 +38,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
         'status': TaskStatus.todo.name,
       }),
     );
-    await _syncProgress(projectId);
+    await _syncDerived(projectId);
     return _toTask(row);
   }
 
@@ -47,7 +48,12 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     required TaskStatus status,
   }) async {
     await _guard(() => _source.updateTask(task.id, {'status': status.name}));
-    await _syncProgress(task.projectId);
+    await _syncDerived(
+      task.projectId,
+      finishedOfAssigneeOf: task.isDone != (status == TaskStatus.done)
+          ? task.id
+          : null,
+    );
     return task.copyWith(status: status);
   }
 
@@ -74,7 +80,11 @@ class TaskRepository with UiLoggy implements ITaskRepository {
       }),
     );
     // Pasar de todo a doing no cambia cuántas tareas están terminadas, así
-    // que el progreso del proyecto sigue igual.
+    // que el progreso del proyecto sigue igual. Sí es una tarea más tomada,
+    // salvo que ya fuera suya (p. ej. la devolvió a pendiente y la retoma).
+    if (current.assigneeId != userId) {
+      await _countTaken(task.projectId, userId, 1);
+    }
     return current.copyWith(status: TaskStatus.doing, assigneeId: userId);
   }
 
@@ -95,7 +105,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     // Solo si cambió terminada/no terminada se mueve el progreso del proyecto.
     if (status.name != task.status.name &&
         (status == TaskStatus.done || task.status == TaskStatus.done)) {
-      await _syncProgress(task.projectId);
+      await _syncDerived(task.projectId, finishedOfAssigneeOf: task.id);
     }
     return task.copyWith(
       description: description,
@@ -147,6 +157,8 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     final mine = rows
         .map(_toTask)
         .where((t) => t.assigneeId == userId && !t.isDone);
+    // `tasks_taken` no baja: lo que soltó sigue contando como tomado (y sin
+    // terminar) en su estancia.
     var released = 0;
     for (final task in mine) {
       await _guard(
@@ -163,27 +175,121 @@ class TaskRepository with UiLoggy implements ITaskRepository {
   @override
   Future<void> deleteTask(ProjectTask task) async {
     await _guard(() => _source.deleteTask(task.id));
-    await _syncProgress(task.projectId);
+    final assignee = task.assigneeId;
+    // Una tarea que ya no existe tampoco cuenta como tomada.
+    if (assignee != null) await _countTaken(task.projectId, assignee, -1);
+    await _syncDerived(task.projectId, finishedOf: assignee);
   }
 
   @override
   Future<double> recalculateProgress(String projectId) async {
     final tasks = await getTasks(projectId);
+    return _writeProjectStats(projectId, tasks);
+  }
+
+  Future<double> _writeProjectStats(
+    String projectId,
+    List<ProjectTask> tasks,
+  ) async {
     final progress = ProjectTask.progressOf(tasks);
-    await _guard(() => _source.writeProjectProgress(projectId, progress));
+    await _guard(
+      () => _source.writeProjectTaskStats(
+        projectId,
+        progress: progress,
+        totalTasks: tasks.length,
+      ),
+    );
     return progress;
   }
 
-  /// El progreso es un derivado: si no se pudo actualizar, la tarea que sí se
-  /// guardó no se deshace. Se avisa en el log y el siguiente cambio (o un
-  /// [recalculateProgress] explícito) lo deja bien.
-  Future<void> _syncProgress(String projectId) async {
+  /// Los derivados de una tarea que sí se guardó: el progreso y total de
+  /// tareas del proyecto y las terminadas de quien corresponda: [finishedOf]
+  /// si ya se sabe quién, o el responsable que tenga ahora la tarea
+  /// [finishedOfAssigneeOf] (se lee de la base, no de la copia que tenga quien
+  /// llama, que puede estar vieja). Si algo no se pudo actualizar, la tarea no se deshace: se avisa en el
+  /// log y el siguiente cambio lo deja bien (se cuenta siempre desde cero).
+  Future<void> _syncDerived(
+    String projectId, {
+    String? finishedOf,
+    String? finishedOfAssigneeOf,
+  }) async {
+    List<ProjectTask> tasks;
     try {
-      await recalculateProgress(projectId);
+      tasks = await getTasks(projectId);
+      await _writeProjectStats(projectId, tasks);
     } catch (e) {
       loggy.warning('No se pudo actualizar el progreso de $projectId: $e');
+      return;
+    }
+    final person =
+        finishedOf ??
+        tasks
+            .where((t) => t.id == finishedOfAssigneeOf)
+            .firstOrNull
+            ?.assigneeId;
+    if (person == null) return;
+    try {
+      await _syncFinished(projectId, person, tasks);
+    } catch (e) {
+      loggy.warning(
+        'No se pudieron actualizar las terminadas de $person '
+        'en $projectId: $e',
+      );
     }
   }
+
+  /// `tasks_finished` de [userId]: lo terminado a su nombre en todo el
+  /// proyecto, menos lo que ya anotaron sus otras estancias.
+  Future<void> _syncFinished(
+    String projectId,
+    String userId,
+    List<ProjectTask> tasks,
+  ) async {
+    final stays = await _readStays(projectId, userId);
+    final current = MemberStay.current(stays);
+    if (current == null) return;
+    final total = tasks.where((t) => t.assigneeId == userId && t.isDone).length;
+    final finished = MemberStay.finishedFor(current, stays, total);
+    if (finished == current.finished) return;
+    await _guard(
+      () => _source.writeMemberCounters(current.id, finished: finished),
+    );
+  }
+
+  /// Mueve `tasks_taken` de [userId] en su estancia actual, sin bajar de 0.
+  /// Es incremental (no se puede contar desde cero: las tareas soltadas ya no
+  /// tienen responsable). Es un derivado: si falla, la tarea no se deshace.
+  Future<void> _countTaken(String projectId, String userId, int delta) async {
+    try {
+      final stays = await _readStays(projectId, userId);
+      final current = MemberStay.current(stays);
+      if (current == null) return;
+      final taken = current.taken + delta;
+      await _guard(
+        () => _source.writeMemberCounters(
+          current.id,
+          taken: taken < 0 ? 0 : taken,
+        ),
+      );
+    } catch (e) {
+      loggy.warning('No se pudieron actualizar las tomadas de $userId: $e');
+    }
+  }
+
+  Future<List<MemberStay>> _readStays(String projectId, String userId) async {
+    final rows = await _guard(() => _source.readMemberStays(projectId, userId));
+    return rows.map(_toStay).where((s) => s.id.isNotEmpty).toList();
+  }
+
+  MemberStay _toStay(Map<String, dynamic> row) => MemberStay(
+    id: (row['_id'] ?? row['id'])?.toString() ?? '',
+    isActive: (row['status']?.toString() ?? 'active') == 'active',
+    joinedAt: DateTime.tryParse(row['joinedAt']?.toString() ?? ''),
+    taken: _count(row['tasks_taken']),
+    finished: _count(row['tasks_finished']),
+  );
+
+  int _count(Object? value) => value is num ? value.toInt() : 0;
 
   ProjectTask _toTask(Map<String, dynamic> row) => ProjectTask(
     id: (row['_id'] ?? row['id'])?.toString() ?? '',

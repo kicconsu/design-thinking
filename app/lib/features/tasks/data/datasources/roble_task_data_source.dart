@@ -55,9 +55,46 @@ class RobleTaskDataSource with UiLoggy implements ITaskDataSource {
   }
 
   @override
-  Future<void> writeProjectProgress(String projectId, double progress) async {
+  Future<void> writeProjectTaskStats(
+    String projectId, {
+    required double progress,
+    required int totalTasks,
+  }) async {
     await _client.db.update(RobleClient.projects, projectId, {
       'progress': progress,
+      'total_tasks': totalTasks,
     });
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readMemberStays(
+    String projectId,
+    String userId,
+  ) async {
+    // Se filtra por proyecto en el servidor y por persona aquí, como hace el
+    // resto de la app con esta tabla.
+    final rows = await _client.db.read(
+      RobleClient.projectMembers,
+      filters: {'project_id': projectId},
+    );
+    return [
+      for (final r in rows)
+        if (r['user_id']?.toString() == userId) r,
+    ];
+  }
+
+  @override
+  Future<void> writeMemberCounters(
+    String memberRowId, {
+    int? taken,
+    int? finished,
+  }) async {
+    final fields = <String, dynamic>{
+      'tasks_taken': ?taken,
+      'tasks_finished': ?finished,
+    };
+    if (fields.isEmpty) return;
+    loggy.debug('writeMemberCounters id=$memberRowId fields: $fields');
+    await _client.db.update(RobleClient.projectMembers, memberRowId, fields);
   }
 }
