@@ -12,6 +12,12 @@ import 'collaboration_requests_controller.dart';
 /// Mantiene el estado de los proyectos del usuario: los que co-crea,
 /// los guardados, las postulaciones pendientes y las colaboraciones activas.
 class UserProjectsController extends GetxController {
+  /// [currentUserId] sustituye a la sesión real: solo para pruebas.
+  UserProjectsController({String Function()? currentUserId})
+    : _userIdOverride = currentUserId;
+
+  final String Function()? _userIdOverride;
+
   final RxList<Project> coCreatedProjects = <Project>[].obs;
   final RxList<Project> savedProjects = <Project>[].obs;
   final RxSet<String> appliedProjectIds = <String>{}.obs;
@@ -32,11 +38,29 @@ class UserProjectsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchCoCreatedProjects();
-    fetchUserApplications();
-    fetchSavedProjects();
-    _seedActiveCollaborationDemo();
+    // Una sola instancia para toda la app. Quien entra o sale de sesión la
+    // llena con [AuthenticationController] y la vacía con [clear].
+    if (RobleConfig.contractId.isEmpty) _seedActiveCollaborationDemo();
   }
+
+  /// Olvida todo lo de la sesión que se va: la siguiente persona no debe ver
+  /// ni una lista suya. Las cargas que sigan en vuelo se descartan solas
+  /// (ver [_inSession]).
+  void clear() {
+    coCreatedProjects.clear();
+    savedProjects.clear();
+    appliedProjectIds.clear();
+    activeProjects.clear();
+    userCreatedProjectIds.clear();
+    selectedMainTab.value = 0;
+    otherProjectsCategoryIndex.value = 0;
+    isLoadingProjects.value = false;
+    if (RobleConfig.contractId.isEmpty) _seedActiveCollaborationDemo();
+  }
+
+  /// ¿Sigue activa la sesión de [userId]? Una carga que empezó con otra
+  /// persona y termina después del cambio no debe escribir en las listas.
+  bool _inSession(String userId) => _currentUserId == userId;
 
   /// ¿Hay dónde persistir los guardados? Sin contrato (modo mock) se guarda
   /// en el datasource en memoria; con contrato hace falta una sesión real,
@@ -51,6 +75,7 @@ class UserProjectsController extends GetxController {
   }
 
   String get _currentUserId {
+    if (_userIdOverride != null) return _userIdOverride();
     final client = Get.isRegistered<RobleClient>()
         ? Get.find<RobleClient>()
         : null;
@@ -69,9 +94,11 @@ class UserProjectsController extends GetxController {
     try {
       final repository = Get.find<IProjectRepository>();
       final ids = await repository.getSavedProjectIds(userId);
+      if (!_inSession(userId)) return;
       for (final id in ids) {
         if (savedProjects.any((p) => p.id == id)) continue;
         final project = await repository.getProjectById(id);
+        if (!_inSession(userId)) return;
         if (project != null && !savedProjects.any((p) => p.id == project.id)) {
           savedProjects.add(project);
         }
@@ -95,6 +122,7 @@ class UserProjectsController extends GetxController {
         // que el servidor escribe en cada fila.
         final String ownerId = client.currentUserId ?? '';
         final remoteProjects = await repository.getProjectsByOwner(ownerId);
+        if (!_inSession(ownerId)) return;
 
         // Solo son "del usuario" los proyectos cuyo _owner coincide con la sesión activa.
         final ownerMatched = remoteProjects
@@ -137,7 +165,9 @@ class UserProjectsController extends GetxController {
     final hasUserProjects = coCreatedProjects.any(
       (p) => userCreatedProjectIds.contains(p.id),
     );
-    if (!hasUserProjects && coCreatedProjects.isEmpty) {
+    if (RobleConfig.contractId.isEmpty &&
+        !hasUserProjects &&
+        coCreatedProjects.isEmpty) {
       _seedCoCreatedDemo();
     }
   }
@@ -204,8 +234,15 @@ class UserProjectsController extends GetxController {
   }
 
   // Proyectos guardados que todavía no han sido postulados
-  List<Project> get unappliedSavedProjects =>
-      savedProjects.where((p) => !appliedProjectIds.contains(p.id)).toList();
+  // (y que no colaboro ya: un guardado de antes no vuelve a salir en Guardados
+  // por haber entrado al proyecto; es una preferencia, no un historial).
+  List<Project> get unappliedSavedProjects => savedProjects
+      .where(
+        (p) =>
+            !appliedProjectIds.contains(p.id) &&
+            !activeProjects.any((a) => a.id == p.id),
+      )
+      .toList();
 
   // Proyectos donde el usuario ya envió postulación y espera validación
   List<Project> get pendingProjects =>
@@ -313,14 +350,12 @@ class UserProjectsController extends GetxController {
   /// de las aceptadas (se muestran en "Activos / Colaborando").
   Future<void> fetchUserApplications() async {
     try {
-      final client = Get.isRegistered<RobleClient>()
-          ? Get.find<RobleClient>()
-          : null;
-      final userId = client?.currentUserId ?? '';
+      final userId = _currentUserId;
       if (userId.isEmpty) return;
 
       final repository = Get.find<IProjectRepository>();
       final requests = await repository.getJoinRequestsByUser(userId);
+      if (!_inSession(userId)) return;
 
       final pendingIds = <String>{};
       // Colaboro donde me aceptaron la solicitud y donde acepté una
@@ -331,6 +366,7 @@ class UserProjectsController extends GetxController {
       } on ProjectFailure {
         // Sin membresías se sigue con lo que digan las solicitudes.
       }
+      if (!_inSession(userId)) return;
 
       for (final req in requests) {
         final state = req.statusState.toLowerCase();
@@ -347,6 +383,7 @@ class UserProjectsController extends GetxController {
       for (final projectId in acceptedIds) {
         try {
           final project = await repository.getProjectById(projectId);
+          if (!_inSession(userId)) return;
           if (project != null) addActiveProject(project);
         } catch (_) {}
       }
@@ -360,6 +397,7 @@ class UserProjectsController extends GetxController {
       for (final projectId in missingPendingIds) {
         try {
           final project = await repository.getProjectById(projectId);
+          if (!_inSession(userId)) return;
           if (project != null &&
               !savedProjects.any((p) => p.id == project.id)) {
             savedProjects.add(project);

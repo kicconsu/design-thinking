@@ -31,6 +31,15 @@ class CollaborationRequestsController extends GetxController {
 
   final RxList<Applicant> applicants = <Applicant>[].obs;
 
+  /// Sube con cada [clear]; ver `InvitationsController`.
+  int _epoch = 0;
+
+  /// Olvida las solicitudes de la sesión que se va.
+  void clear() {
+    _epoch++;
+    applicants.clear();
+  }
+
   List<Applicant> applicantsFor(String projectId) =>
       applicants.where((a) => a.projectId == projectId).toList();
 
@@ -39,6 +48,7 @@ class CollaborationRequestsController extends GetxController {
   /// Lee las solicitudes `pending` de un proyecto y reemplaza las que había
   /// de ese proyecto: lo ya decidido (aquí o desde otro dispositivo) sale.
   Future<void> fetchForProject(String projectId) async {
+    final epoch = _epoch;
     try {
       final requests = await _repository.getJoinRequestsForProject(projectId);
       final loaded = <Applicant>[];
@@ -46,6 +56,7 @@ class CollaborationRequestsController extends GetxController {
         if (req.statusState.toLowerCase() != 'pending') continue;
         loaded.add(await _toApplicant(req));
       }
+      if (epoch != _epoch) return;
       applicants.removeWhere((a) => a.projectId == projectId);
       applicants.addAll(loaded);
     } on ProjectFailure {

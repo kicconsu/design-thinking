@@ -9,6 +9,7 @@ import 'package:imker/features/auth/domain/models/authentication_user.dart';
 import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
+import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/routes/app_routes.dart';
@@ -65,6 +66,20 @@ class AuthenticationController extends GetxController with UiLoggy {
     _isAnonymous.value = false;
     _loggedUser.value = null;
     _dropProfileCache();
+    _dropProjectsState();
+  }
+
+  /// Las listas de proyectos, solicitudes e invitaciones son de quien se va.
+  void _dropProjectsState() {
+    if (Get.isRegistered<UserProjectsController>()) {
+      Get.find<UserProjectsController>().clear();
+    }
+    if (Get.isRegistered<CollaborationRequestsController>()) {
+      Get.find<CollaborationRequestsController>().clear();
+    }
+    if (Get.isRegistered<InvitationsController>()) {
+      Get.find<InvitationsController>().clear();
+    }
   }
 
   /// El perfil cacheado en memoria pertenece a la sesión que se acaba de ir.
@@ -183,6 +198,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       final ctrl = Get.find<UserProjectsController>();
       ctrl.fetchCoCreatedProjects();
       ctrl.fetchUserApplications();
+      ctrl.fetchSavedProjects();
     }
     if (Get.isRegistered<InvitationsController>()) {
       Get.find<InvitationsController>().fetch();

@@ -7,6 +7,9 @@ import 'data/datasources/in_memory_project_data_source.dart';
 import 'data/datasources/roble_project_data_source.dart';
 import 'data/repositories/project_repository.dart';
 import 'domain/repositories/i_project_repository.dart';
+import 'ui/viewmodels/collaboration_requests_controller.dart';
+import 'ui/viewmodels/invitations_controller.dart';
+import 'ui/viewmodels/user_projects_controller.dart';
 
 void registerProjects({bool? useMock}) {
   final shouldUseMock = useMock ?? RobleConfig.contractId.isEmpty;
@@ -14,8 +17,19 @@ void registerProjects({bool? useMock}) {
   if (shouldUseMock) {
     Get.put<IProjectDataSource>(InMemoryProjectDataSource());
   } else {
-    Get.put<IProjectDataSource>(RobleProjectDataSource(Get.find<RobleClient>()));
+    Get.put<IProjectDataSource>(
+      RobleProjectDataSource(Get.find<RobleClient>()),
+    );
   }
 
-  Get.put<IProjectRepository>(ProjectRepository(Get.find<IProjectDataSource>()));
+  Get.put<IProjectRepository>(
+    ProjectRepository(Get.find<IProjectDataSource>()),
+  );
+
+  // Una sola instancia de cada una durante toda la app. Registrarlas por ruta
+  // (`fenix`) creaba copias nuevas en cada login y las listas que mira la
+  // pantalla dejaban de ser las que recibían los datos.
+  Get.put(UserProjectsController(), permanent: true);
+  Get.put(CollaborationRequestsController(), permanent: true);
+  Get.put(InvitationsController(), permanent: true);
 }

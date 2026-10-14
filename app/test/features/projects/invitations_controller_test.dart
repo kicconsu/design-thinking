@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roble/roble.dart';
@@ -29,6 +31,21 @@ class _FlakySource extends InMemoryProjectDataSource {
       invitationId: invitationId,
       status: status,
     );
+  }
+}
+
+/// Deja en espera la lectura de invitaciones hasta que la prueba lo decida.
+class _GatedSource extends InMemoryProjectDataSource {
+  _GatedSource() : super(DummyData());
+
+  Completer<void>? gate;
+
+  @override
+  Future<List<Map<String, dynamic>>> readInvitationsForUser(
+    String userId,
+  ) async {
+    await gate?.future;
+    return super.readInvitationsForUser(userId);
   }
 }
 
@@ -199,5 +216,20 @@ void main() {
     await controller.respond(controller.invitations.single, accept: true);
 
     expect(projects.activeProjects.map((p) => p.id), contains(projectId));
+  });
+
+  test('clear descarta una carga que sigue en vuelo', () async {
+    final slow = _GatedSource();
+    await setUpWith(slow);
+    final controller = build();
+    slow.gate = Completer<void>();
+
+    final loading = controller.fetch();
+    controller.clear();
+    slow.gate!.complete();
+    await loading;
+
+    expect(controller.invitations, isEmpty);
+    expect(controller.projects, isEmpty);
   });
 }
