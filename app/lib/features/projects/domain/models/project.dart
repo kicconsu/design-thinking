@@ -11,6 +11,7 @@ class Project {
     this.status = 'open',
     this.members = const [],
     this.applicantsCount = 0,
+    this.progress = 0,
   });
 
   final String id;
@@ -23,6 +24,9 @@ class Project {
   final String status;
   final List<String> members;
   final int applicantsCount;
+
+  /// Porcentaje (0–100) de tareas terminadas, calculado al cambiar una tarea.
+  final double progress;
 
   bool get isOpen => status == 'open';
 
@@ -37,6 +41,7 @@ class Project {
     String? status,
     List<String>? members,
     int? applicantsCount,
+    double? progress,
   }) {
     return Project(
       id: id ?? this.id,
@@ -49,6 +54,7 @@ class Project {
       status: status ?? this.status,
       members: members ?? this.members,
       applicantsCount: applicantsCount ?? this.applicantsCount,
+      progress: progress ?? this.progress,
     );
   }
 

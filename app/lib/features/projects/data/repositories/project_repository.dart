@@ -482,6 +482,8 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
       skills: decodeStringList(row['skills']),
       status: (row['status'] as String?) ?? 'open',
       members: membersList,
+      // Las filas anteriores a la columna vienen con null: cuentan como 0.
+      progress: ((row['progress'] as num?)?.toDouble() ?? 0).clamp(0, 100),
     );
   }
 
