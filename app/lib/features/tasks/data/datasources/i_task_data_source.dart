@@ -11,6 +11,13 @@ abstract class ITaskDataSource {
 
   Future<void> deleteTask(String taskId);
 
+  /// Filas de `contribution` de esa tarea (sus comentarios).
+  Future<List<Map<String, dynamic>>> readContributions(String taskId);
+
+  Future<Map<String, dynamic>> createContribution(
+    Map<String, dynamic> contributionData,
+  );
+
   /// Escribe `project.progress` (porcentaje 0–100).
   Future<void> writeProjectProgress(String projectId, double progress);
 }

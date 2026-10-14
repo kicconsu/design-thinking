@@ -1,4 +1,6 @@
 import '../models/project_task.dart';
+import '../models/subtask.dart';
+import '../models/task_comment.dart';
 import '../models/task_status.dart';
 
 abstract class ITaskRepository {
@@ -26,6 +28,25 @@ abstract class ITaskRepository {
   Future<ProjectTask> reserveTask({
     required ProjectTask task,
     required String userId,
+  });
+
+  /// Guarda descripción y checklist en una sola escritura. El estado lo
+  /// decide [ProjectTask.statusAfterSaving]; si cambia, se recalcula el
+  /// progreso del proyecto. Devuelve la tarea ya con los valores guardados.
+  Future<ProjectTask> saveTaskProgress({
+    required ProjectTask task,
+    required String description,
+    required List<Subtask> subtasks,
+  });
+
+  /// Comentarios de la tarea, del más nuevo al más viejo.
+  Future<List<TaskComment>> getComments(ProjectTask task);
+
+  /// Agrega un comentario de [userId] a la tarea.
+  Future<TaskComment> addComment({
+    required ProjectTask task,
+    required String userId,
+    required String body,
   });
 
   /// Borra la tarea y recalcula el progreso del proyecto.

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:loggy/loggy.dart';
 
 import 'package:imker/core/roble/roble_client.dart';
@@ -24,9 +26,27 @@ class RobleTaskDataSource with UiLoggy implements ITaskDataSource {
     String taskId,
     Map<String, dynamic> fields,
   ) async {
-    loggy.debug('updateTask id=$taskId fields: $fields');
-    await _client.db.update(RobleClient.tasks, taskId, fields);
+    // Roble rechaza una List nativa en una columna jsonb: el checklist viaja
+    // como texto JSON, igual que `jobs` y `skills` de los proyectos.
+    final payload = Map<String, dynamic>.from(fields);
+    if (payload['checklist'] is List) {
+      payload['checklist'] = jsonEncode(payload['checklist']);
+    }
+    loggy.debug('updateTask id=$taskId fields: $payload');
+    await _client.db.update(RobleClient.tasks, taskId, payload);
     return {'_id': taskId, ...fields};
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readContributions(String taskId) =>
+      _client.db.read(RobleClient.contributions, filters: {'task_id': taskId});
+
+  @override
+  Future<Map<String, dynamic>> createContribution(
+    Map<String, dynamic> contributionData,
+  ) {
+    loggy.debug('createContribution payload: $contributionData');
+    return _client.db.create(RobleClient.contributions, contributionData);
   }
 
   @override

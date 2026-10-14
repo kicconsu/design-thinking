@@ -3,11 +3,11 @@ import 'package:get/get.dart';
 import 'package:imker/core/roble/session_user.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
-import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 
 import '../../domain/models/project_task.dart';
 import '../../domain/models/task_status.dart';
 import '../../domain/repositories/i_task_repository.dart';
+import 'user_name_cache.dart';
 
 /// Estado del gabinete de tareas de un proyecto. Una instancia por entrada.
 class TaskBoardController extends GetxController {
@@ -24,8 +24,8 @@ class TaskBoardController extends GetxController {
   /// Tareas con una reserva en vuelo: evita el doble toque.
   final RxSet<String> reserving = <String>{}.obs;
 
-  /// `user_id` -> nombre, para el "Reservada por ..." de cada tarjeta.
-  final RxMap<String, String> _names = <String, String>{}.obs;
+  /// Nombres para el "Reservada por ..." de cada tarjeta.
+  final UserNameCache _names = UserNameCache();
 
   ITaskRepository get _repository => Get.find<ITaskRepository>();
 
@@ -45,7 +45,7 @@ class TaskBoardController extends GetxController {
     final id = task.assigneeId;
     if (id == null) return null;
     if (id == currentUserId) return 'Tú';
-    return _names[id] ?? 'Otra persona';
+    return _names.nameOf(id) ?? 'Otra persona';
   }
 
   Future<void> load() async {
@@ -53,31 +53,15 @@ class TaskBoardController extends GetxController {
     isLoading.value = true;
     try {
       tasks.assignAll(await _repository.getTasks(project.id));
-      await _loadNames();
+      await _names.resolve([
+        for (final t in tasks)
+          if (t.assigneeId != null && t.assigneeId != currentUserId)
+            t.assigneeId!,
+      ]);
     } on ProjectFailure catch (e) {
       Get.snackbar('Error', e.message, snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
-    }
-  }
-
-  Future<void> _loadNames() async {
-    final missing = {
-      for (final t in tasks)
-        if (t.assigneeId != null &&
-            t.assigneeId != currentUserId &&
-            !_names.containsKey(t.assigneeId))
-          t.assigneeId!,
-    };
-    if (missing.isEmpty || !Get.isRegistered<IProjectRepository>()) return;
-    for (final id in missing) {
-      try {
-        final profile = await Get.find<IProjectRepository>().getUserProfile(id);
-        final name = (profile?['name'] as String?)?.trim() ?? '';
-        if (name.isNotEmpty) _names[id] = name;
-      } on ProjectFailure {
-        // Sin perfil legible queda "Otra persona".
-      }
     }
   }
 
