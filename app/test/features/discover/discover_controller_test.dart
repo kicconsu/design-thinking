@@ -23,6 +23,12 @@ class _MockFailingRepository implements IProjectRepository {
   Future<List<String>> getMemberProjectIds(String userId) async => [];
 
   @override
+  Future<int> cancelPendingJoinRequests({
+    required String projectId,
+    required String userId,
+  }) async => 0;
+
+  @override
   Future<List<Project>> getProjects() async {
     throw const ProjectFailure('Error de prueba');
   }

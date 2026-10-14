@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roble/roble.dart';
@@ -29,6 +31,21 @@ class _FlakySource extends InMemoryProjectDataSource {
       invitationId: invitationId,
       status: status,
     );
+  }
+}
+
+/// Deja en espera la lectura de invitaciones hasta que la prueba lo decida.
+class _GatedSource extends InMemoryProjectDataSource {
+  _GatedSource() : super(DummyData());
+
+  Completer<void>? gate;
+
+  @override
+  Future<List<Map<String, dynamic>>> readInvitationsForUser(
+    String userId,
+  ) async {
+    await gate?.future;
+    return super.readInvitationsForUser(userId);
   }
 }
 
@@ -199,5 +216,89 @@ void main() {
     await controller.respond(controller.invitations.single, accept: true);
 
     expect(projects.activeProjects.map((p) => p.id), contains(projectId));
+  });
+
+  test('aceptar cancela mi solicitud pendiente al mismo proyecto', () async {
+    await setUpWith(InMemoryProjectDataSource(DummyData()));
+    await repository.createJoinRequest(
+      projectId: projectId,
+      userId: 'ana-id',
+      status: 'pending',
+    );
+    final controller = build();
+    await controller.fetch();
+
+    await controller.respond(controller.invitations.single, accept: true);
+
+    final mine = await repository.getJoinRequestsByUser('ana-id');
+    expect(mine.single.statusState, 'cancelled');
+  });
+
+  test(
+    'cancelPendingJoinRequests solo toca las pendientes de ese proyecto',
+    () async {
+      await setUpWith(InMemoryProjectDataSource(DummyData()));
+      final other = await repository.createProject(
+        title: 'Otro',
+        description: 'd',
+        jobs: const [],
+        skills: const [],
+      );
+      await repository.createJoinRequest(
+        projectId: projectId,
+        userId: 'ana-id',
+        status: 'pending',
+      );
+      await repository.createJoinRequest(
+        projectId: other.id,
+        userId: 'ana-id',
+        status: 'pending',
+      );
+
+      final cancelled = await repository.cancelPendingJoinRequests(
+        projectId: projectId,
+        userId: 'ana-id',
+      );
+
+      expect(cancelled, 1);
+      final byProject = {
+        for (final r in await repository.getJoinRequestsByUser('ana-id'))
+          r.projectId: r.statusState,
+      };
+      expect(byProject[projectId], 'cancelled');
+      expect(byProject[other.id], 'pending');
+    },
+  );
+
+  test(
+    'una invitación a un proyecto donde ya soy miembro no se muestra',
+    () async {
+      await setUpWith(InMemoryProjectDataSource(DummyData()));
+      await repository.addProjectMember(
+        projectId: projectId,
+        userId: 'ana-id',
+        role: {'name': 'member'},
+      );
+      final controller = build();
+
+      await controller.fetch();
+
+      expect(controller.invitations, isEmpty);
+    },
+  );
+
+  test('clear descarta una carga que sigue en vuelo', () async {
+    final slow = _GatedSource();
+    await setUpWith(slow);
+    final controller = build();
+    slow.gate = Completer<void>();
+
+    final loading = controller.fetch();
+    controller.clear();
+    slow.gate!.complete();
+    await loading;
+
+    expect(controller.invitations, isEmpty);
+    expect(controller.projects, isEmpty);
   });
 }

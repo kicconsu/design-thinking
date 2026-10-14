@@ -37,10 +37,16 @@ class InvitationsController extends GetxController {
 
   final RxBool isLoading = false.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    fetch();
+  /// Sube con cada [clear]: una carga que empezó antes de salir de sesión no
+  /// debe escribir lo suyo en la lista de quien entre después.
+  int _epoch = 0;
+
+  /// Olvida las invitaciones de la sesión que se va.
+  void clear() {
+    _epoch++;
+    invitations.clear();
+    projects.clear();
+    isLoading.value = false;
   }
 
   /// Lee las invitaciones pendientes. Una invitación a un proyecto que ya no
@@ -51,18 +57,25 @@ class InvitationsController extends GetxController {
       invitations.clear();
       return;
     }
+    final epoch = _epoch;
     try {
       isLoading.value = true;
       final pending = await _repository.getPendingInvitations(userId);
+      // Una invitación a un proyecto donde ya colaboro (p. ej. me aceptaron
+      // una solicitud) no tiene nada que responder.
+      final memberOf = (await _repository.getMemberProjectIds(userId)).toSet();
       final shown = <ProjectInvitation>[];
       for (final inv in pending) {
+        if (memberOf.contains(inv.projectId)) continue;
         final project =
             projects[inv.projectId] ??
             await _repository.getProjectById(inv.projectId);
+        if (epoch != _epoch) return;
         if (project == null) continue;
         projects[inv.projectId] = project;
         shown.add(inv);
       }
+      if (epoch != _epoch) return;
       invitations.assignAll(shown);
     } on ProjectFailure {
       // Se conserva lo que ya estuviera en pantalla.
@@ -100,6 +113,20 @@ class InvitationsController extends GetxController {
       return e.message;
     } catch (_) {
       return 'No se pudo responder la invitación.';
+    }
+
+    // Ya es miembro: su solicitud pendiente a este proyecto (si la había)
+    // quedó obsoleta y el dueño no debería seguir viéndola. No es crítico: si
+    // falla, el proyecto ya cuenta como Activo y esa solicitud no se muestra.
+    if (accept) {
+      try {
+        await _repository.cancelPendingJoinRequests(
+          projectId: invitation.projectId,
+          userId: userId,
+        );
+      } on ProjectFailure {
+        // Se limpia en la próxima oportunidad.
+      }
     }
 
     invitations.removeWhere((i) => i.id == invitation.id);

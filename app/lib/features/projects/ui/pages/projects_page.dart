@@ -35,8 +35,10 @@ class ProjectsPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Obx(() {
                   final coCreatedCount = controller.coCreatedProjects.length;
+                  // Las tres secciones de "Otros proyectos" sin repetir ninguno.
                   final othersCount =
-                      controller.savedProjects.length +
+                      controller.unappliedSavedProjects.length +
+                      controller.pendingProjects.length +
                       controller.activeProjects.length;
 
                   return SegmentedTabSwitch(

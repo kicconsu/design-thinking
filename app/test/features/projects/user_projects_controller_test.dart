@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
@@ -15,6 +17,19 @@ Project _project(String id) => Project(
   jobs: const [],
   skills: const [],
 );
+
+/// Deja en espera la lectura de solicitudes hasta que la prueba lo decida.
+class _GatedSource extends InMemoryProjectDataSource {
+  Completer<void>? gate;
+
+  @override
+  Future<List<Map<String, dynamic>>> readJoinRequestsByUser(
+    String userId,
+  ) async {
+    await gate?.future;
+    return super.readJoinRequestsByUser(userId);
+  }
+}
 
 void main() {
   late UserProjectsController controller;
@@ -71,5 +86,104 @@ void main() {
         isNot(contains('p3')),
       );
     });
+  });
+
+  group('listas de Otros proyectos', () {
+    test('un guardado que ya es activo no sale en Guardados', () {
+      controller.savedProjects.addAll([_project('a'), _project('b')]);
+      controller.activeProjects.add(_project('a'));
+
+      expect(controller.unappliedSavedProjects.map((p) => p.id), ['b']);
+    });
+
+    test('pendiente y activo a la vez: gana Activos y no queda pendiente', () {
+      controller.savedProjects.add(_project('a'));
+      controller.appliedProjectIds.add('a');
+      controller.activeProjects.add(_project('a'));
+
+      expect(controller.pendingProjects, isEmpty);
+      expect(controller.unappliedSavedProjects, isEmpty);
+    });
+
+    test('addActiveProject quita la postulación pendiente a ese proyecto', () {
+      controller.appliedProjectIds.add('a');
+
+      controller.addActiveProject(_project('a'));
+
+      expect(controller.appliedProjectIds, isNot(contains('a')));
+      expect(controller.activeProjects.map((p) => p.id), ['a']);
+    });
+
+    test('clear vacía todo lo de la sesión', () {
+      controller.coCreatedProjects.add(_project('mio'));
+      controller.savedProjects.add(_project('g'));
+      controller.activeProjects.add(_project('a'));
+      controller.appliedProjectIds.add('p');
+      controller.userCreatedProjectIds.add('mio');
+      controller.selectedMainTab.value = 1;
+      controller.otherProjectsCategoryIndex.value = 3;
+
+      controller.clear();
+
+      expect(controller.coCreatedProjects, isEmpty);
+      expect(controller.savedProjects, isEmpty);
+      expect(controller.activeProjects, isEmpty);
+      expect(controller.appliedProjectIds, isEmpty);
+      expect(controller.userCreatedProjectIds, isEmpty);
+      expect(controller.selectedMainTab.value, 0);
+      expect(controller.otherProjectsCategoryIndex.value, 0);
+    });
+  });
+
+  group('cargas que cruzan un cambio de sesión', () {
+    late _GatedSource source;
+    late String projectId;
+    var user = 'A';
+
+    setUp(() async {
+      Get.reset();
+      user = 'A';
+      source = _GatedSource();
+      repository = ProjectRepository(source);
+      Get.put<IProjectRepository>(repository);
+      controller = UserProjectsController(currentUserId: () => user);
+      final project = await repository.createProject(
+        title: 'P',
+        description: 'd',
+        jobs: const [],
+        skills: const [],
+      );
+      projectId = project.id;
+      await repository.createJoinRequest(
+        projectId: projectId,
+        userId: 'A',
+        status: 'accepted',
+      );
+    });
+
+    test(
+      'sin cambio de sesión el proyecto aceptado entra en Activos',
+      () async {
+        await controller.fetchUserApplications();
+
+        expect(controller.activeProjects.map((p) => p.id), [projectId]);
+      },
+    );
+
+    test(
+      'si la sesión cambia mientras carga, se descarta el resultado',
+      () async {
+        source.gate = Completer<void>();
+        final loading = controller.fetchUserApplications();
+
+        user = 'B';
+        controller.clear();
+        source.gate!.complete();
+        await loading;
+
+        expect(controller.activeProjects, isEmpty);
+        expect(controller.appliedProjectIds, isEmpty);
+      },
+    );
   });
 }
