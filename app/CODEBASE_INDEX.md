@@ -128,6 +128,15 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 
 - `features/projects` — Proyectos (`project`), guardados, postulaciones y
   colaboraciones. `RobleProjectDataSource` usa `readPublicOrPrivate`.
+- `features/projects` también tiene la vista de información de un proyecto
+  (`ProjectInfoPage`: pestañas Progreso, Info. básica y Miembros). Los miembros
+  salen de `project_member` (solo `status` activo) y su nombre y carrera de
+  `profile` (`IProjectRepository.getProjectMembers`); un perfil ilegible no
+  tumba la lista. `core/roble/session_user.dart` da el `user_id` de la sesión.
+- `features/tasks` — Tareas (`task`) y progreso. `TaskRepository` recalcula
+  `project.progress` (tareas `done` / total) tras crear, cambiar de estado o
+  borrar una tarea, y reserva tareas (`assignee_id`) sin pisar a quien se
+  adelantó. `TaskBoardPage` es el gabinete.
 - `features/discover` — Feed de descubrimiento.
 - `features/home` — `SplashPage` (restaura sesión y enruta) y `HomePage`
   (IndexedStack de pestañas).

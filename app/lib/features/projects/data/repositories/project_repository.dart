@@ -4,7 +4,9 @@ import 'package:loggy/loggy.dart';
 import 'package:roble/roble.dart';
 
 import 'package:imker/core/data/dummy_data.dart';
+import 'package:imker/core/utils/career_label.dart';
 import 'package:imker/core/utils/string_list.dart';
+import 'package:imker/features/projects/domain/models/project_member.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/domain/models/project_join_request.dart';
@@ -481,6 +483,76 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
   /// como activa.
   bool _isActiveMember(Map<String, dynamic> row) =>
       (row['status']?.toString() ?? 'active') == 'active';
+
+  // ─── Miembros ─────────────────────────────────────────────────────────────
+  @override
+  Future<List<ProjectMember>> getProjectMembers(String projectId) async {
+    final rows = await _guard(
+      () => _source.readProjectMembers(projectId: projectId),
+    );
+
+    // La lectura puede devolver filas de otros proyectos (según el modo de
+    // lectura) y Roble no garantiza unicidad: se filtra y se cuenta una vez.
+    final seen = <String>{};
+    final active = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      if (!_isActiveMember(row)) continue;
+      if ((row['project_id'] ?? row['projectId'])?.toString() != projectId) {
+        continue;
+      }
+      final userId = (row['user_id'] ?? row['userId'])?.toString() ?? '';
+      if (userId.isEmpty || !seen.add(userId)) continue;
+      active.add(row);
+    }
+
+    final profiles = await Future.wait([
+      for (final row in active) _profileOrNull(row['user_id'].toString()),
+    ]);
+
+    final members = <ProjectMember>[
+      for (var i = 0; i < active.length; i++) _toMember(active[i], profiles[i]),
+    ];
+    // Dart ordena de forma estable: a igual criterio se conserva el orden.
+    members.sort((a, b) {
+      if (a.isOwner != b.isOwner) return a.isOwner ? -1 : 1;
+      final aj = a.joinedAt;
+      final bj = b.joinedAt;
+      // Sin fecha de ingreso, al final.
+      if (aj == null && bj == null) return 0;
+      if (aj == null) return 1;
+      if (bj == null) return -1;
+      return aj.compareTo(bj);
+    });
+    return members;
+  }
+
+  /// El perfil es un adorno de la lista: sin él se muestra un nombre genérico.
+  Future<Map<String, dynamic>?> _profileOrNull(String userId) async {
+    try {
+      return await _source.readUserProfile(userId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  ProjectMember _toMember(
+    Map<String, dynamic> row,
+    Map<String, dynamic>? profile,
+  ) {
+    final userId = row['user_id'].toString();
+    final name = (profile?['name'] as String?)?.trim() ?? '';
+    return ProjectMember(
+      userId: userId,
+      name: name.isNotEmpty
+          ? name
+          : (userId.length > 8
+                ? 'Usuario ${userId.substring(0, 8)}'
+                : 'Miembro'),
+      career: formatCareer(profile?['career']),
+      role: ProjectMemberRole.fromName(_roleName(row['role'])),
+      joinedAt: DateTime.tryParse(row['joinedAt']?.toString() ?? ''),
+    );
+  }
 
   // ─── Invitaciones ─────────────────────────────────────────────────────────
   @override

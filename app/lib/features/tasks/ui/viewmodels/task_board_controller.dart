@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 
-import 'package:imker/core/roble/roble_client.dart';
-import 'package:imker/core/roble/roble_config.dart';
+import 'package:imker/core/roble/session_user.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
@@ -30,13 +29,7 @@ class TaskBoardController extends GetxController {
 
   ITaskRepository get _repository => Get.find<ITaskRepository>();
 
-  String get currentUserId {
-    if (_userIdOverride != null) return _userIdOverride();
-    if (RobleConfig.contractId.isEmpty) return 'demo-user';
-    return Get.isRegistered<RobleClient>()
-        ? (Get.find<RobleClient>().currentUserId ?? '')
-        : '';
-  }
+  String get currentUserId => (_userIdOverride ?? sessionUserId)();
 
   @override
   void onReady() {
