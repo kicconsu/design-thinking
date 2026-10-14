@@ -6,6 +6,7 @@ import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/widgets/project_progress_tab.dart';
+import 'package:imker/features/tasks/ui/pages/task_board_page.dart';
 
 /// Información de un proyecto del que el usuario es parte (lo creó o colabora
 /// en él): pestañas Progreso, Info. básica y Miembros.
@@ -99,11 +100,30 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
                   ],
                 ),
               ),
+              if (_tab == 0) ...[
+                const SizedBox(height: 16),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  onPressed: _openTasks,
+                  child: const Text('Ver Tareas'),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Al volver del gabinete se relee el proyecto: ahí pudo cambiar el progreso.
+  Future<void> _openTasks() async {
+    await Get.to(() => TaskBoardPage(project: _controller.project.value));
+    if (mounted) _controller.reload();
   }
 
   Widget _tabBody(Project project) {

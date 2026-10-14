@@ -8,6 +8,7 @@ class ProjectTask {
     required this.title,
     this.description = '',
     this.status = TaskStatus.todo,
+    this.assigneeId,
   });
 
   final String id;
@@ -16,12 +17,16 @@ class ProjectTask {
   final String description;
   final TaskStatus status;
 
+  /// `user_id` de quien reservó la tarea; null mientras nadie la tomó.
+  final String? assigneeId;
+
   bool get isDone => status == TaskStatus.done;
 
   ProjectTask copyWith({
     String? title,
     String? description,
     TaskStatus? status,
+    String? assigneeId,
   }) {
     return ProjectTask(
       id: id,
@@ -29,6 +34,7 @@ class ProjectTask {
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
+      assigneeId: assigneeId ?? this.assigneeId,
     );
   }
 

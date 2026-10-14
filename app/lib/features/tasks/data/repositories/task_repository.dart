@@ -48,6 +48,33 @@ class TaskRepository with UiLoggy implements ITaskRepository {
   }
 
   @override
+  Future<ProjectTask> reserveTask({
+    required ProjectTask task,
+    required String userId,
+  }) async {
+    final rows = await _guard(() => _source.readTasks(task.projectId));
+    final current = rows.map(_toTask).where((t) => t.id == task.id).firstOrNull;
+    if (current == null) {
+      throw const ProjectFailure('La tarea ya no existe.');
+    }
+    final taken = current.assigneeId != null && current.assigneeId != userId;
+    if (current.status != TaskStatus.todo || taken) {
+      throw const ProjectFailure(
+        'Esta tarea ya fue reservada por otra persona.',
+      );
+    }
+    await _guard(
+      () => _source.updateTask(task.id, {
+        'assignee_id': userId,
+        'status': TaskStatus.doing.name,
+      }),
+    );
+    // Pasar de todo a doing no cambia cuántas tareas están terminadas, así
+    // que el progreso del proyecto sigue igual.
+    return current.copyWith(status: TaskStatus.doing, assigneeId: userId);
+  }
+
+  @override
   Future<void> deleteTask(ProjectTask task) async {
     await _guard(() => _source.deleteTask(task.id));
     await _syncProgress(task.projectId);
@@ -78,7 +105,13 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     title: (row['title'] ?? '').toString(),
     description: (row['description'] ?? '').toString(),
     status: TaskStatus.fromName(row['status']?.toString()),
+    assigneeId: _nonEmpty(row['assignee_id']),
   );
+
+  String? _nonEmpty(Object? value) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
 
   Future<T> _guard<T>(Future<T> Function() action) async {
     try {
