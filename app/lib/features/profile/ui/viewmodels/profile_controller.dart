@@ -37,11 +37,21 @@ class ProfileController extends GetxController {
     }
   }
 
-  Future<bool> updateProfile({required String bio, required List<String> skills}) async {
+  Future<bool> updateProfile({
+    required String program,
+    required String institution,
+    required String bio,
+    required List<String> skills,
+  }) async {
     try {
       isSaving.value = true;
       error.value = null;
-      _profile.value = await _repository.updateMyProfile(bio: bio, skills: skills);
+      _profile.value = await _repository.updateMyProfile(
+        program: program,
+        institution: institution,
+        bio: bio,
+        skills: skills,
+      );
       return true;
     } on ProfileFailure catch (e) {
       error.value = e.message;

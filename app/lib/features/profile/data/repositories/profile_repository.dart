@@ -27,11 +27,18 @@ class ProfileRepository implements IProfileRepository {
 
   @override
   Future<UserProfile> updateMyProfile({
+    required String program,
+    required String institution,
     required String bio,
     required List<String> skills,
   }) async {
     final row = await _guard(
-      () => _source.updateMyProfile(bio: bio, skills: skills),
+      () => _source.updateMyProfile(
+        program: program,
+        institution: institution,
+        bio: bio,
+        skills: skills,
+      ),
       isWrite: true,
     );
     return _toProfile(row);
@@ -61,14 +68,13 @@ class ProfileRepository implements IProfileRepository {
   }
 
   // ─── Mapper ───────────────────────────────────────────────────────────────
-  UserProfile _toProfile(Map<String, dynamic> row) => UserProfile(
-    academicInfo: formatCareer(row['career']),
-    bio: (row['description'] as String?) ?? '',
-    skills: decodeStringList(row['skills']),
-    // Placeholder hasta que exista un algoritmo real de reputación.
-    commitmentScore: 83,
-    onTimeScore: 83,
-    responseRateScore: 83,
-    completedProjectsScore: 83,
-  );
+  UserProfile _toProfile(Map<String, dynamic> row) {
+    final career = parseCareer(row['career']);
+    return UserProfile(
+      program: career.program,
+      institution: career.institution,
+      bio: (row['description'] as String?) ?? '',
+      skills: decodeStringList(row['skills']),
+    );
+  }
 }

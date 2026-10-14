@@ -12,9 +12,11 @@ abstract class IProfileDataSource {
   /// sin fila (los líderes ven los perfiles de los postulantes desde ahí).
   Future<Map<String, dynamic>?> ensureMyProfile({required String name});
 
-  /// Actualiza `description` y `skills` en la fila del usuario y devuelve
-  /// la fila ya actualizada.
+  /// Actualiza `career`, `description` y `skills` en la fila del usuario y
+  /// devuelve la fila ya actualizada.
   Future<Map<String, dynamic>> updateMyProfile({
+    required String program,
+    required String institution,
     required String bio,
     required List<String> skills,
   });

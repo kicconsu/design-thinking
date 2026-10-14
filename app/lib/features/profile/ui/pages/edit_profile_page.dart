@@ -56,7 +56,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _save() async {
     final controller = Get.find<ProfileController>();
-    final ok = await controller.updateProfile(bio: _bioController.text.trim(), skills: _skills);
+    final current = controller.profile;
+    final ok = await controller.updateProfile(
+      program: current?.program ?? '',
+      institution: current?.institution ?? '',
+      bio: _bioController.text.trim(),
+      skills: _skills,
+    );
 
     if (!mounted) return;
 

@@ -27,6 +27,7 @@ class _FakeRobleDb extends RobleApiDataBase {
   Map<String, dynamic> profile;
 
   final created = <Map<String, dynamic>>[];
+  Map<String, dynamic>? lastFilters;
   final updated = <Map<String, dynamic>>[];
 
   @override
@@ -38,6 +39,7 @@ class _FakeRobleDb extends RobleApiDataBase {
     Map<String, dynamic>? filters,
   }) async {
     expect(tableName, RobleClient.profileTable);
+    lastFilters = filters;
     return rows;
   }
 
@@ -101,6 +103,14 @@ void main() {
       );
     });
 
+    test('pide al servidor solo la fila propia', () async {
+      final db = _FakeRobleDb(sessionUserId: _yo, rows: [_filaMia]);
+
+      await dataSource(db).readMyProfile();
+
+      expect(db.lastFilters, {'_owner': _yo});
+    });
+
     test('devuelve null sin sesión en vez de adivinar', () async {
       final db = _FakeRobleDb(sessionUserId: null, rows: [_filaMia]);
 
@@ -144,6 +154,8 @@ void main() {
       );
 
       final row = await dataSource(db).updateMyProfile(
+        program: 'Ing. Sistemas',
+        institution: 'Uninorte',
         bio: 'Una bio',
         skills: ['Dart'],
       );
@@ -151,6 +163,23 @@ void main() {
       expect(db.updated.single['id'], 'mia');
       expect(row['description'], 'Una bio');
       expect(row['skills'], ['Dart']);
+      expect(row['career'], {
+        'program': 'Ing. Sistemas',
+        'institution': 'Uninorte',
+      });
+    });
+
+    test('sin carrera guarda un objeto vacío (la columna es NOT NULL)', () async {
+      final db = _FakeRobleDb(sessionUserId: _yo, rows: [_filaMia]);
+
+      await dataSource(db).updateMyProfile(
+        program: ' ',
+        institution: '',
+        bio: '',
+        skills: const [],
+      );
+
+      expect(db.updated.single['career'], <String, dynamic>{});
     });
 
     test('si no hay fila, la crea con el nombre del perfil de auth', () async {
@@ -160,12 +189,18 @@ void main() {
         profile: {'userId': _yo, 'name': 'Dev'},
       );
 
-      await dataSource(db).updateMyProfile(bio: 'Una bio', skills: const []);
+      await dataSource(db).updateMyProfile(
+        program: 'Medicina',
+        institution: '',
+        bio: 'Una bio',
+        skills: const [],
+      );
 
       expect(db.updated, isEmpty);
       expect(db.created, hasLength(1));
       expect(db.created.single['name'], 'Dev');
       expect(db.created.single['description'], 'Una bio');
+      expect(db.created.single['career'], {'program': 'Medicina'});
     });
   });
 }

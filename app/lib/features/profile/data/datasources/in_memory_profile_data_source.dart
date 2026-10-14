@@ -1,3 +1,5 @@
+import 'package:imker/core/utils/career_label.dart';
+
 import 'i_profile_data_source.dart';
 
 /// Backend falso: una sola fila de perfil en memoria, igual de forma a la
@@ -25,9 +27,12 @@ class InMemoryProfileDataSource implements IProfileDataSource {
 
   @override
   Future<Map<String, dynamic>> updateMyProfile({
+    required String program,
+    required String institution,
     required String bio,
     required List<String> skills,
   }) async {
+    _row['career'] = careerToJson(program: program, institution: institution);
     _row['description'] = bio;
     _row['skills'] = skills;
     return _row;
