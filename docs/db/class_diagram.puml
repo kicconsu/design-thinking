@@ -80,6 +80,9 @@ entity project_member {
 * user_id : uuid <<FK>>
 * project_id : uuid <<FK>>
 * role : json {name: owner | member}
+* status : active | left | removed
+* joinedAt : timestamptz
+  leftAt : timestamptz
 }
 
 entity project_invitation {
@@ -89,7 +92,7 @@ entity project_invitation {
 * project_id : uuid <<FK project>>
 * email : text
 * user_id : uuid <<FK user_system>>
-* status : pending | accepted | declined
+* status : pending | accepted | declined | cancelled
 * createdAt : timestamptz
   respondedAt : timestamptz
 }
@@ -148,9 +151,15 @@ Las denied/cancelled quedan de historial.
 end note
 
 note bottom of project_member
-Una membresía por (user_id, project_id):
-  ROBLE no lo garantiza, lo hace el cliente
-  (addProjectMember es idempotente).
+Cada estancia es una fila y nunca se borra ni
+  se reabre: salir o ser echado la marca left o
+  removed (con leftAt) y volver crea una fila nueva.
+  Activo = fila con status active. ROBLE no
+  garantiza unicidad: addProjectMember no inserta
+  si ya hay una activa.
+Las solicitudes e invitaciones accepted son
+  historia; solo project_member dice quién
+  colabora hoy.
 Pendiente: qué pasa cuando alguien se va
 (status o left_at).
 end note

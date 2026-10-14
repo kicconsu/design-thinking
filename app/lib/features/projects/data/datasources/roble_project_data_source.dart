@@ -317,15 +317,21 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       };
     }
 
-    // ROBLE no tiene unicidad: si ya es miembro no se vuelve a insertar, así
-    // reintentar una aceptación que falló a medias no duplica a nadie.
+    // ROBLE no tiene unicidad: si ya hay una estancia activa no se inserta
+    // otra, así reintentar una aceptación que falló a medias no duplica a
+    // nadie. Una estancia terminada (`left`/`removed`) no se reabre: es
+    // historial, el reingreso crea una fila nueva.
     // Lectura estricta: si falla, la excepción sube y no se inserta a ciegas.
     final current = await _client.db.read(
       RobleClient.projectMembers,
       filters: {'project_id': projectId},
     );
     final existing = current
-        .where((r) => r['user_id']?.toString() == rawUserId)
+        .where(
+          (r) =>
+              r['user_id']?.toString() == rawUserId &&
+              (r['status']?.toString() ?? 'active') == 'active',
+        )
         .firstOrNull;
     if (existing != null) return existing;
 
@@ -333,6 +339,8 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       'project_id': projectId,
       'user_id': rawUserId,
       'role': roleMap,
+      'status': 'active',
+      'joinedAt': DateTime.now().toUtc().toIso8601String(),
     };
 
     try {

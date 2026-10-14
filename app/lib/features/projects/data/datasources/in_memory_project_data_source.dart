@@ -19,6 +19,10 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   final List<Map<String, dynamic>> _saved = [];
   final List<Map<String, dynamic>> _invitations = [];
 
+  /// Ids únicos aunque se creen varias filas en el mismo instante.
+  int _seq = 0;
+  String _nextId() => '${DateTime.now().microsecondsSinceEpoch}-${_seq++}';
+
   @override
   Future<List<Map<String, dynamic>>> readProjects() async => _data.projects;
 
@@ -35,7 +39,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   Future<Map<String, dynamic>> createProject(
     Map<String, dynamic> projectData,
   ) async {
-    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final newId = _nextId();
     final row = <String, dynamic>{
       '_id': newId,
       '_owner': 'demo-owner',
@@ -49,7 +53,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   Future<Map<String, dynamic>> createJoinRequest(
     Map<String, dynamic> joinRequestData,
   ) async {
-    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final newId = _nextId();
     final row = <String, dynamic>{
       '_id': newId,
       '_owner': joinRequestData['user_id'] ?? 'demo-user',
@@ -120,17 +124,35 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     Map<String, dynamic>? role,
   }) async {
     final existing = _projectMembers.where(
-      (r) => r['project_id'] == projectId && r['user_id'] == userId,
+      (r) =>
+          r['project_id'] == projectId &&
+          r['user_id'] == userId &&
+          (r['status'] ?? 'active') == 'active',
     );
     if (existing.isNotEmpty) return existing.first;
     final row = {
-      '_id': 'member-${DateTime.now().millisecondsSinceEpoch}',
+      '_id': 'member-${_projectMembers.length}-${DateTime.now().microsecondsSinceEpoch}',
       'project_id': projectId,
       'user_id': userId,
       'role': role ?? {'name': 'collaborator'},
+      'status': 'active',
+      'joinedAt': DateTime.now().toUtc().toIso8601String(),
     };
     _projectMembers.add(row);
     return row;
+  }
+
+  /// Termina la estancia activa de alguien (`left` o `removed`). Solo para
+  /// pruebas: la app todavía no tiene la acción de salir ni la de echar.
+  void endMembership(String projectId, String userId, String status) {
+    for (final r in _projectMembers) {
+      if (r['project_id'] == projectId &&
+          r['user_id'] == userId &&
+          (r['status'] ?? 'active') == 'active') {
+        r['status'] = status;
+        r['leftAt'] = DateTime.now().toUtc().toIso8601String();
+      }
+    }
   }
 
   @override

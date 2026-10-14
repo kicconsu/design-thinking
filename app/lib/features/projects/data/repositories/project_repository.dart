@@ -203,6 +203,11 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     String? userId,
     dynamic status,
   }) async {
+    final me = (userId != null && userId.isNotEmpty)
+        ? userId
+        : _source.currentUserId;
+    if (me.isNotEmpty) await _assertCanApply(projectId: projectId, userId: me);
+
     final payload = <String, dynamic>{
       'project_id': projectId,
       if (userId != null && userId.isNotEmpty) 'user_id': userId,
@@ -211,6 +216,31 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
 
     final resultRow = await _guard(() => _source.createJoinRequest(payload));
     return _toProjectJoinRequest(resultRow);
+  }
+
+  /// Solo se postula desde "nada" o "guardado": quien ya colabora, ya postuló
+  /// o ya tiene una invitación pendiente al mismo proyecto no puede volver a
+  /// hacerlo. Lecturas estrictas: si fallan, la excepción sube.
+  Future<void> _assertCanApply({
+    required String projectId,
+    required String userId,
+  }) async {
+    if ((await getMemberProjectIds(userId)).contains(projectId)) {
+      throw const ProjectFailure('Ya colaboras en este proyecto.');
+    }
+    final mine = await getJoinRequestsByUser(userId);
+    if (mine.any(
+      (r) =>
+          r.projectId == projectId && r.statusState.toLowerCase() == 'pending',
+    )) {
+      throw const ProjectFailure('Ya tienes una postulación pendiente aquí.');
+    }
+    final invitations = await getPendingInvitations(userId);
+    if (invitations.any((i) => i.projectId == projectId)) {
+      throw const ProjectFailure(
+        'Ya te invitaron a este proyecto: responde la invitación.',
+      );
+    }
   }
 
   @override
@@ -304,6 +334,7 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
   Future<int> cancelPendingJoinRequests({
     required String projectId,
     required String userId,
+    String? cancelledBy,
   }) async {
     final mine = await getJoinRequestsByUser(userId);
     final stale = mine.where(
@@ -313,17 +344,143 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
           r.id.isNotEmpty,
     );
     for (final request in stale) {
-      // `reviewed_by` es quien cambió el estado: aquí, la propia persona.
+      // `reviewed_by` es quien cambió el estado.
       await _guard(
         () => _source.updateJoinRequestStatus(
           requestId: request.id,
           status: 'cancelled',
-          reviewedBy: userId,
+          reviewedBy: cancelledBy ?? userId,
         ),
       );
     }
     return stale.length;
   }
+
+  // ─── Entrar a un proyecto ─────────────────────────────────────────────────
+  static const _memberRole = {'name': 'member'};
+
+  @override
+  Future<void> acceptJoinRequest({
+    required String requestId,
+    required String projectId,
+    required String applicantId,
+    required String reviewerId,
+  }) async {
+    await _guard(
+      () => _source.addProjectMember(
+        projectId: projectId,
+        userId: applicantId,
+        role: _memberRole,
+      ),
+    );
+    await _guard(
+      () => _source.updateJoinRequestStatus(
+        requestId: requestId,
+        status: 'accepted',
+        reviewedBy: reviewerId,
+      ),
+    );
+    // Ya es miembro: lo demás que tuviera abierto hacia este proyecto sobra.
+    await _bestEffort(
+      () => cancelPendingJoinRequests(
+        projectId: projectId,
+        userId: applicantId,
+        cancelledBy: reviewerId,
+      ),
+    );
+    await _bestEffort(() => _cancelPendingInvitations(projectId, applicantId));
+  }
+
+  @override
+  Future<void> rejectJoinRequest({
+    required String requestId,
+    required String reviewerId,
+  }) async {
+    await _guard(
+      () => _source.updateJoinRequestStatus(
+        requestId: requestId,
+        status: 'rejected',
+        reviewedBy: reviewerId,
+      ),
+    );
+  }
+
+  @override
+  Future<void> acceptInvitation(ProjectInvitation invitation) async {
+    await _guard(
+      () => _source.addProjectMember(
+        projectId: invitation.projectId,
+        userId: invitation.userId,
+        role: _memberRole,
+      ),
+    );
+    await _guard(
+      () => _source.updateInvitationStatus(
+        invitationId: invitation.id,
+        status: 'accepted',
+      ),
+    );
+    await _bestEffort(
+      () => cancelPendingJoinRequests(
+        projectId: invitation.projectId,
+        userId: invitation.userId,
+      ),
+    );
+  }
+
+  @override
+  Future<void> declineInvitation(ProjectInvitation invitation) async {
+    await _guard(
+      () => _source.updateInvitationStatus(
+        invitationId: invitation.id,
+        status: 'declined',
+      ),
+    );
+  }
+
+  @override
+  Future<List<String>> getActiveMemberUserIds(String projectId) async {
+    final rows = await _guard(
+      () => _source.readProjectMembers(projectId: projectId),
+    );
+    return {
+      for (final r in rows)
+        if (_isActiveMember(r) && (r['user_id']?.toString() ?? '').isNotEmpty)
+          r['user_id'].toString(),
+    }.toList();
+  }
+
+  /// Cierra las invitaciones `pending` de esa persona a ese proyecto.
+  Future<void> _cancelPendingInvitations(
+    String projectId,
+    String userId,
+  ) async {
+    final rows = await _guard(() => _source.readInvitationsForUser(userId));
+    for (final row in rows.map(_toInvitation)) {
+      if (row.projectId != projectId || !row.isPending) continue;
+      await _guard(
+        () => _source.updateInvitationStatus(
+          invitationId: row.id,
+          status: 'cancelled',
+        ),
+      );
+    }
+  }
+
+  /// Limpieza que no debe tumbar la operación principal: si falla, la fila
+  /// obsoleta no se muestra (las lecturas ya la filtran) y se cierra después.
+  Future<void> _bestEffort(Future<void> Function() action) async {
+    try {
+      await action();
+    } on ProjectFailure catch (e) {
+      loggy.warning('limpieza pendiente: ${e.message}');
+    }
+  }
+
+  /// Una fila de `project_member` sin `status` (anterior a la columna) cuenta
+  /// como activa.
+  bool _isActiveMember(Map<String, dynamic> row) =>
+      (row['status']?.toString() ?? 'active') == 'active';
 
   // ─── Invitaciones ─────────────────────────────────────────────────────────
   @override
@@ -357,12 +514,13 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
   @override
   Future<List<String>> getMemberProjectIds(String userId) async {
     final rows = await _guard(() => _source.readMembershipsByUser(userId));
-    return [
+    return {
       for (final r in rows)
-        if (_roleName(r['role']) != 'owner' &&
+        if (_isActiveMember(r) &&
+            _roleName(r['role']) != 'owner' &&
             (r['project_id']?.toString() ?? '').isNotEmpty)
           r['project_id'].toString(),
-    ];
+    }.toList();
   }
 
   String _roleName(Object? role) {
@@ -418,12 +576,16 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     final Map<String, List<String>> map = {};
     try {
       final memberRows = await _source.readProjectMembers(projectId: projectId);
+      final seen = <String>{};
       for (final row in memberRows) {
+        if (!_isActiveMember(row)) continue;
         final pId = (row['project_id'] ?? row['projectId'])?.toString() ?? '';
         final uId =
             (row['user_id'] ?? row['userId'] ?? row['_owner'])?.toString() ??
             '';
         if (pId.isEmpty) continue;
+        // ROBLE no garantiza unicidad: una persona cuenta una sola vez.
+        if (uId.isNotEmpty && !seen.add('$pId/$uId')) continue;
 
         final role = row['role'];
         String roleName = '';

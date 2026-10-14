@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_relation.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 
@@ -84,24 +85,38 @@ class ProjectDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             Obx(() {
-              final isOwner = userProjectsController.isOwner(projectItem);
-              final isPending = userProjectsController.isApplied(
-                projectItem.id,
-              );
-              final isActive = userProjectsController.activeProjects.any(
-                (p) => p.id == projectItem.id,
-              );
+              final relation = userProjectsController.relationOf(projectItem);
 
-              if (isOwner) {
+              // Qué decir según la relación; solo guardado/nada permite postular.
+              String? banner;
+              switch (relation) {
+                case ProjectRelation.owner:
+                  banner = 'Eres el creador de este proyecto';
+                case ProjectRelation.active:
+                  banner = 'Ya colaboras en este proyecto';
+                case ProjectRelation.invited:
+                  banner = 'Te invitaron: respóndela en Proyectos → Otros proyectos → Invitaciones';
+                case ProjectRelation.pending:
+                  banner = 'Postulación pendiente de respuesta';
+                case ProjectRelation.saved:
+                case ProjectRelation.none:
+                  banner = null;
+              }
+
+              if (banner != null) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: cs.secondaryContainer,
                     border: Border.all(color: cs.outline),
                   ),
                   child: Center(
                     child: Text(
-                      'Eres el creador de este proyecto',
+                      banner,
+                      textAlign: TextAlign.center,
                       style: tt.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: cs.onSecondaryContainer,
@@ -110,9 +125,6 @@ class ProjectDetailPage extends StatelessWidget {
                   ),
                 );
               }
-
-              // No mostrar el botón si ya es pendiente o colaboración activa
-              if (isPending || isActive) return const SizedBox.shrink();
 
               return FilledButton.icon(
                 style: FilledButton.styleFrom(

@@ -154,10 +154,16 @@ void main() {
         skills: const [],
       );
       projectId = project.id;
+      // Solicitud aceptada (historia) y la membresía que de verdad cuenta.
       await repository.createJoinRequest(
         projectId: projectId,
         userId: 'A',
         status: 'accepted',
+      );
+      await repository.addProjectMember(
+        projectId: projectId,
+        userId: 'A',
+        role: {'name': 'member'},
       );
     });
 

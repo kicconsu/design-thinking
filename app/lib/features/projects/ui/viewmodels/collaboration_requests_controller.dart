@@ -51,9 +51,15 @@ class CollaborationRequestsController extends GetxController {
     final epoch = _epoch;
     try {
       final requests = await _repository.getJoinRequestsForProject(projectId);
+      // Quien ya colabora (p. ej. entró por una invitación) no necesita que se
+      // le acepte nada.
+      final members = (await _repository.getActiveMemberUserIds(
+        projectId,
+      )).toSet();
       final loaded = <Applicant>[];
       for (final req in requests) {
         if (req.statusState.toLowerCase() != 'pending') continue;
+        if (members.contains(req.userId)) continue;
         loaded.add(await _toApplicant(req));
       }
       if (epoch != _epoch) return;
@@ -73,8 +79,8 @@ class CollaborationRequestsController extends GetxController {
   /// Acepta o rechaza una solicitud. Devuelve `null` si salió bien o el
   /// mensaje para mostrar.
   ///
-  /// Aceptar primero registra al miembro (idempotente) y después marca la
-  /// solicitud: si el segundo paso falla, reintentar no duplica a nadie.
+  /// La regla (miembro primero, estado después, limpieza al final) vive en el
+  /// repositorio; aquí solo se pide y se informa.
   Future<String?> decide(
     Applicant applicant, {
     required Project project,
@@ -90,17 +96,18 @@ class CollaborationRequestsController extends GetxController {
 
     try {
       if (accepted) {
-        await _repository.addProjectMember(
+        await _repository.acceptJoinRequest(
+          requestId: applicant.id,
           projectId: applicant.projectId,
-          userId: applicant.userId,
-          role: {'name': 'member'},
+          applicantId: applicant.userId,
+          reviewerId: reviewerId,
+        );
+      } else {
+        await _repository.rejectJoinRequest(
+          requestId: applicant.id,
+          reviewerId: reviewerId,
         );
       }
-      await _repository.updateJoinRequestStatus(
-        requestId: applicant.id,
-        status: accepted ? 'accepted' : 'rejected',
-        reviewedBy: reviewerId,
-      );
     } on ProjectFailure catch (e) {
       return e.message;
     } catch (_) {

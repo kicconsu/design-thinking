@@ -26,7 +26,31 @@ class _MockFailingRepository implements IProjectRepository {
   Future<int> cancelPendingJoinRequests({
     required String projectId,
     required String userId,
+    String? cancelledBy,
   }) async => 0;
+
+  @override
+  Future<void> acceptJoinRequest({
+    required String requestId,
+    required String projectId,
+    required String applicantId,
+    required String reviewerId,
+  }) async {}
+
+  @override
+  Future<void> rejectJoinRequest({
+    required String requestId,
+    required String reviewerId,
+  }) async {}
+
+  @override
+  Future<void> acceptInvitation(ProjectInvitation invitation) async {}
+
+  @override
+  Future<void> declineInvitation(ProjectInvitation invitation) async {}
+
+  @override
+  Future<List<String>> getActiveMemberUserIds(String projectId) async => [];
 
   @override
   Future<List<Project>> getProjects() async {

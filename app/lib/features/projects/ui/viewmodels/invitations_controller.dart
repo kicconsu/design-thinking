@@ -86,8 +86,8 @@ class InvitationsController extends GetxController {
 
   /// Acepta o rechaza. Devuelve `null` si salió bien o el mensaje para mostrar.
   ///
-  /// Aceptar primero registra al miembro (idempotente) y después marca la
-  /// invitación: si el segundo paso falla, reintentar no duplica a nadie.
+  /// La regla (miembro primero, estado después, limpieza al final) vive en el
+  /// repositorio; aquí solo se pide y se informa.
   Future<String?> respond(
     ProjectInvitation invitation, {
     required bool accept,
@@ -99,34 +99,14 @@ class InvitationsController extends GetxController {
 
     try {
       if (accept) {
-        await _repository.addProjectMember(
-          projectId: invitation.projectId,
-          userId: userId,
-          role: {'name': 'member'},
-        );
+        await _repository.acceptInvitation(invitation);
+      } else {
+        await _repository.declineInvitation(invitation);
       }
-      await _repository.respondToInvitation(
-        invitationId: invitation.id,
-        accept: accept,
-      );
     } on ProjectFailure catch (e) {
       return e.message;
     } catch (_) {
       return 'No se pudo responder la invitación.';
-    }
-
-    // Ya es miembro: su solicitud pendiente a este proyecto (si la había)
-    // quedó obsoleta y el dueño no debería seguir viéndola. No es crítico: si
-    // falla, el proyecto ya cuenta como Activo y esa solicitud no se muestra.
-    if (accept) {
-      try {
-        await _repository.cancelPendingJoinRequests(
-          projectId: invitation.projectId,
-          userId: userId,
-        );
-      } on ProjectFailure {
-        // Se limpia en la próxima oportunidad.
-      }
     }
 
     invitations.removeWhere((i) => i.id == invitation.id);
