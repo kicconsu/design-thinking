@@ -10,8 +10,6 @@ import 'package:imker/routes/app_routes.dart';
 import '../viewmodels/profile_controller.dart';
 import '../widgets/profile_view.dart';
 import 'collaboration_history_page.dart';
-import 'edit_profile_page.dart';
-import 'profile_projects_page.dart';
 import 'settings_page.dart';
 import 'trust_indicators_page.dart';
 
@@ -101,10 +99,7 @@ class _ProfileContent extends StatelessWidget {
               isOwn: true,
               projects: myProjects,
               onOpenSettings: () => Get.to(() => const SettingsPage()),
-              onEdit: () => Get.to(() => const EditProfilePage()),
               onOpenProject: (p) => Get.to(() => ProjectDetailPage(project: p)),
-              onOpenProjects: () =>
-                  Get.to(() => ProfileProjectsPage(projects: myProjects)),
               onOpenIndicators: () =>
                   Get.to(() => TrustIndicatorsPage(profile: profile)),
               onOpenHistory: () => Get.to(

@@ -19,9 +19,7 @@ class ProfileView extends StatelessWidget {
     this.isOwn = false,
     this.projects = const [],
     this.onOpenSettings,
-    this.onEdit,
     this.onOpenProject,
-    this.onOpenProjects,
     this.onOpenIndicators,
     this.onOpenHistory,
   });
@@ -31,9 +29,7 @@ class ProfileView extends StatelessWidget {
   final bool isOwn;
   final List<Project> projects;
   final VoidCallback? onOpenSettings;
-  final VoidCallback? onEdit;
   final ValueChanged<Project>? onOpenProject;
-  final VoidCallback? onOpenProjects;
   final VoidCallback? onOpenIndicators;
   final VoidCallback? onOpenHistory;
 
@@ -43,6 +39,7 @@ class ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final muted = tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,31 +50,36 @@ class ProfileView extends StatelessWidget {
           projectCount: projects.length,
           isOwn: isOwn,
           onOpenSettings: onOpenSettings,
-          onEdit: onEdit,
         ),
-        const SizedBox(height: 12),
-        _SectionCard(
-          title: 'Sobre ti',
-          child: Text(
-            profile.bio.isNotEmpty
-                ? profile.bio
-                : (isOwn
+        const SizedBox(height: 28),
+        _Section(
+          title: isOwn ? 'Sobre ti' : 'Sobre mí',
+          child: profile.bio.isEmpty
+              ? Text(
+                  isOwn
                       ? 'Aún no has escrito nada sobre ti.'
-                      : 'Aún no escribió nada.'),
-            style: tt.bodyMedium?.copyWith(
-              color: profile.bio.isEmpty ? cs.onSurfaceVariant : null,
-            ),
-          ),
+                      : 'Aún no escribió nada.',
+                  style: muted,
+                )
+              : Container(
+                  padding: const EdgeInsets.only(left: 14),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: cs.primary, width: 3),
+                    ),
+                  ),
+                  child: Text(profile.bio, style: tt.bodyLarge),
+                ),
         ),
-        const SizedBox(height: 12),
-        _SectionCard(
+        const SizedBox(height: 28),
+        _Section(
           title: 'Habilidades',
           child: profile.skills.isEmpty
               ? Text(
                   isOwn
                       ? 'Aún no agregas habilidades.'
                       : 'Aún no agrega habilidades.',
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  style: muted,
                 )
               : Wrap(
                   spacing: 8,
@@ -86,8 +88,8 @@ class ProfileView extends StatelessWidget {
                     for (final skill in profile.skills)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                          horizontal: 12,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: cs.secondaryContainer,
@@ -95,25 +97,23 @@ class ProfileView extends StatelessWidget {
                         ),
                         child: Text(
                           skill,
-                          style: TextStyle(color: cs.onSecondaryContainer),
+                          style: tt.labelLarge?.copyWith(
+                            color: cs.onSecondaryContainer,
+                          ),
                         ),
                       ),
                   ],
                 ),
         ),
-        const SizedBox(height: 12),
-        _SectionCard(
+        const SizedBox(height: 28),
+        _Section(
           title: 'Proyectos',
-          onTap: onOpenProjects,
-          actionLabel: projects.length > _previewCount
-              ? 'Ver todos (${projects.length})'
-              : null,
           child: projects.isEmpty
               ? Text(
                   isOwn
                       ? 'Todavía no participas en ningún proyecto.'
                       : 'Todavía no participa en ningún proyecto.',
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  style: muted,
                 )
               : Column(
                   children: [
@@ -127,34 +127,72 @@ class ProfileView extends StatelessWidget {
                   ],
                 ),
         ),
-        const SizedBox(height: 12),
-        _SectionCard(
+        if (onOpenHistory != null) ...[
+          const SizedBox(height: 4),
+          _WideButton(
+            icon: Icons.history,
+            label: projects.length > _previewCount
+                ? 'Historial de colaboración (${projects.length})'
+                : 'Historial de colaboración',
+            onPressed: onOpenHistory!,
+          ),
+        ],
+        const SizedBox(height: 28),
+        _Section(
           title: 'Indicadores de confianza',
-          onTap: onOpenIndicators,
           child: profile.hasTrustHistory
-              ? TrustIndicators(
-                  commitmentScore: profile.commitmentScore,
-                  onTimeScore: profile.onTimeScore,
-                  responseRateScore: profile.responseRateScore,
-                  completedProjectsScore: profile.completedProjectsScore,
-                  showTitle: false,
+              ? InkWell(
+                  onTap: onOpenIndicators,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      border: Border.all(color: cs.outline),
+                    ),
+                    child: TrustIndicators(
+                      commitmentScore: profile.commitmentScore,
+                      onTimeScore: profile.onTimeScore,
+                      responseRateScore: profile.responseRateScore,
+                      completedProjectsScore: profile.completedProjectsScore,
+                      showTitle: false,
+                    ),
+                  ),
                 )
-              : Text(
-                  'Aparecerán cuando ${isOwn ? 'colabores' : 'colabore'} en proyectos.',
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              : InkWell(
+                  onTap: onOpenIndicators,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: cs.outline),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.insights_outlined,
+                          size: 32,
+                          color: cs.primary,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            'Aparecerán cuando ${isOwn ? 'colabores' : 'colabore'} en proyectos.',
+                            style: muted,
+                          ),
+                        ),
+                        if (onOpenIndicators != null)
+                          Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                      ],
+                    ),
+                  ),
                 ),
-        ),
-        const SizedBox(height: 12),
-        _NavRow(
-          icon: Icons.history,
-          label: 'Historial de colaboración',
-          onTap: onOpenHistory,
         ),
       ],
     );
   }
 }
 
+/// Banda con el avatar centrado sobre su borde, nombre, carrera y una franja de
+/// cifras al estilo de las tarjetas de Descubrir (celdas separadas por líneas).
 class _Header extends StatelessWidget {
   const _Header({
     required this.name,
@@ -162,7 +200,6 @@ class _Header extends StatelessWidget {
     required this.projectCount,
     required this.isOwn,
     this.onOpenSettings,
-    this.onEdit,
   });
 
   final String name;
@@ -170,175 +207,183 @@ class _Header extends StatelessWidget {
   final int projectCount;
   final bool isOwn;
   final VoidCallback? onOpenSettings;
-  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final summary = [
-      '$projectCount ${projectCount == 1 ? 'proyecto' : 'proyectos'}',
-      '${profile.skills.length} ${profile.skills.length == 1 ? 'habilidad' : 'habilidades'}',
-    ].join(' · ');
+    const avatarRadius = 46.0;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.tertiaryContainer,
-        border: Border.all(color: cs.outline),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ProfileAvatar(name: name, radius: 36),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: tt.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: cs.onTertiaryContainer,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      profile.academicInfo.isNotEmpty
-                          ? profile.academicInfo
-                          : (isOwn
-                                ? 'Agrega tu carrera'
-                                : 'Sin carrera indicada'),
-                      style: tt.bodyMedium?.copyWith(
-                        color: cs.onTertiaryContainer,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      summary,
-                      style: tt.bodySmall?.copyWith(
-                        color: cs.onTertiaryContainer,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isOwn && onOpenSettings != null)
-                IconButton(
-                  tooltip: 'Ajustes',
-                  icon: Icon(
-                    Icons.settings_outlined,
-                    color: cs.onTertiaryContainer,
-                  ),
-                  onPressed: onOpenSettings,
-                ),
-            ],
-          ),
-          if (isOwn && onEdit != null) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
-                  ),
-                ),
-                onPressed: onEdit,
-                child: const Text('Editar perfil'),
+    Widget stat(String value, String label) => Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label.toUpperCase(),
+              style: tt.labelSmall?.copyWith(
+                letterSpacing: 1.2,
+                color: cs.onSurfaceVariant,
               ),
             ),
           ],
+        ),
+      ),
+    );
+    final divider = Container(width: 1, height: 44, color: cs.outline);
+
+    return Container(
+      decoration: BoxDecoration(border: Border.all(color: cs.outline)),
+      child: Column(
+        children: [
+          // Banda superior; el avatar la cruza.
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                height: 84,
+                width: double.infinity,
+                color: cs.tertiaryContainer,
+                alignment: Alignment.topRight,
+                child: isOwn && onOpenSettings != null
+                    ? IconButton(
+                        tooltip: 'Ajustes',
+                        icon: Icon(
+                          Icons.settings_outlined,
+                          color: cs.onTertiaryContainer,
+                        ),
+                        onPressed: onOpenSettings,
+                      )
+                    : null,
+              ),
+              Positioned(
+                top: 84 - avatarRadius,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: cs.surface,
+                    border: Border.all(color: cs.outline, width: 1.5),
+                  ),
+                  child: ProfileAvatar(name: name, radius: avatarRadius),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: avatarRadius + 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: tt.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  profile.academicInfo.isNotEmpty
+                      ? profile.academicInfo
+                      : (isOwn ? 'Agrega tu carrera' : 'Sin carrera indicada'),
+                  textAlign: TextAlign.center,
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: cs.secondaryContainer,
+              border: Border(top: BorderSide(color: cs.outline)),
+            ),
+            child: Row(
+              children: [
+                stat(
+                  '$projectCount',
+                  projectCount == 1 ? 'Proyecto' : 'Proyectos',
+                ),
+                divider,
+                stat(
+                  '${profile.skills.length}',
+                  profile.skills.length == 1 ? 'Habilidad' : 'Habilidades',
+                ),
+                divider,
+                stat(
+                  profile.hasTrustHistory ? '${profile.commitmentScore}%' : '—',
+                  'Confianza',
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Tarjeta con título; si recibe [onTap] se puede abrir (muestra un chevron).
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.child,
-    this.onTap,
-    this.actionLabel,
-  });
+/// Título de sección en la tipografía de títulos de la app, con filete.
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
 
   final String title;
   final Widget child;
-  final VoidCallback? onTap;
-  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border.all(color: cs.outline),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: tt.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (actionLabel != null)
-                    Text(
-                      actionLabel!,
-                      style: tt.bodySmall?.copyWith(color: cs.primary),
-                    ),
-                  if (onTap != null)
-                    Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                ],
-              ),
-              const SizedBox(height: 8),
-              child,
-            ],
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
-      ),
+        const SizedBox(height: 6),
+        Divider(height: 1, color: cs.outline),
+        const SizedBox(height: 14),
+        child,
+      ],
     );
   }
 }
 
-class _NavRow extends StatelessWidget {
-  const _NavRow({required this.icon, required this.label, this.onTap});
+/// Botón ancho con el aspecto de «Leer más» de las tarjetas de Descubrir.
+class _WideButton extends StatelessWidget {
+  const _WideButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
 
   final IconData icon;
   final String label;
-  final VoidCallback? onTap;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border.all(color: cs.outline),
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        backgroundColor: cs.tertiaryContainer,
+        foregroundColor: cs.onTertiaryContainer,
+        side: BorderSide(color: cs.onTertiaryContainer),
+        minimumSize: const Size.fromHeight(48),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       ),
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(label),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(label),
     );
   }
 }

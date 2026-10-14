@@ -76,17 +76,24 @@ void main() {
 
       expect(find.text('Valentina Ríos'), findsOneWidget);
       expect(find.text('Ingeniería de Sistemas - Uninorte'), findsOneWidget);
-      expect(find.text('1 proyecto · 2 habilidades'), findsOneWidget);
+      expect(find.text('PROYECTO'), findsOneWidget);
       expect(find.text('Me gustan los datos.'), findsOneWidget);
       expect(find.text('Python'), findsOneWidget);
       expect(find.text('Proyecto Solaria'), findsOneWidget);
     });
 
-    testWidgets('sin historial no muestra indicadores ni inventa números', (tester) async {
-      await tester.pumpWidget(_host(const ProfileView(name: 'Ana', profile: _full, isOwn: true)));
+    testWidgets('sin historial no muestra indicadores ni inventa números', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(const ProfileView(name: 'Ana', profile: _full, isOwn: true)),
+      );
 
       expect(find.byType(TrustIndicators), findsNothing);
-      expect(find.textContaining('Aparecerán cuando colabores'), findsOneWidget);
+      expect(
+        find.textContaining('Aparecerán cuando colabores'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('con historial muestra los indicadores', (tester) async {
@@ -104,25 +111,27 @@ void main() {
     });
 
     testWidgets('perfil vacío propio invita a completarlo', (tester) async {
-      await tester.pumpWidget(_host(const ProfileView(name: 'Ana', profile: UserProfile(), isOwn: true)));
+      await tester.pumpWidget(
+        _host(
+          const ProfileView(name: 'Ana', profile: UserProfile(), isOwn: true),
+        ),
+      );
 
       expect(find.text('Agrega tu carrera'), findsOneWidget);
       expect(find.text('Aún no has escrito nada sobre ti.'), findsOneWidget);
       expect(find.text('Aún no agregas habilidades.'), findsOneWidget);
     });
 
-    testWidgets('perfil ajeno no ofrece editar ni ajustes', (tester) async {
+    testWidgets('perfil ajeno no ofrece ajustes', (tester) async {
       await tester.pumpWidget(
-        _host(ProfileView(name: 'Ana', profile: _full, onEdit: () {}, onOpenSettings: () {})),
+        _host(ProfileView(name: 'Ana', profile: _full, onOpenSettings: () {})),
       );
 
-      expect(find.text('Editar perfil'), findsNothing);
       expect(find.byIcon(Icons.settings_outlined), findsNothing);
     });
 
-    testWidgets('el perfil propio abre ajustes y edición', (tester) async {
+    testWidgets('el perfil propio abre ajustes', (tester) async {
       var settings = 0;
-      var edit = 0;
       await tester.pumpWidget(
         _host(
           ProfileView(
@@ -130,23 +139,32 @@ void main() {
             profile: _full,
             isOwn: true,
             onOpenSettings: () => settings++,
-            onEdit: () => edit++,
           ),
         ),
       );
 
       await tester.tap(find.byIcon(Icons.settings_outlined));
-      await tester.tap(find.text('Editar perfil'));
 
       expect(settings, 1);
-      expect(edit, 1);
     });
 
-    testWidgets('muestra «Ver todos» solo si hay más de dos proyectos', (tester) async {
+    testWidgets('muestra dos proyectos y el total en el historial', (
+      tester,
+    ) async {
       final three = [for (var i = 0; i < 3; i++) _project('$i', 'P$i')];
-      await tester.pumpWidget(_host(ProfileView(name: 'Ana', profile: _full, isOwn: true, projects: three)));
+      await tester.pumpWidget(
+        _host(
+          ProfileView(
+            name: 'Ana',
+            profile: _full,
+            isOwn: true,
+            projects: three,
+            onOpenHistory: () {},
+          ),
+        ),
+      );
 
-      expect(find.text('Ver todos (3)'), findsOneWidget);
+      expect(find.text('Historial de colaboración (3)'), findsOneWidget);
       expect(find.text('P2'), findsNothing);
     });
   });
@@ -154,7 +172,9 @@ void main() {
   group('SettingsPage', () {
     tearDown(Get.reset);
 
-    testWidgets('cerrar sesión pide confirmación y no cierra si se cancela', (tester) async {
+    testWidgets('cerrar sesión pide confirmación y no cierra si se cancela', (
+      tester,
+    ) async {
       final repo = _FakeAuth();
       Get.put(AuthenticationController(repo));
       await tester.pumpWidget(const GetMaterialApp(home: SettingsPage()));
@@ -162,7 +182,10 @@ void main() {
 
       await tester.tap(find.text('Cerrar sesión'));
       await tester.pumpAndSettle();
-      expect(find.text('¿Estás seguro de que deseas cerrar sesión?'), findsOneWidget);
+      expect(
+        find.text('¿Estás seguro de que deseas cerrar sesión?'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();

@@ -6,7 +6,8 @@ import 'package:imker/routes/app_routes.dart';
 
 import 'edit_profile_page.dart';
 
-/// Ajustes de la cuenta: editar perfil, configuración y cerrar sesión.
+/// Detalles de la cuenta (solo lectura) y ajustes: editar perfil,
+/// configuración y cerrar sesión.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -62,7 +63,42 @@ class SettingsPage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           children: [
             Text(
-              'Cuenta',
+              'Detalles',
+              style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                border: Border.all(color: cs.outline),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.mail_outline, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CORREO',
+                          style: tt.labelSmall?.copyWith(
+                            letterSpacing: 1.2,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(auth.loggedEmail, style: tt.bodyLarge),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Ajustes',
               style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
@@ -74,23 +110,10 @@ class SettingsPage extends StatelessWidget {
                 onTap: () => Get.off(() => const EditProfilePage()),
               ),
               Divider(height: 1, color: cs.outline),
-              ListTile(
-                leading: const Icon(Icons.mail_outline),
-                title: const Text('Correo'),
-                subtitle: Text(auth.loggedEmail),
-              ),
-            ]),
-            const SizedBox(height: 20),
-            Text(
-              'Aplicación',
-              style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant),
-            ),
-            const SizedBox(height: 8),
-            group([
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: const Text('Configuración'),
-                subtitle: const Text('Próximamente'),
+              const ListTile(
+                leading: Icon(Icons.settings_outlined),
+                title: Text('Configuración'),
+                subtitle: Text('Próximamente'),
                 enabled: false,
               ),
             ]),
