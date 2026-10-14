@@ -5,9 +5,11 @@ import 'package:imker/core/widgets/operation_done_page.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
-import '../viewmodels/profile_controller.dart';
 
-/// Pantalla "Edit-Profile" del flujo de Figma: edita el resumen y las
+import '../viewmodels/profile_controller.dart';
+import '../widgets/profile_form_fields.dart';
+
+/// Pantalla "Edit-Profile" del flujo de Figma: edita carrera, resumen y
 /// habilidades del propio perfil.
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -17,51 +19,27 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  final _bioController = TextEditingController();
-  final _newSkillController = TextEditingController();
-  late List<String> _skills;
+  late final ProfileFormController _form;
 
   @override
   void initState() {
     super.initState();
-    final profile = Get.find<ProfileController>().profile;
-    _bioController.text = profile?.bio ?? '';
-    _skills = List<String>.from(profile?.skills ?? const []);
+    _form = ProfileFormController(Get.find<ProfileController>().profile);
   }
 
   @override
   void dispose() {
-    _bioController.dispose();
-    _newSkillController.dispose();
+    _form.dispose();
     super.dispose();
-  }
-
-  void _addSkill() {
-    final value = _newSkillController.text.trim();
-    if (value.isEmpty) return;
-    final alreadyExists = _skills.any((s) => s.toLowerCase() == value.toLowerCase());
-    if (alreadyExists) {
-      _newSkillController.clear();
-      return;
-    }
-    setState(() {
-      _skills.add(value);
-      _newSkillController.clear();
-    });
-  }
-
-  void _removeSkill(String skill) {
-    setState(() => _skills.remove(skill));
   }
 
   Future<void> _save() async {
     final controller = Get.find<ProfileController>();
-    final current = controller.profile;
     final ok = await controller.updateProfile(
-      program: current?.program ?? '',
-      institution: current?.institution ?? '',
-      bio: _bioController.text.trim(),
-      skills: _skills,
+      program: _form.programText,
+      institution: _form.institutionText,
+      bio: _form.bioText,
+      skills: _form.skills,
     );
 
     if (!mounted) return;
@@ -110,14 +88,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           children: [
-            Text('Mi Perfil', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+            Text(
+              'Mi Perfil',
+              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: cs.tertiaryContainer,
-                  child: Icon(Icons.person, color: cs.onTertiaryContainer, size: 30),
+                  child: Icon(
+                    Icons.person,
+                    color: cs.onTertiaryContainer,
+                    size: 30,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -126,7 +111,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     children: [
                       Text(
                         auth.loggedName,
-                        style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        style: tt.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (profile != null && profile.academicInfo.isNotEmpty)
                         Text(profile.academicInfo, style: tt.bodySmall),
@@ -144,79 +131,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
               onTabSelected: (_) {},
             ),
             const SizedBox(height: 16),
-            Text('Sobre ti', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _bioController,
-              maxLines: 5,
-              minLines: 3,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: cs.surface,
-                hintText: 'Cuéntale al resto de estudiantes sobre ti...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(color: cs.outline),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Habilidades', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _newSkillController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: cs.surface,
-                      hintText: 'p. ej. Pandas, DuckDB...',
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.zero,
-                        borderSide: BorderSide(color: cs.outline),
-                      ),
-                    ),
-                    onSubmitted: (_) => _addSkill(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                  ),
-                  onPressed: _addSkill,
-                  child: const Text('Aceptar'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _skills
-                  .map(
-                    (s) => Chip(
-                      label: Text(s),
-                      backgroundColor: cs.secondaryContainer,
-                      labelStyle: TextStyle(color: cs.onSecondaryContainer),
-                      deleteIcon: Icon(Icons.close, size: 16, color: cs.onSecondaryContainer),
-                      onDeleted: () => _removeSkill(s),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                        side: BorderSide(color: cs.outline),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
+            ProfileFormFields(form: _form),
             const SizedBox(height: 32),
             Obx(
               () => FilledButton(
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
                 ),
                 onPressed: controller.isSaving.value ? null : _save,
                 child: controller.isSaving.value
