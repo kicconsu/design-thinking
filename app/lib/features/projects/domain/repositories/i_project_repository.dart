@@ -68,8 +68,40 @@ abstract class IProjectRepository {
   /// Cancela las solicitudes `pending` de ese usuario a ese proyecto.
   /// Devuelve cuántas canceló. Se usa cuando ya es miembro por otra vía
   /// (p. ej. aceptó una invitación): la solicitud quedó obsoleta.
+  /// [cancelledBy] es quien hace el cambio; por defecto, la propia persona.
   Future<int> cancelPendingJoinRequests({
     required String projectId,
     required String userId,
+    String? cancelledBy,
   });
+
+  // ─── Entrar a un proyecto ─────────────────────────────────────────────────
+  // Cada operación aplica la regla completa y se puede reintentar: primero la
+  // membresía (idempotente), después los estados, y al final una limpieza que
+  // no es crítica. Lanzan [ProjectFailure].
+
+  /// El dueño acepta una solicitud: activa al miembro, marca `accepted` y
+  /// cierra las demás solicitudes e invitaciones pendientes de esa persona.
+  Future<void> acceptJoinRequest({
+    required String requestId,
+    required String projectId,
+    required String applicantId,
+    required String reviewerId,
+  });
+
+  /// El dueño rechaza una solicitud. No toca la membresía.
+  Future<void> rejectJoinRequest({
+    required String requestId,
+    required String reviewerId,
+  });
+
+  /// La persona acepta una invitación: activa su membresía, marca `accepted`
+  /// y cancela sus solicitudes pendientes a ese proyecto.
+  Future<void> acceptInvitation(ProjectInvitation invitation);
+
+  /// La persona rechaza una invitación. No toca la membresía.
+  Future<void> declineInvitation(ProjectInvitation invitation);
+
+  /// `user_id` de quienes colaboran hoy en el proyecto (sin duplicados).
+  Future<List<String>> getActiveMemberUserIds(String projectId);
 }

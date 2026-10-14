@@ -1,6 +1,7 @@
 import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_relation.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
 import 'package:flutter/material.dart';
@@ -145,6 +146,51 @@ class _FavoriteButton extends StatelessWidget {
     }
   }
 
+  void _showActiveNotice(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    Get.snackbar(
+      'Ya colaboras en este proyecto',
+      "Lo encuentras en 'Proyectos' → Otros proyectos → Activos.",
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: cs.tertiaryContainer,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  void _showInvitedNotice(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    Get.snackbar(
+      'Te invitaron a este proyecto',
+      "Respóndela en 'Proyectos' → Otros proyectos → Invitaciones.",
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: cs.tertiaryContainer,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  /// Botón redondo informativo (sin alternar nada) para las relaciones en las
+  /// que guardar ya no aplica.
+  Widget _statusButton({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Material(
+      color: Colors.black45,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: IconButton(
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        icon: Icon(icon, color: color, size: 24),
+        tooltip: tooltip,
+        onPressed: onPressed,
+      ),
+    );
+  }
+
   void _showAppliedNotice(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
@@ -162,27 +208,35 @@ class _FavoriteButton extends StatelessWidget {
     final projectsController = Get.find<UserProjectsController>();
 
     return Obx(() {
-      final isOwner = projectsController.isOwner(project);
-      if (isOwner) return const SizedBox.shrink();
-
-      // Ya hay una postulación pendiente: el estado lo manda "Pendientes",
-      // así que aquí sólo se informa, no se alterna.
-      if (projectsController.isApplied(project.id)) {
-        return Material(
-          color: Colors.black45,
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          child: IconButton(
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            icon: const Icon(
-              Icons.how_to_reg_outlined,
-              color: Colors.amberAccent,
-              size: 24,
-            ),
+      // Una sola pregunta: cómo me relaciono con este proyecto. Según eso
+      // se puede guardar, o solo se informa.
+      switch (projectsController.relationOf(project)) {
+        case ProjectRelation.owner:
+          return const SizedBox.shrink();
+        case ProjectRelation.active:
+          return _statusButton(
+            icon: Icons.check_circle_outline,
+            color: Colors.lightGreenAccent,
+            tooltip: 'Ya colaboras aquí',
+            onPressed: () => _showActiveNotice(context),
+          );
+        case ProjectRelation.invited:
+          return _statusButton(
+            icon: Icons.mail_outline,
+            color: Colors.amberAccent,
+            tooltip: 'Tienes una invitación',
+            onPressed: () => _showInvitedNotice(context),
+          );
+        case ProjectRelation.pending:
+          return _statusButton(
+            icon: Icons.how_to_reg_outlined,
+            color: Colors.amberAccent,
             tooltip: 'Postulación pendiente',
             onPressed: () => _showAppliedNotice(context),
-          ),
-        );
+          );
+        case ProjectRelation.saved:
+        case ProjectRelation.none:
+          break;
       }
 
       final saved = projectsController.isSaved(project.id);

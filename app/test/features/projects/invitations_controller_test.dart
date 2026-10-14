@@ -220,11 +220,13 @@ void main() {
 
   test('aceptar cancela mi solicitud pendiente al mismo proyecto', () async {
     await setUpWith(InMemoryProjectDataSource(DummyData()));
-    await repository.createJoinRequest(
-      projectId: projectId,
-      userId: 'ana-id',
-      status: 'pending',
-    );
+    // Directo al datasource: el repositorio no deja postular con una
+    // invitación pendiente, pero la solicitud pudo ser anterior a ella.
+    await source.createJoinRequest({
+      'project_id': projectId,
+      'user_id': 'ana-id',
+      'status': 'pending',
+    });
     final controller = build();
     await controller.fetch();
 
@@ -244,16 +246,16 @@ void main() {
         jobs: const [],
         skills: const [],
       );
-      await repository.createJoinRequest(
-        projectId: projectId,
-        userId: 'ana-id',
-        status: 'pending',
-      );
-      await repository.createJoinRequest(
-        projectId: other.id,
-        userId: 'ana-id',
-        status: 'pending',
-      );
+      await source.createJoinRequest({
+        'project_id': projectId,
+        'user_id': 'ana-id',
+        'status': 'pending',
+      });
+      await source.createJoinRequest({
+        'project_id': other.id,
+        'user_id': 'ana-id',
+        'status': 'pending',
+      });
 
       final cancelled = await repository.cancelPendingJoinRequests(
         projectId: projectId,

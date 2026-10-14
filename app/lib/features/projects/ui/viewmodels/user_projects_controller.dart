@@ -5,9 +5,11 @@ import 'package:imker/core/roble/roble_config.dart';
 import 'package:imker/core/data/dummy_data.dart';
 
 import '../../domain/models/project.dart';
+import '../../domain/models/project_relation.dart';
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
 import 'collaboration_requests_controller.dart';
+import 'invitations_controller.dart';
 
 /// Mantiene el estado de los proyectos del usuario: los que co-crea,
 /// los guardados, las postulaciones pendientes y las colaboraciones activas.
@@ -233,26 +235,36 @@ class UserProjectsController extends GetxController {
     activeProjects.add(DummyData.solariaProject);
   }
 
-  // Proyectos guardados que todavía no han sido postulados
-  // (y que no colaboro ya: un guardado de antes no vuelve a salir en Guardados
-  // por haber entrado al proyecto; es una preferencia, no un historial).
+  /// Cómo se relaciona la sesión con [project], con una sola respuesta:
+  /// owner > active > invited > pending > saved > none. Todas las pantallas
+  /// preguntan aquí en vez de combinar guardados, postulaciones y membresías.
+  ProjectRelation relationOf(Project project) {
+    if (isOwner(project)) return ProjectRelation.owner;
+    if (activeProjects.any((p) => p.id == project.id)) {
+      return ProjectRelation.active;
+    }
+    if (_isInvited(project.id)) return ProjectRelation.invited;
+    if (appliedProjectIds.contains(project.id)) return ProjectRelation.pending;
+    if (isSaved(project.id)) return ProjectRelation.saved;
+    return ProjectRelation.none;
+  }
+
+  bool _isInvited(String projectId) =>
+      Get.isRegistered<InvitationsController>() &&
+      Get.find<InvitationsController>().invitations.any(
+        (i) => i.projectId == projectId,
+      );
+
+  // Guardados: solo lo guardado y nada más (ni activo, ni invitado, ni
+  // postulado). Un guardado es una preferencia, no un historial.
   List<Project> get unappliedSavedProjects => savedProjects
-      .where(
-        (p) =>
-            !appliedProjectIds.contains(p.id) &&
-            !activeProjects.any((a) => a.id == p.id),
-      )
+      .where((p) => relationOf(p) == ProjectRelation.saved)
       .toList();
 
-  // Proyectos donde el usuario ya envió postulación y espera validación.
-  // Un proyecto sale en UNA sola sección: Activos gana a Pendientes y esta
-  // a Guardados.
+  // Pendientes: postulé y espero la decisión. Los pendientes viven en
+  // [savedProjects] para poder pintarse.
   List<Project> get pendingProjects => savedProjects
-      .where(
-        (p) =>
-            appliedProjectIds.contains(p.id) &&
-            !activeProjects.any((a) => a.id == p.id),
-      )
+      .where((p) => relationOf(p) == ProjectRelation.pending)
       .toList();
 
   // Proyectos donde el usuario ya trabaja activamente
@@ -277,12 +289,20 @@ class UserProjectsController extends GetxController {
 
   /// Añade un proyecto a "Activos" (p. ej. tras aceptar una invitación).
   void addActiveProject(Project project) {
+    _manualActiveAdds++;
+    _putActive(project);
+  }
+
+  /// Altas hechas a mano desde la app (no leídas del servidor). Una recarga
+  /// que empezó antes de una de ellas no puede podar la lista.
+  int _manualActiveAdds = 0;
+
+  void _putActive(Project project) {
     // Ya colabora: una postulación pendiente a este proyecto quedó obsoleta.
     appliedProjectIds.remove(project.id);
     if (activeProjects.any((p) => p.id == project.id)) return;
-    activeProjects.removeWhere(
-      (p) => p.owner == 'demo-owner' || p.id == DummyData.solariaId,
-    );
+    // El proyecto de demo (solo existe sin backend) cede su lugar a uno real.
+    activeProjects.removeWhere((p) => p.id == DummyData.solariaId);
     activeProjects.add(project);
   }
 
@@ -366,38 +386,47 @@ class UserProjectsController extends GetxController {
       final requests = await repository.getJoinRequestsByUser(userId);
       if (!_inSession(userId)) return;
 
+      // Activos sale SOLO de la membresía. Las solicitudes y las invitaciones
+      // `accepted` son historia: lo que dice si colaboro hoy es mi fila activa
+      // de `project_member` (así, si me echan o salgo, dejo de ser activo).
       final pendingIds = <String>{};
-      // Colaboro donde me aceptaron la solicitud y donde acepté una
-      // invitación: ambas terminan en una fila de `project_member`.
-      final acceptedIds = <String>{};
+      final memberIds = <String>{};
+      var membersLoaded = false;
+      final manualAddsAtStart = _manualActiveAdds;
       try {
-        acceptedIds.addAll(await repository.getMemberProjectIds(userId));
+        memberIds.addAll(await repository.getMemberProjectIds(userId));
+        membersLoaded = true;
       } on ProjectFailure {
-        // Sin membresías se sigue con lo que digan las solicitudes.
+        // Sin membresías no se toca lo que ya hubiera en Activos.
       }
       if (!_inSession(userId)) return;
 
       for (final req in requests) {
-        final state = req.statusState.toLowerCase();
-        if (state == 'accepted') {
-          acceptedIds.add(req.projectId);
-        } else if (state == 'pending') {
+        if (req.statusState.toLowerCase() == 'pending') {
           pendingIds.add(req.projectId);
         }
       }
 
       // Si ya es miembro (p. ej. por una invitación), la solicitud pendiente
       // al mismo proyecto no cuenta.
-      pendingIds.removeAll(acceptedIds);
+      pendingIds.removeAll(memberIds);
       appliedProjectIds.assignAll(pendingIds);
 
-      // 1. Cargar proyectos aceptados en activeProjects (sección "Activos")
-      for (final projectId in acceptedIds) {
+      // 1. Cargar los proyectos donde colaboro (sección "Activos").
+      for (final projectId in memberIds) {
         try {
           final project = await repository.getProjectById(projectId);
           if (!_inSession(userId)) return;
-          if (project != null) addActiveProject(project);
+          if (project != null) _putActive(project);
         } catch (_) {}
+      }
+
+      // Los que dejaron de ser mis proyectos activos salen. Solo si la lectura
+      // fue completa y nadie añadió uno a mano mientras tanto.
+      if (membersLoaded && manualAddsAtStart == _manualActiveAdds) {
+        activeProjects.removeWhere(
+          (p) => !memberIds.contains(p.id) && p.id != DummyData.solariaId,
+        );
       }
 
       // 2. Cargar proyectos pendientes en savedProjects (sección "Pendientes")
@@ -422,18 +451,7 @@ class UserProjectsController extends GetxController {
   /// Postula al usuario a un proyecto conectando con la BD Roble (tabla `project_join_request`).
   /// Retorna true si se postuló con éxito.
   Future<bool> applyToProject(Project project) async {
-    // Queda guardado para que aparezca en la pestaña Guardados/Pendientes;
-    // si el servidor no lo acepta, se sigue guardando en memoria.
-    final alreadySaved = isSaved(project.id);
-    saveProject(project);
-    if (!alreadySaved) {
-      try {
-        await _persistSaved(project, saving: true);
-      } catch (_) {}
-    }
-    if (appliedProjectIds.contains(project.id)) {
-      return false;
-    }
+    if (appliedProjectIds.contains(project.id)) return false;
 
     try {
       final repository = Get.find<IProjectRepository>();
@@ -442,13 +460,13 @@ class UserProjectsController extends GetxController {
           : null;
       final userId = client?.currentUserId;
 
+      // El repositorio rechaza si ya colaboro, ya postulé o ya me invitaron.
       await repository.createJoinRequest(
         projectId: project.id,
         userId: userId,
         status: 'pending',
       );
       appliedProjectIds.add(project.id);
-      return true;
     } catch (e) {
       Get.snackbar(
         'Error de postulación',
@@ -459,5 +477,16 @@ class UserProjectsController extends GetxController {
       );
       return false;
     }
+
+    // Queda guardado para que aparezca en Pendientes; si el servidor no lo
+    // acepta, se sigue guardando en memoria.
+    final alreadySaved = isSaved(project.id);
+    saveProject(project);
+    if (!alreadySaved) {
+      try {
+        await _persistSaved(project, saving: true);
+      } catch (_) {}
+    }
+    return true;
   }
 }
