@@ -158,6 +158,18 @@ class _FavoriteButton extends StatelessWidget {
     );
   }
 
+  void _showOwnerNotice(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    Get.snackbar(
+      'Este proyecto es tuyo',
+      "Lo administras en 'Proyectos' → Mis proyectos.",
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: cs.tertiaryContainer,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
   void _showInvitedNotice(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
@@ -212,7 +224,12 @@ class _FavoriteButton extends StatelessWidget {
       // se puede guardar, o solo se informa.
       switch (projectsController.relationOf(project)) {
         case ProjectRelation.owner:
-          return const SizedBox.shrink();
+          return _statusButton(
+            icon: Icons.star_rounded,
+            color: Colors.amberAccent,
+            tooltip: 'Es tu proyecto',
+            onPressed: () => _showOwnerNotice(context),
+          );
         case ProjectRelation.active:
           return _statusButton(
             icon: Icons.check_circle_outline,
@@ -342,7 +359,6 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final projectsController = Get.find<UserProjectsController>();
     final buttonStyle = FilledButton.styleFrom(
       backgroundColor: cs.inversePrimary,
       shape: const RoundedRectangleBorder(
@@ -365,36 +381,6 @@ class _ActionButtons extends StatelessWidget {
               label: Text('Leer más', style: tt.headlineSmall),
             ),
           ),
-          Obx(() {
-            final isOwner = projectsController.isOwner(project);
-            if (!isOwner) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: cs.secondaryContainer,
-                  border: Border.all(color: Colors.black, width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star_rounded, size: 16, color: cs.primary),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Tu proyecto',
-                      style: tt.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
         ],
       ),
     );
