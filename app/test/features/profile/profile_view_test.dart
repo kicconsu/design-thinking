@@ -130,6 +130,31 @@ void main() {
       expect(find.byIcon(Icons.settings_outlined), findsNothing);
     });
 
+    testWidgets('invita a completar solo si el perfil propio está incompleto', (
+      tester,
+    ) async {
+      var taps = 0;
+      Widget view(UserProfile profile, {bool isOwn = true}) => _host(
+        ProfileView(
+          name: 'Ana',
+          profile: profile,
+          isOwn: isOwn,
+          onComplete: () => taps++,
+        ),
+      );
+
+      await tester.pumpWidget(view(const UserProfile()));
+      expect(find.text('Completa tu perfil'), findsOneWidget);
+      await tester.tap(find.text('Completa tu perfil'));
+      expect(taps, 1);
+
+      await tester.pumpWidget(view(_full));
+      expect(find.text('Completa tu perfil'), findsNothing);
+
+      await tester.pumpWidget(view(const UserProfile(), isOwn: false));
+      expect(find.text('Completa tu perfil'), findsNothing);
+    });
+
     testWidgets('el perfil propio abre ajustes', (tester) async {
       var settings = 0;
       await tester.pumpWidget(

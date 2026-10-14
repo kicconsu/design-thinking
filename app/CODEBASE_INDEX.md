@@ -112,6 +112,11 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   indicadores, historial). Sin GetX: sirve para el perfil propio y, a futuro,
   para el de otra persona. `core/widgets/profile_avatar.dart` pone iniciales
   (o la foto cuando haya `imageUrl`).
+- [`lib/features/profile/ui/pages/onboarding_page.dart`](lib/features/profile/ui/pages/onboarding_page.dart) —
+  Primeros datos del perfil (omitible), ruta `/onboarding`. Se abre tras
+  `signUp` y tras `upgradeAccount`; los termina en Home (en Perfil si venía de
+  invitado). La tarjeta «Completa tu perfil» de `ProfileView` cubre a quien
+  lo omitió y a las cuentas anteriores.
 - [`lib/features/profile/ui/pages/profile_page.dart`](lib/features/profile/ui/pages/profile_page.dart),
   [`edit_profile_page.dart`](lib/features/profile/ui/pages/edit_profile_page.dart),
   [`settings_page.dart`](lib/features/profile/ui/pages/settings_page.dart)
@@ -141,6 +146,7 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   `clear()` y descarte de cargas de una sesión anterior.
 - `test/features/profile/profile_form_test.dart` — Formulario compartido.
 - `test/features/profile/profile_view_test.dart` — `ProfileView`, avatar y ajustes.
+- `test/features/profile/onboarding_page_test.dart` — Guardar, omitir, error y destino en Home.
 - `test/features/projects/project_repository_test.dart`,
   `test/features/discover/discover_controller_test.dart` — Mapeo y errores.
 - `test/core/string_list_test.dart` — Lectura de columnas jsonb con array
