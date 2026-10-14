@@ -92,6 +92,12 @@ abstract class IProjectRepository {
   /// que salió o la sacaron no cuentan.
   Future<List<Project>> getProjectsOfPerson(String userId);
 
+  /// Todos los proyectos en los que una persona participó alguna vez: tiene o
+  /// tuvo una estancia en ellos, en cualquier estado y como creadora o
+  /// colaboradora. A diferencia de [getProjectsOfPerson], incluye aquellos de
+  /// los que salió o la sacaron. Es de donde sale su historial.
+  Future<List<Project>> getProjectsParticipatedBy(String userId);
+
   /// IDs de proyectos donde ese usuario es miembro sin ser su creador.
   Future<List<String>> getMemberProjectIds(String userId);
 

@@ -6,12 +6,14 @@ import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
 
 /// Historial de colaboración: proyectos actuales y, aparte, los anteriores
-/// (los que ya cerraron).
+/// (los que ya cerraron). Con [onlyPrevious] solo estos últimos: es lo que ve
+/// quien decide sobre una solicitud, y revertirlo es dejar de pasarlo.
 class CollaborationHistoryPage extends StatelessWidget {
   const CollaborationHistoryPage({
     super.key,
     required this.created,
     required this.collaborating,
+    this.onlyPrevious = false,
   });
 
   /// Proyectos que creó la persona.
@@ -19,6 +21,10 @@ class CollaborationHistoryPage extends StatelessWidget {
 
   /// Proyectos en los que colabora hoy.
   final List<Project> collaborating;
+
+  /// Mostrar solo «Proyectos anteriores», sin las secciones de lo que sigue
+  /// abierto.
+  final bool onlyPrevious;
 
   Widget _section(
     BuildContext context,
@@ -83,18 +89,20 @@ class CollaborationHistoryPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           children: [
-            _section(
-              context,
-              'Colaborando ahora',
-              currentlyCollaborating,
-              'No colabora en ningún proyecto ahora.',
-            ),
-            _section(
-              context,
-              'Proyectos creados',
-              currentlyCreated,
-              'No ha creado proyectos abiertos.',
-            ),
+            if (!onlyPrevious) ...[
+              _section(
+                context,
+                'Colaborando ahora',
+                currentlyCollaborating,
+                'No colabora en ningún proyecto ahora.',
+              ),
+              _section(
+                context,
+                'Proyectos creados',
+                currentlyCreated,
+                'No ha creado proyectos abiertos.',
+              ),
+            ],
             _section(
               context,
               'Proyectos anteriores',

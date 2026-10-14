@@ -618,6 +618,26 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> readProjectsParticipatedBy(
+    String userId,
+  ) async {
+    if (!_isValidUuid(userId)) return [];
+    // Consulta guardada en la consola de Roble:
+    //   SELECT DISTINCT p.* FROM project p
+    //   JOIN project_member m ON m.project_id = p._id
+    //   WHERE m.user_id = $1::uuid
+    // Si no existe o está apagada, la excepción se propaga.
+    final result = await _client.db.executeQueryByName(
+      'proyectos_de_usuario',
+      params: [userId],
+    );
+    return [
+      for (final row in result.rows)
+        if (row is Map) Map<String, dynamic>.from(row),
+    ];
+  }
+
+  @override
   Future<void> deleteProjectCascade(String projectId) async {
     if (!_isValidUuid(projectId)) return;
 

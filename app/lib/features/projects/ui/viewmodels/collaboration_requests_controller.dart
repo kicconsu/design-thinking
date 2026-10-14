@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 
 import 'package:imker/core/utils/career_label.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
+import 'package:imker/features/trust/domain/repositories/i_trust_repository.dart';
+import 'package:imker/features/trust/domain/trust_failure.dart';
 
 import '../../domain/models/applicant.dart';
 import '../../domain/models/project.dart';
@@ -17,7 +19,13 @@ class CollaborationRequestsController extends GetxController {
     IProjectRepository? repository,
     String Function()? currentUserId,
     bool Function(Project)? isOwner,
+    ITrustRepository? trust,
   }) : _repository = repository ?? Get.find<IProjectRepository>(),
+       _trust =
+           trust ??
+           (Get.isRegistered<ITrustRepository>()
+               ? Get.find<ITrustRepository>()
+               : null),
        _currentUserId =
            currentUserId ??
            (() => Get.find<AuthenticationController>().loggedUserId),
@@ -25,6 +33,7 @@ class CollaborationRequestsController extends GetxController {
            isOwner ?? ((p) => Get.find<UserProjectsController>().isOwner(p));
 
   final IProjectRepository _repository;
+  final ITrustRepository? _trust;
   final String Function() _currentUserId;
   final bool Function(Project) _isOwner;
 
@@ -54,11 +63,17 @@ class CollaborationRequestsController extends GetxController {
       // le acepte nada.
       final members = (await _repository.getActiveMemberUserIds(projectId))
           .toSet();
+      final pending = [
+        for (final req in requests)
+          if (req.statusState.toLowerCase() == 'pending' &&
+              !members.contains(req.userId))
+            req,
+      ];
+      // Una sola consulta para todas las personas de la lista.
+      final commitment = await _commitmentScores(pending.map((r) => r.userId));
       final loaded = <Applicant>[];
-      for (final req in requests) {
-        if (req.statusState.toLowerCase() != 'pending') continue;
-        if (members.contains(req.userId)) continue;
-        loaded.add(await _toApplicant(req));
+      for (final req in pending) {
+        loaded.add(await _toApplicant(req, commitment[req.userId] ?? 0));
       }
       if (epoch != _epoch) return;
       applicants.removeWhere((a) => a.projectId == projectId);
@@ -121,7 +136,19 @@ class CollaborationRequestsController extends GetxController {
     return null;
   }
 
-  Future<Applicant> _toApplicant(ProjectJoinRequest req) async {
+  /// El compromiso de cada persona; sin él la lista sale igual, solo que sin
+  /// ese dato.
+  Future<Map<String, int>> _commitmentScores(Iterable<String> userIds) async {
+    final trust = _trust;
+    if (trust == null) return const {};
+    try {
+      return await trust.getCommitmentScores(userIds);
+    } on TrustFailure {
+      return const {};
+    }
+  }
+
+  Future<Applicant> _toApplicant(ProjectJoinRequest req, int commitment) async {
     Map<String, dynamic>? profile;
     if (req.userId.isNotEmpty) {
       try {
@@ -144,6 +171,7 @@ class CollaborationRequestsController extends GetxController {
       academicInfo: formatCareer(profile?['career']),
       appliedAgo: _formatAgo(req.createdAt),
       statusState: req.statusState,
+      commitmentScore: commitment,
     );
   }
 

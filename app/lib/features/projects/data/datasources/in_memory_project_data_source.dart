@@ -287,6 +287,17 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   ) async => _projectMembers.where((r) => r['user_id'] == userId).toList();
 
   @override
+  Future<List<Map<String, dynamic>>> readProjectsParticipatedBy(
+    String userId,
+  ) async {
+    final ids = {
+      for (final m in _projectMembers)
+        if (m['user_id'] == userId) m['project_id'],
+    };
+    return _data.projects.where((r) => ids.contains(r['_id'])).toList();
+  }
+
+  @override
   Future<void> deleteProjectCascade(String projectId) async {
     _invitations.removeWhere((r) => r['project_id'] == projectId);
     _projectMembers.removeWhere((r) => r['project_id'] == projectId);

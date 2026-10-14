@@ -13,6 +13,10 @@ class Applicant {
   final String appliedAgo;
   final String statusState;
 
+  /// Índice general de compromiso, 0-100; 0 si no tiene historial. Es lo único
+  /// de sus indicadores que muestra la lista: el resto se ve en su ficha.
+  final int commitmentScore;
+
   const Applicant({
     required this.id,
     required this.projectId,
@@ -21,5 +25,6 @@ class Applicant {
     required this.academicInfo,
     required this.appliedAgo,
     this.statusState = 'pending',
+    this.commitmentScore = 0,
   });
 }
