@@ -5,6 +5,8 @@ import '../../domain/models/user_profile.dart';
 import '../../domain/profile_failure.dart';
 import '../../domain/repositories/i_profile_repository.dart';
 
+/// Perfil de la sesión activa. Una sola instancia durante toda la app
+/// (`registerProfileData`): auth lo carga al entrar y lo vacía al salir.
 class ProfileController extends GetxController {
   ProfileController(this._repository);
 
@@ -15,25 +17,40 @@ class ProfileController extends GetxController {
   final RxBool isSaving = false.obs;
   final RxnString error = RxnString();
 
+  /// Cambia al vaciar el controller. Una carga o un guardado que empezó con
+  /// otra sesión no debe escribir el perfil de esa persona en la que entra.
+  int _epoch = 0;
+
   UserProfile? get profile => _profile.value;
 
-  @override
-  void onInit() {
-    super.onInit();
-    loadProfile();
+  /// Olvida el perfil de la sesión que se va.
+  void clear() {
+    _epoch++;
+    _profile.value = null;
+    error.value = null;
+    isLoading.value = false;
+    isSaving.value = false;
   }
 
   Future<void> loadProfile() async {
+    final epoch = _epoch;
     try {
       isLoading.value = true;
       error.value = null;
-      _profile.value = await _repository.getMyProfile();
+      final loaded = await _repository.getMyProfile();
+      if (epoch != _epoch) return;
+      _profile.value = loaded;
     } on ProfileFailure catch (e) {
-      error.value = e.message;
+      if (epoch == _epoch) error.value = e.message;
     } catch (e) {
-      error.value = errorMessage(e, fallback: 'Ocurrió un error inesperado al cargar tu perfil.');
+      if (epoch == _epoch) {
+        error.value = errorMessage(
+          e,
+          fallback: 'Ocurrió un error inesperado al cargar tu perfil.',
+        );
+      }
     } finally {
-      isLoading.value = false;
+      if (epoch == _epoch) isLoading.value = false;
     }
   }
 
@@ -43,24 +60,29 @@ class ProfileController extends GetxController {
     required String bio,
     required List<String> skills,
   }) async {
+    final epoch = _epoch;
     try {
       isSaving.value = true;
       error.value = null;
-      _profile.value = await _repository.updateMyProfile(
+      final saved = await _repository.updateMyProfile(
         program: program,
         institution: institution,
         bio: bio,
         skills: skills,
       );
+      if (epoch != _epoch) return false;
+      _profile.value = saved;
       return true;
     } on ProfileFailure catch (e) {
-      error.value = e.message;
+      if (epoch == _epoch) error.value = e.message;
       return false;
     } catch (e) {
-      error.value = errorMessage(e, fallback: 'No se pudo actualizar tu perfil.');
+      if (epoch == _epoch) {
+        error.value = errorMessage(e, fallback: 'No se pudo actualizar tu perfil.');
+      }
       return false;
     } finally {
-      isSaving.value = false;
+      if (epoch == _epoch) isSaving.value = false;
     }
   }
 }

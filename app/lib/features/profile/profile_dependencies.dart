@@ -9,10 +9,12 @@ import 'data/repositories/profile_repository.dart';
 import 'domain/repositories/i_profile_repository.dart';
 import 'ui/viewmodels/profile_controller.dart';
 
-/// Datos de perfil, registrados en [main] y permanentes.
+/// Datos y controlador de perfil, registrados en [main] y permanentes.
 ///
-/// No vive en el binding de Home porque auth los necesita al entrar: es quien
-/// garantiza que la fila exista, y se registra antes que el controlador.
+/// No viven en el binding de Home porque auth los necesita al entrar: es quien
+/// garantiza que la fila exista, carga el perfil y lo vacía al salir. Una sola
+/// instancia del controlador (registrarla por ruta con `fenix` creaba copias
+/// por login, como pasaba con los controllers de proyectos).
 void registerProfileData() {
   final useMock = RobleConfig.contractId.isEmpty;
 
@@ -29,13 +31,6 @@ void registerProfileData() {
     ProfileRepository(Get.find<IProfileDataSource>()),
     permanent: true,
   );
-}
 
-/// El ViewModel de la pestaña de perfil: se crea al abrir la pantalla.
-///
-/// `fenix: true` para que, si se borra al cerrar sesión, la siguiente persona
-/// encuentre uno nuevo y no el perfil que quedó en memoria del anterior.
-void registerProfile() {
-  if (!Get.isRegistered<IProfileRepository>()) registerProfileData();
-  Get.lazyPut(() => ProfileController(Get.find<IProfileRepository>()), fenix: true);
+  Get.put(ProfileController(Get.find<IProfileRepository>()), permanent: true);
 }
