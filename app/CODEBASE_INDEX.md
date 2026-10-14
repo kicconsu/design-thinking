@@ -136,6 +136,16 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   ve). Quitar: botón en `MemberProfilePage` (ficha del miembro, se abre desde
   la pestaña Miembros), solo para el creador sobre colaboradores.
 
+## Perfil de otras personas
+
+- `PersonProfilePage` (`projects/ui/pages`): perfil de solo lectura de una
+  persona más en qué anda (`IProjectRepository.getProjectsOfPerson`: creados y
+  activos). Si se abre desde un proyecto del que es miembro, añade «En este
+  proyecto» y el creador puede quitarla. `openPersonProfile` es la entrada
+  común: a un invitado le pide cuenta.
+- Se abre desde la pestaña Miembros y desde «Integrantes» del detalle de un
+  proyecto (lista real, ya no textos).
+
 ## Projects / Discover / Home
 
 - `features/projects` — Proyectos (`project`), guardados, postulaciones y

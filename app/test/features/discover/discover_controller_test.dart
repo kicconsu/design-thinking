@@ -57,6 +57,9 @@ class _MockFailingRepository implements IProjectRepository {
   Future<List<String>> getActiveMemberUserIds(String projectId) async => [];
 
   @override
+  Future<List<Project>> getProjectsOfPerson(String userId) async => [];
+
+  @override
   Future<void> leaveProject({
     required String projectId,
     required String userId,

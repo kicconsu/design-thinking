@@ -69,6 +69,11 @@ abstract class IProjectRepository {
   /// nombre genérico.
   Future<List<ProjectMember>> getProjectMembers(String projectId);
 
+  /// En qué anda una persona: los proyectos que creó y en los que colabora
+  /// hoy (estancia activa), sin repetir y con los creados primero. Los de los
+  /// que salió o la sacaron no cuentan.
+  Future<List<Project>> getProjectsOfPerson(String userId);
+
   /// IDs de proyectos donde ese usuario es miembro sin ser su creador.
   Future<List<String>> getMemberProjectIds(String userId);
 

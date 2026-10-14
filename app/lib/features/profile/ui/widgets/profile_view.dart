@@ -40,6 +40,9 @@ class ProfileView extends StatelessWidget {
   final VoidCallback? onComplete;
   final ValueChanged<Project>? onOpenProject;
   final VoidCallback? onOpenIndicators;
+
+  /// Si hay historial se muestran los primeros proyectos y un botón para
+  /// verlos todos; sin él (perfil de otra persona) se muestran todos.
   final VoidCallback? onOpenHistory;
 
   static const _previewCount = 2;
@@ -131,7 +134,9 @@ class ProfileView extends StatelessWidget {
                   )
                 : Column(
                     children: [
-                      for (final p in list.take(_previewCount))
+                      for (final p in list.take(
+                        onOpenHistory == null ? list.length : _previewCount,
+                      ))
                         ProjectTile(
                           project: p,
                           onTap: onOpenProject == null

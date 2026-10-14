@@ -1,50 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
+import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
 import 'package:imker/features/profile/ui/widgets/profile_view.dart';
 
 import '../../domain/models/project_member.dart';
-import '../viewmodels/member_profile_controller.dart';
+import '../viewmodels/person_profile_controller.dart';
 import '../widgets/member_labels.dart';
+import 'project_detail_page.dart';
 
-/// Ficha de un miembro del proyecto: lo que ha hecho aquí y su perfil, en
-/// solo lectura. El creador puede quitar desde aquí a un colaborador.
+/// Ficha de una persona: su perfil en solo lectura y en qué anda (sus
+/// proyectos). Si se abre desde un proyecto del que es miembro ([member] y
+/// [projectId]), añade lo que ha hecho ahí, y el creador puede quitarla.
 ///
 /// Se cierra con `true` si se quitó a la persona, para que la lista de
 /// miembros se recargue.
-class MemberProfilePage extends StatefulWidget {
-  const MemberProfilePage({
+class PersonProfilePage extends StatefulWidget {
+  const PersonProfilePage({
     super.key,
-    required this.member,
-    required this.projectId,
+    required this.userId,
+    required this.name,
+    this.projectId,
+    this.member,
     this.viewerIsCreator = false,
     this.currentUserId,
   });
 
-  final ProjectMember member;
-  final String projectId;
+  final String userId;
+  final String name;
+  final String? projectId;
+  final ProjectMember? member;
   final bool viewerIsCreator;
 
   /// Sustituye a la sesión real: solo para pruebas.
   final String Function()? currentUserId;
 
   @override
-  State<MemberProfilePage> createState() => _MemberProfilePageState();
+  State<PersonProfilePage> createState() => _PersonProfilePageState();
 }
 
-class _MemberProfilePageState extends State<MemberProfilePage> {
-  late final MemberProfileController _controller;
+class _PersonProfilePageState extends State<PersonProfilePage> {
+  late final PersonProfileController _controller;
   late final String _tag;
 
   @override
   void initState() {
     super.initState();
     // Un controlador por ficha: abrir a otra persona no hereda a la anterior.
-    _tag = '${widget.member.userId}#${identityHashCode(this)}';
+    _tag = '${widget.userId}#${identityHashCode(this)}';
     _controller = Get.put(
-      MemberProfileController(
-        member: widget.member,
+      PersonProfileController(
+        userId: widget.userId,
+        name: widget.name,
         projectId: widget.projectId,
+        member: widget.member,
         viewerIsCreator: widget.viewerIsCreator,
         currentUserId: widget.currentUserId,
       ),
@@ -54,12 +64,12 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
 
   @override
   void dispose() {
-    Get.delete<MemberProfileController>(tag: _tag, force: true);
+    Get.delete<PersonProfileController>(tag: _tag, force: true);
     super.dispose();
   }
 
   Future<void> _confirmRemove() async {
-    final name = widget.member.name;
+    final name = widget.name;
     final doing = _controller.tasksDoing.value ?? 0;
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
@@ -114,7 +124,7 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
       backgroundColor: cs.primaryContainer,
       appBar: AppBar(
         backgroundColor: cs.tertiaryContainer,
-        title: Text(widget.member.name, overflow: TextOverflow.ellipsis),
+        title: Text(widget.name, overflow: TextOverflow.ellipsis),
         centerTitle: true,
         elevation: 0,
       ),
@@ -148,9 +158,17 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               children: [
-                _InThisProjectCard(controller: _controller),
-                const SizedBox(height: 16),
-                ProfileView(name: widget.member.name, profile: profile),
+                if (widget.member != null) ...[
+                  _InThisProjectCard(controller: _controller),
+                  const SizedBox(height: 16),
+                ],
+                ProfileView(
+                  name: widget.name,
+                  profile: profile,
+                  projects: _controller.projects.value,
+                  onOpenProject: (p) =>
+                      Get.to(() => ProjectDetailPage(project: p)),
+                ),
                 if (_controller.canRemove) ...[
                   const SizedBox(height: 32),
                   Obx(
@@ -191,13 +209,13 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
 class _InThisProjectCard extends StatelessWidget {
   const _InThisProjectCard({required this.controller});
 
-  final MemberProfileController controller;
+  final PersonProfileController controller;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final member = controller.member;
+    final member = controller.member!;
     final since = memberSinceLabel(member.joinedAt);
 
     Widget stat(String value, String label) => Expanded(
@@ -280,4 +298,33 @@ class _InThisProjectCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Abre la ficha de una persona. Un invitado no puede leer perfiles ajenos: en
+/// su lugar se le pide una cuenta (devuelve null). Devuelve `true` si desde la
+/// ficha se quitó a la persona del proyecto.
+Future<bool?> openPersonProfile({
+  required String userId,
+  required String name,
+  String? projectId,
+  ProjectMember? member,
+  bool viewerIsCreator = false,
+}) async {
+  final auth = Get.find<AuthenticationController>();
+  if (!auth.isLogged || auth.isAnonymous) {
+    showAccountRequiredPrompt(
+      message:
+          'Para ver el perfil de otras personas necesitas una cuenta real.',
+    );
+    return null;
+  }
+  return Get.to<bool>(
+    () => PersonProfilePage(
+      userId: userId,
+      name: name,
+      projectId: projectId,
+      member: member,
+      viewerIsCreator: viewerIsCreator,
+    ),
+  );
 }
