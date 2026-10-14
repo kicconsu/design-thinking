@@ -6,11 +6,10 @@ import 'package:imker/core/widgets/imker_bottom_nav_bar.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
-import 'package:imker/features/projects/domain/models/project_member.dart';
-import 'package:imker/features/projects/ui/pages/member_profile_page.dart';
+import 'package:imker/features/projects/ui/viewmodels/project_basic_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
-import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/widgets/project_basic_info_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_progress_tab.dart';
 import 'package:imker/features/tasks/ui/pages/task_board_page.dart';
@@ -34,6 +33,7 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
 
   late final ProjectInfoController _controller;
   late final ProjectMembersController _members;
+  late final ProjectBasicInfoController _basic;
   late final String _tag;
   int _tab = 0;
 
@@ -50,12 +50,14 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
       ),
       tag: _tag,
     );
+    _basic = Get.put(ProjectBasicInfoController(_controller), tag: _tag);
   }
 
   @override
   void dispose() {
     Get.delete<ProjectInfoController>(tag: _tag, force: true);
     Get.delete<ProjectMembersController>(tag: _tag, force: true);
+    Get.delete<ProjectBasicInfoController>(tag: _tag, force: true);
     super.dispose();
   }
 
@@ -273,16 +275,26 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
           canManage: _isCreator,
         );
       default:
-        // La pestaña Info. básica llega en su propia rama.
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Center(
-            child: Text(
-              'Disponible pronto.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
+        return ProjectBasicInfoTab(
+          title: _basic.title,
+          description: _basic.description,
+          jobs: _basic.jobs,
+          skills: _basic.skills,
+          onJobsChanged: (v) => _basic.jobs = v,
+          onSkillsChanged: (v) => _basic.skills = v,
+          canEdit: _basic.canEdit,
+          isSaving: _basic.isSaving.value,
+          onSave: _saveBasicInfo,
         );
     }
+  }
+
+  Future<void> _saveBasicInfo() async {
+    final error = await _basic.save();
+    Get.snackbar(
+      error == null ? 'Listo' : 'No se pudo guardar',
+      error ?? 'Los cambios del proyecto se guardaron.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 }

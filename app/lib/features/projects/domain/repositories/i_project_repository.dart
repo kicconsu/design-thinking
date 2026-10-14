@@ -17,6 +17,17 @@ abstract class IProjectRepository {
     List<String> inviteEmails = const [],
   });
 
+  /// Edita la información básica de un proyecto y devuelve el proyecto ya
+  /// leído de vuelta. Exige nombre y descripción, como la creación; las listas
+  /// se guardan sin vacíos ni repetidos. Lanza [ProjectFailure] si no cumple.
+  Future<Project> updateProject({
+    required String id,
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+  });
+
   /// Correos de [emails] que NO tienen cuenta. Vacío = todos existen.
   /// Se llama antes de crear nada para poder abortar sin efectos parciales.
   Future<List<String>> validateInviteEmails(List<String> emails);

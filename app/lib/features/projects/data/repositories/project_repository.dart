@@ -159,6 +159,48 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     return _toProject(resultRow, membersMap);
   }
 
+  @override
+  Future<Project> updateProject({
+    required String id,
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+  }) async {
+    final cleanTitle = title.trim();
+    final cleanDescription = description.trim();
+    // Las mismas reglas que al crear el proyecto.
+    if (cleanTitle.isEmpty) {
+      throw const ProjectFailure('El proyecto necesita un nombre.');
+    }
+    if (cleanDescription.isEmpty) {
+      throw const ProjectFailure('El proyecto necesita una descripción.');
+    }
+
+    await _guard(
+      () => _source.updateProject(id, {
+        'title': cleanTitle,
+        'description': cleanDescription,
+        'jobs': _cleanList(jobs),
+        'skills': _cleanList(skills),
+      }),
+    );
+    final fresh = await getProjectById(id);
+    if (fresh == null) {
+      throw const ProjectFailure('No se encontró el proyecto.');
+    }
+    return fresh;
+  }
+
+  /// Sin vacíos ni repetidos (sin distinguir mayúsculas), conservando el orden.
+  List<String> _cleanList(List<String> values) {
+    final seen = <String>{};
+    return [
+      for (final v in values)
+        if (v.trim().isNotEmpty && seen.add(v.trim().toLowerCase())) v.trim(),
+    ];
+  }
+
   List<String> _normalizeEmails(List<String> emails) => emails
       .map((email) => email.trim().toLowerCase())
       .where((email) => email.isNotEmpty)

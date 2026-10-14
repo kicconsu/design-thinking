@@ -50,6 +50,17 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> updateProject(
+    String projectId,
+    Map<String, dynamic> fields,
+  ) async {
+    final i = _data.projects.indexWhere((r) => r['_id'] == projectId);
+    if (i == -1) throw StateError('Proyecto $projectId no existe');
+    _data.projects[i] = {..._data.projects[i], ...fields};
+    return _data.projects[i];
+  }
+
+  @override
   Future<Map<String, dynamic>> createJoinRequest(
     Map<String, dynamic> joinRequestData,
   ) async {
