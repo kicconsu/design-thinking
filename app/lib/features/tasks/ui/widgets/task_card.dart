@@ -46,6 +46,15 @@ class TaskCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
+              if (task.subtasks.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: task.checklistProgress,
+                  minHeight: 5,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  color: cs.primary,
+                ),
+              ],
               if (assignee != null) ...[
                 const SizedBox(height: 6),
                 Text(

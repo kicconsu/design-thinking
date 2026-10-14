@@ -4,6 +4,7 @@ import 'i_task_data_source.dart';
 class InMemoryTaskDataSource implements ITaskDataSource {
   final List<Map<String, dynamic>> _tasks = [];
   final Map<String, double> progressByProject = {};
+  final List<Map<String, dynamic>> _contributions = [];
   int _seq = 0;
 
   @override
@@ -33,6 +34,21 @@ class InMemoryTaskDataSource implements ITaskDataSource {
   @override
   Future<void> deleteTask(String taskId) async {
     _tasks.removeWhere((t) => t['_id'] == taskId);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readContributions(String taskId) async => [
+    for (final c in _contributions)
+      if (c['task_id'] == taskId) Map<String, dynamic>.from(c),
+  ];
+
+  @override
+  Future<Map<String, dynamic>> createContribution(
+    Map<String, dynamic> contributionData,
+  ) async {
+    final row = {...contributionData, '_id': 'local-contribution-${++_seq}'};
+    _contributions.add(row);
+    return Map<String, dynamic>.from(row);
   }
 
   @override

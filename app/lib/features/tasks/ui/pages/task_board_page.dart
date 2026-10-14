@@ -8,6 +8,7 @@ import 'package:imker/features/projects/domain/models/project.dart';
 import '../../domain/models/project_task.dart';
 import '../../domain/models/task_status.dart';
 import '../viewmodels/task_board_controller.dart';
+import 'task_progress_page.dart';
 import '../widgets/new_task_dialog.dart';
 import '../widgets/task_card.dart';
 
@@ -70,6 +71,19 @@ class _TaskBoardPageState extends State<TaskBoardPage> {
       return;
     }
     if (mounted) setState(() => _tab = 0);
+  }
+
+  /// Abre el progreso de la tarea y, al volver, relee el tablero: ahí pudo
+  /// cambiar su estado.
+  Future<void> _openTask(ProjectTask task) async {
+    await Get.to(
+      () => TaskProgressPage(
+        project: widget.project,
+        task: task,
+        currentUserId: widget.currentUserId,
+      ),
+    );
+    if (mounted) _controller.load();
   }
 
   Future<void> _reserve(ProjectTask task) async {
@@ -186,6 +200,7 @@ class _TaskBoardPageState extends State<TaskBoardPage> {
                 assignee: _controller.assigneeLabel(task),
                 busy: _controller.reserving.contains(task.id),
                 onReserve: () => _reserve(task),
+                onTap: () => _openTask(task),
               ),
           ],
         ),

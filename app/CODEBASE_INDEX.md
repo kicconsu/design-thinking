@@ -136,7 +136,11 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 - `features/tasks` — Tareas (`task`) y progreso. `TaskRepository` recalcula
   `project.progress` (tareas `done` / total) tras crear, cambiar de estado o
   borrar una tarea, y reserva tareas (`assignee_id`) sin pisar a quien se
-  adelantó. `TaskBoardPage` es el gabinete.
+  adelantó. `TaskBoardPage` es el gabinete y `TaskProgressPage` el progreso
+  de una tarea: descripción y checklist (`task.checklist`, jsonb; lo edita
+  solo quien la reservó; completarlo termina la tarea y desmarcarlo la
+  reabre) y comentarios (`contribution`, planos: sin respuestas ni votos).
+  `core/widgets/checklist_editor.dart` es el editor de checklist compartido.
 - `features/discover` — Feed de descubrimiento.
 - `features/home` — `SplashPage` (restaura sesión y enruta) y `HomePage`
   (IndexedStack de pestañas).
