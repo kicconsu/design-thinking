@@ -278,12 +278,17 @@ class UserProjectsController extends GetxController {
         projectId,
       );
       if (fresh == null) return;
-      for (final list in [coCreatedProjects, activeProjects]) {
-        final i = list.indexWhere((p) => p.id == projectId);
-        if (i != -1) list[i] = fresh;
-      }
+      replaceProject(fresh);
     } on ProjectFailure {
       // Se conserva lo que ya estuviera en pantalla.
+    }
+  }
+
+  /// Sustituye [fresh] en las listas donde ya aparece el proyecto.
+  void replaceProject(Project fresh) {
+    for (final list in [coCreatedProjects, activeProjects]) {
+      final i = list.indexWhere((p) => p.id == fresh.id);
+      if (i != -1) list[i] = fresh;
     }
   }
 

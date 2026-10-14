@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
+import 'package:imker/features/projects/ui/pages/project_info_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
@@ -322,6 +323,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                   key: const ValueKey('active'),
                   onRefresh: _refresh,
                   projects: active,
+                  pageBuilder: (project) => ProjectInfoPage(project: project),
                   emptyText:
                       'Aún no tienes colaboraciones activas.\n'
                       'Cuando un líder acepte tu solicitud, el proyecto aparecerá aquí.',
@@ -411,6 +413,9 @@ class _ProjectsCategoryList extends StatelessWidget {
   final Widget Function(Project project)? buildBottom;
   final Future<void> Function() onRefresh;
 
+  /// Qué pantalla abre cada proyecto. Sin él abre la ficha de postulación.
+  final Widget Function(Project project)? pageBuilder;
+
   const _ProjectsCategoryList({
     super.key,
     required this.projects,
@@ -419,6 +424,7 @@ class _ProjectsCategoryList extends StatelessWidget {
     required this.onRefresh,
     this.buildTrailing,
     this.buildBottom,
+    this.pageBuilder,
   });
 
   @override
@@ -456,8 +462,11 @@ class _ProjectsCategoryList extends StatelessWidget {
                 final project = projects[index];
                 return ProjectTile(
                   project: project,
-                  onTap: () =>
-                      Get.to(() => ProjectDetailPage(project: project)),
+                  onTap: () => Get.to(
+                    () =>
+                        pageBuilder?.call(project) ??
+                        ProjectDetailPage(project: project),
+                  ),
                   trailing: buildTrailing?.call(project),
                   bottom: buildBottom?.call(project),
                 );

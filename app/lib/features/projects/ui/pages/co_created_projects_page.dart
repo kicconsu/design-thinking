@@ -1,3 +1,4 @@
+import 'package:imker/features/projects/ui/pages/project_info_page.dart';
 import 'package:imker/features/projects/ui/views/collaboration_requests_page.dart';
 import 'package:imker/features/projects/ui/views/create_project.dart';
 import 'package:imker/features/projects/ui/views/requests_button.dart';
@@ -120,6 +121,7 @@ class CoCreatedProjectsPage extends StatelessWidget {
             ...projects.map(
               (project) => ProjectTile(
                 project: project,
+                onTap: () => Get.to(() => ProjectInfoPage(project: project)),
                 trailing: RequestsButton(
                   count: requests.pendingCount(project.id),
                   onTap: () =>
