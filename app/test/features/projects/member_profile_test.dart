@@ -70,7 +70,9 @@ void main() {
   group('MemberProfilePage', () {
     testWidgets('muestra el perfil de esa persona', (tester) async {
       await tester.pumpWidget(
-        const GetMaterialApp(home: MemberProfilePage(member: _ana)),
+        const GetMaterialApp(
+          home: MemberProfilePage(member: _ana, projectId: 'p1'),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -84,7 +86,9 @@ void main() {
     testWidgets('si falla, dice por qué y deja reintentar', (tester) async {
       profiles.failure = const ProfileFailure('Sin conexión. Verifica tu red.');
       await tester.pumpWidget(
-        const GetMaterialApp(home: MemberProfilePage(member: _ana)),
+        const GetMaterialApp(
+          home: MemberProfilePage(member: _ana, projectId: 'p1'),
+        ),
       );
       await tester.pumpAndSettle();
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:imker/core/widgets/profile_avatar.dart';
 import 'package:imker/features/projects/domain/models/project_member.dart';
+import 'package:imker/features/projects/ui/widgets/member_labels.dart';
 
 /// Pestaña "Miembros" de la información del proyecto: quién está en el
 /// proyecto, con su carrera, su papel y desde cuándo.
@@ -107,32 +108,11 @@ class _MemberTile extends StatelessWidget {
   final bool isMe;
   final VoidCallback? onTap;
 
-  static const _months = [
-    'ene',
-    'feb',
-    'mar',
-    'abr',
-    'may',
-    'jun',
-    'jul',
-    'ago',
-    'sep',
-    'oct',
-    'nov',
-    'dic',
-  ];
-
-  String? get _since {
-    final d = member.joinedAt?.toLocal();
-    if (d == null) return null;
-    return 'Desde ${d.day} ${_months[d.month - 1]} ${d.year}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final since = _since;
+    final since = memberSinceLabel(member.joinedAt);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -177,42 +157,12 @@ class _MemberTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _RoleBadge(role: member.role),
+                ProjectRoleBadge(role: member.role),
                 if (onTap != null)
                   Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleBadge extends StatelessWidget {
-  const _RoleBadge({required this.role});
-
-  final ProjectMemberRole role;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final owner = role == ProjectMemberRole.owner;
-    final background = owner ? cs.tertiaryContainer : cs.secondaryContainer;
-    final foreground = owner ? cs.onTertiaryContainer : cs.onSecondaryContainer;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        border: Border.all(color: cs.outline),
-      ),
-      child: Text(
-        role.label,
-        style: TextStyle(
-          color: foreground,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
         ),
       ),
     );
