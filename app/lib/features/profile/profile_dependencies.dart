@@ -7,6 +7,7 @@ import 'data/datasources/in_memory_profile_data_source.dart';
 import 'data/datasources/roble_profile_data_source.dart';
 import 'data/repositories/profile_repository.dart';
 import 'domain/repositories/i_profile_repository.dart';
+import 'ui/viewmodels/people_directory.dart';
 import 'ui/viewmodels/profile_controller.dart';
 
 /// Datos y controlador de perfil, registrados en [main] y permanentes.
@@ -33,4 +34,5 @@ void registerProfileData() {
   );
 
   Get.put(ProfileController(Get.find<IProfileRepository>()), permanent: true);
+  Get.put(PeopleDirectory(), permanent: true);
 }

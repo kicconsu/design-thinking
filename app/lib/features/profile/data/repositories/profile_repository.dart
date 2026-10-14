@@ -77,6 +77,7 @@ class ProfileRepository implements IProfileRepository {
   UserProfile _toProfile(Map<String, dynamic> row) {
     final career = parseCareer(row['career']);
     return UserProfile(
+      name: (row['name'] as String?)?.trim() ?? '',
       program: career.program,
       institution: career.institution,
       bio: (row['description'] as String?) ?? '',

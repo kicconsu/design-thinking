@@ -6,6 +6,7 @@ import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
 import 'package:imker/features/projects/ui/pages/project_info_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
+import 'package:imker/features/projects/ui/widgets/inviter_row.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
@@ -351,42 +352,50 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                       (i) => i.projectId == project.id,
                     );
                     final busy = _responding.contains(invitation.id);
-                    return Row(
+                    final inviter = invitation.invitedBy;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: busy
-                                ? null
-                                : () => _respond(invitation, false),
-                            style: OutlinedButton.styleFrom(
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                            ),
-                            child: const Text('Rechazar'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: busy
-                                ? null
-                                : () => _respond(invitation, true),
-                            style: FilledButton.styleFrom(
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
+                        if (inviter != null && inviter.isNotEmpty)
+                          InviterRow(inviterId: inviter),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: busy
+                                    ? null
+                                    : () => _respond(invitation, false),
+                                style: OutlinedButton.styleFrom(
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                ),
+                                child: const Text('Rechazar'),
                               ),
                             ),
-                            child: const Text('Aceptar'),
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: busy
+                                    ? null
+                                    : () => _respond(invitation, true),
+                                style: FilledButton.styleFrom(
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                ),
+                                child: const Text('Aceptar'),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     );
