@@ -72,6 +72,9 @@ class InvitationsController extends GetxController {
             await _repository.getProjectById(inv.projectId);
         if (epoch != _epoch) return;
         if (project == null) continue;
+        // Un proyecto cerrado ya no recibe invitaciones: no hay nada que
+        // responder.
+        if (!project.isOpen) continue;
         projects[inv.projectId] = project;
         shown.add(inv);
       }

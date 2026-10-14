@@ -15,12 +15,32 @@ class ProjectInfoController extends GetxController {
   final Rx<Project> project;
 
   final RxBool isRefreshing = false.obs;
+  final RxBool isClosing = false.obs;
 
   @override
   void onReady() {
     super.onReady();
     // La lista pudo cargarse antes de que alguien cambiara una tarea.
     reload();
+  }
+
+  /// Cierra el proyecto: deja de recibir solicitudes e invitaciones. Quién
+  /// puede pedirlo (el creador) lo decide la pantalla. Devuelve null si salió
+  /// bien o el mensaje de error para mostrar.
+  Future<String?> closeProject() async {
+    if (!project.value.isOpen) return null;
+    if (isClosing.value) return null;
+    isClosing.value = true;
+    try {
+      applyProject(
+        await Get.find<IProjectRepository>().closeProject(project.value.id),
+      );
+      return null;
+    } on ProjectFailure catch (e) {
+      return e.message;
+    } finally {
+      isClosing.value = false;
+    }
   }
 
   /// Deja [fresh] como el proyecto que se ve y lo propaga a las listas de

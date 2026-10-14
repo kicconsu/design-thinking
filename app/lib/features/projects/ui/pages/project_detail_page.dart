@@ -7,6 +7,7 @@ import 'package:imker/features/projects/domain/models/project_relation.dart';
 import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/widgets/closed_project_banner.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 
@@ -119,6 +120,8 @@ class ProjectDetailPage extends StatelessWidget {
                 );
               }
 
+              // Cerrado: ya no recibe solicitudes, no hay a qué postular.
+              if (!projectItem.isOpen) return const ClosedProjectBanner();
               return FilledButton.icon(
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),

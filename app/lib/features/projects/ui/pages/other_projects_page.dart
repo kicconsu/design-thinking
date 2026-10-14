@@ -284,10 +284,13 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                       ),
                       const SizedBox(width: 4),
                       FilledButton(
-                        onPressed: () => showConfirmApplicationDialog(
-                          context: context,
-                          project: project,
-                        ),
+                        // Un proyecto cerrado ya no recibe solicitudes.
+                        onPressed: project.isOpen
+                            ? () => showConfirmApplicationDialog(
+                                context: context,
+                                project: project,
+                              )
+                            : null,
                         style: FilledButton.styleFrom(
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
@@ -297,7 +300,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                             vertical: 6,
                           ),
                         ),
-                        child: const Text('Aplicar'),
+                        child: Text(project.isOpen ? 'Aplicar' : 'Cerrado'),
                       ),
                     ],
                   ),
