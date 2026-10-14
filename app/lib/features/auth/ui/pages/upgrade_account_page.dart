@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
+import 'package:imker/features/profile/ui/pages/onboarding_page.dart';
 import 'package:imker/routes/app_routes.dart';
 
 /// Formulario para que el invitado complete su cuenta (email + contraseña).
@@ -34,7 +35,12 @@ class _UpgradeAccountPageState extends State<UpgradeAccountPage> with UiLoggy {
     );
 
     if (ok) {
-      Get.back(); // vuelve al perfil, que ahora muestra la cuenta real
+      // Cuenta real recién creada: primeros datos del perfil y de vuelta a la
+      // pestaña Perfil, que ahora muestra la cuenta real.
+      Get.offNamed(
+        AppRoutes.onboarding,
+        arguments: const OnboardingArgs(homeTab: 2),
+      );
       Get.snackbar(
         '¡Bienvenido!',
         'Tu cuenta ha sido creada.',

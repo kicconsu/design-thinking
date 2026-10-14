@@ -35,7 +35,7 @@ class _RegisterPageState extends State<RegisterPage> with UiLoggy {
         'Bienvenido a Imker',
         snackPosition: SnackPosition.BOTTOM,
       );
-      Get.offAllNamed(AppRoutes.home);
+      Get.offAllNamed(AppRoutes.onboarding);
     } else {
       Get.snackbar('Error', _auth.error.value, snackPosition: SnackPosition.BOTTOM);
     }
