@@ -12,6 +12,7 @@ import 'package:imker/features/projects/ui/viewmodels/project_basic_info_control
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/widgets/closed_project_banner.dart';
 import 'package:imker/features/projects/ui/widgets/project_basic_info_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_progress_tab.dart';
@@ -98,8 +99,8 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
                     border: Border.all(color: cs.outline),
                   ),
                   // Título centrado entre dos huecos iguales; en uno va el
-                  // menú. El creador no puede salir: sin menú no hay nada que
-                  // ofrecerle (aquí irá «Cerrar proyecto»).
+                  // menú: quien colabora puede salir; el creador no puede
+                  // salir, pero sí cerrar el proyecto mientras esté abierto.
                   child: Row(
                     children: [
                       const SizedBox(width: 48),
@@ -111,7 +112,7 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
                         ),
                       ),
                       if (_isCreator)
-                        const SizedBox(width: 48)
+                        _creatorMenu(cs)
                       else
                         PopupMenuButton<String>(
                           tooltip: 'Más acciones',
@@ -138,6 +139,16 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
                     ],
                   ),
                 ),
+              ),
+              // Cerrado: lo ve todo el que entra, para que sepa por qué ya no
+              // hay solicitudes ni invitaciones.
+              Obx(
+                () => _controller.project.value.isOpen
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: const ClosedProjectBanner(),
+                      ),
               ),
               const SizedBox(height: 16),
               Container(
@@ -200,6 +211,70 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
     return widget.currentUserId == null &&
         Get.isRegistered<UserProjectsController>() &&
         Get.find<UserProjectsController>().isOwner(_controller.project.value);
+  }
+
+  /// El menú del creador: «Cerrar proyecto» mientras esté abierto; cerrado ya
+  /// no tiene nada que ofrecer y queda el hueco del mismo ancho.
+  Widget _creatorMenu(ColorScheme cs) {
+    if (!_controller.project.value.isOpen) return const SizedBox(width: 48);
+    return PopupMenuButton<String>(
+      tooltip: 'Más acciones',
+      enabled: !_controller.isClosing.value,
+      onSelected: (_) => _confirmClose(),
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'close',
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline, color: cs.error, size: 20),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  'Cerrar proyecto',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: cs.error),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmClose() async {
+    final title = _controller.project.value.title;
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('¿Cerrar «$title»?'),
+        content: const Text(
+          'El proyecto dejará de recibir solicitudes e invitaciones. Quienes '
+          'ya colaboran siguen en él. No se puede volver a abrir desde la app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Get.back(result: true),
+            child: const Text('Cerrar proyecto'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final error = await _controller.closeProject();
+    Get.snackbar(
+      error == null ? 'Listo' : 'No se pudo cerrar',
+      error ?? '«$title» ya no recibe solicitudes ni invitaciones.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   Future<void> _confirmLeave() async {

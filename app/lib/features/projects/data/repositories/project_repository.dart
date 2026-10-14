@@ -250,6 +250,7 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     final me = (userId != null && userId.isNotEmpty)
         ? userId
         : _source.currentUserId;
+    await _assertOpen(projectId, 'solicitudes');
     if (me.isNotEmpty) await _assertCanApply(projectId: projectId, userId: me);
 
     final payload = <String, dynamic>{
@@ -260,6 +261,25 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
 
     final resultRow = await _guard(() => _source.createJoinRequest(payload));
     return _toProjectJoinRequest(resultRow);
+  }
+
+  @override
+  Future<Project> closeProject(String projectId) async {
+    // Idempotente: cerrar uno ya cerrado deja el mismo resultado.
+    await _guard(() => _source.updateProject(projectId, {'status': 'closed'}));
+    final fresh = await getProjectById(projectId);
+    if (fresh == null) throw const ProjectFailure('No se encontró el proyecto.');
+    return fresh;
+  }
+
+  /// Un proyecto cerrado ya no recibe [what] (solicitudes o invitaciones).
+  /// Solo bloquea si el proyecto está explícitamente `closed`: uno que no se
+  /// encuentra (p. ej. un proyecto demo) sigue el camino de siempre.
+  Future<void> _assertOpen(String projectId, String what) async {
+    final row = await _guard(() => _source.readProjectById(projectId));
+    if (row != null && row['status']?.toString() == 'closed') {
+      throw ProjectFailure('Este proyecto está cerrado y ya no recibe $what.');
+    }
   }
 
   /// Solo se postula desde "nada" o "guardado": quien ya colabora, ya postuló
@@ -410,6 +430,8 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     required String applicantId,
     required String reviewerId,
   }) async {
+    // Una solicitud que quedó pendiente antes de cerrar ya no se puede aceptar.
+    await _assertOpen(projectId, 'solicitudes');
     await _guard(
       () => _source.addProjectMember(
         projectId: projectId,
@@ -451,6 +473,7 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
 
   @override
   Future<void> acceptInvitation(ProjectInvitation invitation) async {
+    await _assertOpen(invitation.projectId, 'invitaciones');
     await _guard(
       () => _source.addProjectMember(
         projectId: invitation.projectId,

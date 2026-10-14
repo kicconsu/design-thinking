@@ -28,6 +28,13 @@ abstract class IProjectRepository {
     required List<String> skills,
   });
 
+  /// Cierra el proyecto (`status` = `closed`) y devuelve el proyecto leído de
+  /// vuelta. Un proyecto cerrado ya no recibe solicitudes ni invitaciones:
+  /// [createJoinRequest], [acceptJoinRequest] y [acceptInvitation] lanzan
+  /// [ProjectFailure]. Rechazar o declinar lo que haya quedado pendiente sigue
+  /// permitido. Quién puede cerrarlo (el creador) lo decide quien llama.
+  Future<Project> closeProject(String projectId);
+
   /// Correos de [emails] que NO tienen cuenta. Vacío = todos existen.
   /// Se llama antes de crear nada para poder abortar sin efectos parciales.
   Future<List<String>> validateInviteEmails(List<String> emails);

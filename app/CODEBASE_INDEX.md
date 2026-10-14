@@ -135,6 +135,16 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 - Salir: menú ⋮ en la tarjeta del título de `ProjectInfoPage` (el creador no lo
   ve). Quitar: botón en `MemberProfilePage` (ficha del miembro, se abre desde
   la pestaña Miembros), solo para el creador sobre colaboradores.
+- Cerrar proyecto: el creador lo cierra desde ese mismo menú ⋮
+  (`IProjectRepository.closeProject` → `status = closed`, sin reabrir desde la
+  app). Un proyecto cerrado ya no recibe solicitudes ni invitaciones:
+  `createJoinRequest`, `acceptJoinRequest` y `acceptInvitation` lanzan
+  `ProjectFailure`; rechazar o declinar lo pendiente sigue permitido. Sigue en
+  el feed y quienes ya colaboran siguen dentro. La ficha de postulación muestra
+  `ClosedProjectBanner` en vez de postular, «Aplicar» pasa a «Cerrado» y las
+  invitaciones a proyectos cerrados no se listan. En el historial de
+  colaboración del perfil, los cerrados (creados o no) pasan a «Proyectos
+  anteriores» y salen de «Colaborando ahora» y «Proyectos creados».
 
 ## Perfil de otras personas
 

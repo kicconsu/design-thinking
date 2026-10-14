@@ -196,10 +196,16 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('el creador no tiene menú de salida', (tester) async {
+    testWidgets('el creador no puede salir: su menú solo ofrece cerrar', (
+      tester,
+    ) async {
       await openInfo(tester, _creator);
 
-      expect(find.byType(PopupMenuButton<String>), findsNothing);
+      // El menú existe (ahí está «Cerrar proyecto»), pero sin «Salir».
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      expect(find.text('Salir del proyecto'), findsNothing);
+      expect(find.text('Cerrar proyecto'), findsOneWidget);
     });
 
     testWidgets('un miembro puede salir tras confirmar', (tester) async {
