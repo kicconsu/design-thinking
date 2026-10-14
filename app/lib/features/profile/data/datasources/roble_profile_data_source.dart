@@ -2,13 +2,13 @@ import 'package:loggy/loggy.dart';
 import 'package:roble/roble.dart';
 
 import 'package:imker/core/roble/roble_client.dart';
+import 'package:imker/core/utils/career_label.dart';
 
 import 'i_profile_data_source.dart';
 
 /// Datasource real: lee y escribe la fila del usuario en la tabla `profile`.
 ///
-/// La lectura devuelve
-/// todas las filas y la propia se busca por `_owner`.
+/// La fila propia se pide con filtro `_owner` y se vuelve a comprobar aquí.
 class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
   RobleProfileDataSource(this._client);
 
@@ -43,10 +43,14 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
 
   @override
   Future<Map<String, dynamic>> updateMyProfile({
+    required String program,
+    required String institution,
     required String bio,
     required List<String> skills,
   }) async {
     final payload = {
+      // `career` es jsonb: objeto `{program, institution}` (`{}` si no hay).
+      'career': careerToJson(program: program, institution: institution),
       'description': bio,
       // `skills` es jsonb: el array va en la raíz de la columna.
       'skills': skills,
@@ -74,14 +78,12 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
     final name = await _displayName();
     return _client.db.create(RobleClient.profileTable, {
       'name': name,
-      'career': <String, dynamic>{},
       'profilePicture': '',
       ...payload,
     });
   }
 
   Future<Map<String, dynamic>?> _readOwnRow({required String action}) async {
-    final rows = await _client.db.read(RobleClient.profileTable);
     final userId = _client.currentUserId;
     if (userId == null || userId.isEmpty) {
       loggy.warning(
@@ -89,6 +91,12 @@ class RobleProfileDataSource with UiLoggy implements IProfileDataSource {
       );
       return null;
     }
+    final rows = await _client.db.read(
+      RobleClient.profileTable,
+      filters: {'_owner': userId},
+    );
+    // El servidor ya filtra; esta comprobación evita devolver la fila de otra
+    // persona si el filtro no se aplicara.
     for (final row in rows) {
       if (row['_owner']?.toString() == userId) return row;
     }

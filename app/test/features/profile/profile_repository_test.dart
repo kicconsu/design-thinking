@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:imker/core/utils/career_label.dart';
 import 'package:imker/features/profile/data/datasources/i_profile_data_source.dart';
 import 'package:imker/features/profile/data/repositories/profile_repository.dart';
 import 'package:imker/features/profile/domain/profile_failure.dart';
@@ -29,11 +30,18 @@ class _FakeDataSource implements IProfileDataSource {
 
   @override
   Future<Map<String, dynamic>> updateMyProfile({
+    required String program,
+    required String institution,
     required String bio,
     required List<String> skills,
   }) async {
     _throwIfFailing();
-    return row = {...?row, 'description': bio, 'skills': skills};
+    return row = {
+      ...?row,
+      'career': careerToJson(program: program, institution: institution),
+      'description': bio,
+      'skills': skills,
+    };
   }
 }
 
@@ -83,6 +91,58 @@ void main() {
       final profile = await repo.getMyProfile();
 
       expect(profile.academicInfo, 'Ing. Sistemas - U. de la Costa');
+    });
+
+    test('separa carrera e institución y arma academicInfo', () async {
+      final repo = ProfileRepository(
+        _FakeDataSource({
+          'career': {'program': 'Ing. Sistemas', 'institution': 'Uninorte'},
+        }),
+      );
+
+      final profile = await repo.getMyProfile();
+
+      expect(profile.program, 'Ing. Sistemas');
+      expect(profile.institution, 'Uninorte');
+    });
+
+    test('los indicadores de confianza valen 0 y no hay historial', () async {
+      final repo = ProfileRepository(_FakeDataSource({'skills': ['Dart']}));
+
+      final profile = await repo.getMyProfile();
+
+      expect(profile.commitmentScore, 0);
+      expect(profile.completedProjectsScore, 0);
+      expect(profile.hasTrustHistory, isFalse);
+    });
+
+    test('isComplete exige carrera y al menos una habilidad', () async {
+      Future<bool> complete(Map<String, dynamic> row) async =>
+          (await ProfileRepository(_FakeDataSource(row)).getMyProfile())
+              .isComplete;
+
+      expect(await complete({}), isFalse);
+      expect(await complete({'career': {'program': 'X'}}), isFalse);
+      expect(await complete({'skills': ['Dart']}), isFalse);
+      expect(
+        await complete({'career': {'program': 'X'}, 'skills': ['Dart']}),
+        isTrue,
+      );
+    });
+
+    test('updateMyProfile devuelve el perfil con la carrera nueva', () async {
+      final repo = ProfileRepository(_FakeDataSource({}));
+
+      final profile = await repo.updateMyProfile(
+        program: 'Derecho',
+        institution: 'Uninorte',
+        bio: 'Hola',
+        skills: ['Oratoria'],
+      );
+
+      expect(profile.academicInfo, 'Derecho - Uninorte');
+      expect(profile.bio, 'Hola');
+      expect(profile.skills, ['Oratoria']);
     });
 
     test('devuelve un perfil vacío si el usuario todavía no tiene fila', () async {

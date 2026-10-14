@@ -154,13 +154,15 @@ class _GeneralTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TrustIndicators(
-          commitmentScore: profile.commitmentScore,
-          onTimeScore: profile.onTimeScore,
-          responseRateScore: profile.responseRateScore,
-          completedProjectsScore: profile.completedProjectsScore,
-        ),
-        const SizedBox(height: 24),
+        if (profile.hasTrustHistory) ...[
+          TrustIndicators(
+            commitmentScore: profile.commitmentScore,
+            onTimeScore: profile.onTimeScore,
+            responseRateScore: profile.responseRateScore,
+            completedProjectsScore: profile.completedProjectsScore,
+          ),
+          const SizedBox(height: 24),
+        ],
         Text('Sobre ti', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Container(

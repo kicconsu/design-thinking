@@ -97,12 +97,16 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 ## Profile feature
 
 - [`lib/features/profile/data/datasources/roble_profile_data_source.dart`](lib/features/profile/data/datasources/roble_profile_data_source.dart) —
-  Lee y escribe la tabla `profile`. Busca la fila propia por `_owner`.
+  Lee y escribe la tabla `profile`. Pide la fila propia con filtro `_owner`;
+  `career` se guarda como `{program, institution}`.
 - [`lib/features/profile/data/repositories/profile_repository.dart`](lib/features/profile/data/repositories/profile_repository.dart) —
   Traduce `RobleApi*` a `ProfileFailure` (403/404/red/tiempo).
 - [`lib/features/profile/profile_dependencies.dart`](lib/features/profile/profile_dependencies.dart) —
-  `registerProfileData()` (permanente, en `main`) y `registerProfile()`
-  (controlador perezoso en `HomeBinding`).
+  `registerProfileData()` (en `main`): datasource, repositorio y la única
+  instancia permanente de `ProfileController`. Auth lo carga al entrar y lo
+  vacía (`clear()`) al salir.
+- [`lib/features/profile/ui/widgets/profile_form_fields.dart`](lib/features/profile/ui/widgets/profile_form_fields.dart) —
+  Formulario compartido (carrera, institución, resumen, habilidades).
 - [`lib/features/profile/ui/pages/profile_page.dart`](lib/features/profile/ui/pages/profile_page.dart),
   [`edit_profile_page.dart`](lib/features/profile/ui/pages/edit_profile_page.dart) —
   Pantallas.
@@ -124,7 +128,10 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   el perfil de otra persona; `ensureMyProfile`/`updateMyProfile` crean sólo
   cuando hace falta.
 - `test/features/profile/profile_repository_test.dart` — Mapeo de `skills`
-  (array en la raíz), `career` y traducción de errores.
+  (array en la raíz), `career`, `isComplete` y traducción de errores.
+- `test/features/profile/profile_controller_test.dart` — Carga, guardado,
+  `clear()` y descarte de cargas de una sesión anterior.
+- `test/features/profile/profile_form_test.dart` — Formulario compartido.
 - `test/features/projects/project_repository_test.dart`,
   `test/features/discover/discover_controller_test.dart` — Mapeo y errores.
 - `test/core/string_list_test.dart` — Lectura de columnas jsonb con array

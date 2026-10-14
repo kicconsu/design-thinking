@@ -7,7 +7,6 @@ import 'package:imker/features/discover/discover_dependencies.dart';
 import 'package:imker/features/home/ui/pages/home_page.dart';
 import 'package:imker/features/home/ui/pages/splash_page.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
-import 'package:imker/features/profile/profile_dependencies.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
 import 'package:imker/routes/app_routes.dart';
 
@@ -34,7 +33,6 @@ class HomeBinding extends Bindings {
   void dependencies() {
     Get.lazyPut(() => HomeViewModel(), fenix: true);
     registerDiscover();
-    registerProfile();
   }
 }
 

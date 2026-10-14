@@ -82,11 +82,17 @@ class AuthenticationController extends GetxController with UiLoggy {
     }
   }
 
-  /// El perfil cacheado en memoria pertenece a la sesión que se acaba de ir.
-  /// Se borra para que la siguiente persona no encuentre el del anterior.
+  /// El perfil en memoria pertenece a la sesión que se acaba de ir.
+  /// Se vacía para que la siguiente persona no encuentre el del anterior.
   void _dropProfileCache() {
     if (Get.isRegistered<ProfileController>()) {
-      Get.delete<ProfileController>();
+      Get.find<ProfileController>().clear();
+    }
+  }
+
+  void _refreshProfile() {
+    if (Get.isRegistered<ProfileController>()) {
+      Get.find<ProfileController>().loadProfile();
     }
   }
 
@@ -99,6 +105,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       _loggedUser.value = restored ? await repoAuthentication.getLoggedUser() : null;
       if (restored) {
         await _ensureProfileExists();
+        _refreshProfile();
         _refreshUserProjects();
       }
     } catch (exception) {
@@ -126,6 +133,7 @@ class AuthenticationController extends GetxController with UiLoggy {
       _loggedUser.value = ok ? await repoAuthentication.getLoggedUser() : null;
       if (ok) {
         await _ensureProfileExists();
+        _refreshProfile();
         _refreshUserProjects();
       }
       if (!ok) error.value = 'No se pudo iniciar sesión. Verifica tus datos.';
@@ -164,6 +172,7 @@ class AuthenticationController extends GetxController with UiLoggy {
         _isAnonymous.value = false;
         _loggedUser.value = await repoAuthentication.getLoggedUser();
         await _ensureProfileExists();
+        _refreshProfile();
         _refreshUserProjects();
       } else {
         error.value = 'No se pudo crear la cuenta. Intenta de nuevo.';
@@ -267,6 +276,7 @@ class AuthenticationController extends GetxController with UiLoggy {
         _logged.value = true;
         _loggedUser.value = await repoAuthentication.getLoggedUser();
         await _ensureProfileExists();
+        _refreshProfile();
         _refreshUserProjects();
       }
       return ok;
