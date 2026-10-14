@@ -13,6 +13,7 @@ import 'core/theme/theme_builder.dart';
 import 'features/auth/auth_dependencies.dart';
 import 'features/profile/profile_dependencies.dart';
 import 'features/projects/projects_dependencies.dart';
+import 'features/tasks/tasks_dependencies.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 
@@ -40,6 +41,7 @@ void main() async {
   registerProfileData();
   registerAuth();
   registerProjects();
+  registerTasks();
 
   runApp(const MyApp());
 }
