@@ -8,6 +8,12 @@ import 'package:roble/roble.dart';
 
 class _FailingDataSource implements IProjectDataSource {
   @override
+  Future<Map<String, dynamic>> updateProject(
+    String projectId,
+    Map<String, dynamic> fields,
+  ) async => throw exception;
+
+  @override
   String get currentUserId => '';
 
   _FailingDataSource(this.exception);
@@ -114,6 +120,12 @@ class _FailingDataSource implements IProjectDataSource {
 }
 
 class _SingleProjectDataSource implements IProjectDataSource {
+  @override
+  Future<Map<String, dynamic>> updateProject(
+    String projectId,
+    Map<String, dynamic> fields,
+  ) async => fields;
+
   @override
   String get currentUserId => '';
 

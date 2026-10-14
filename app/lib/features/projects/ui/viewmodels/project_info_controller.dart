@@ -23,6 +23,15 @@ class ProjectInfoController extends GetxController {
     reload();
   }
 
+  /// Deja [fresh] como el proyecto que se ve y lo propaga a las listas de
+  /// "Mis proyectos" y "Activos".
+  void applyProject(Project fresh) {
+    project.value = fresh;
+    if (Get.isRegistered<UserProjectsController>()) {
+      Get.find<UserProjectsController>().replaceProject(fresh);
+    }
+  }
+
   /// Vuelve a leer el proyecto (su `progress` lo mantiene el repositorio de
   /// tareas) y propaga el resultado a las listas de "Mis proyectos" y
   /// "Activos" para que no queden con el valor viejo.
@@ -34,10 +43,7 @@ class ProjectInfoController extends GetxController {
         project.value.id,
       );
       if (fresh == null) return;
-      project.value = fresh;
-      if (Get.isRegistered<UserProjectsController>()) {
-        Get.find<UserProjectsController>().replaceProject(fresh);
-      }
+      applyProject(fresh);
     } on ProjectFailure {
       // Sin red se conserva lo que ya estaba en pantalla.
     } finally {

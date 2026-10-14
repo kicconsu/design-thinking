@@ -11,6 +11,15 @@ import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
 
 class _MockFailingRepository implements IProjectRepository {
   @override
+  Future<Project> updateProject({
+    required String id,
+    required String title,
+    required String description,
+    required List<String> jobs,
+    required List<String> skills,
+  }) async => throw const ProjectFailure('no');
+
+  @override
   Future<List<ProjectInvitation>> getPendingInvitations(String userId) async =>
       [];
 

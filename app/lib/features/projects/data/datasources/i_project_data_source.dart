@@ -6,6 +6,13 @@ abstract class IProjectDataSource {
   Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId);
   Future<Map<String, dynamic>?> readProjectById(String id);
   Future<Map<String, dynamic>> createProject(Map<String, dynamic> projectData);
+
+  /// Escribe solo las columnas de [fields] en el proyecto [projectId].
+  Future<Map<String, dynamic>> updateProject(
+    String projectId,
+    Map<String, dynamic> fields,
+  );
+
   Future<Map<String, dynamic>> createJoinRequest(
     Map<String, dynamic> joinRequestData,
   );

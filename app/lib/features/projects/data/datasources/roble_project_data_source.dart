@@ -69,24 +69,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
     // PostgreSQL los acepte sin error de conversión.
     final sanitized = Map<String, dynamic>.from(projectData);
     for (final key in ['jobs', 'skills']) {
-      final raw = sanitized[key];
-      List<String> asList;
-      if (raw is List) {
-        asList = raw.map((e) => e.toString()).toList();
-      } else if (raw is String) {
-        try {
-          final decoded = jsonDecode(raw);
-          asList = (decoded is List)
-              ? decoded.map((e) => e.toString()).toList()
-              : <String>[];
-        } catch (_) {
-          asList = <String>[];
-        }
-      } else {
-        asList = <String>[];
-      }
-      // Enviamos como JSON string para columnas jsonb (Roble rechaza List<> nativa).
-      sanitized[key] = jsonEncode(asList);
+      sanitized[key] = _encodeJsonList(sanitized[key]);
     }
     if (sanitized['status'] is Map) {
       sanitized['status'] =
@@ -124,6 +107,51 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       }
     }
     return result;
+  }
+
+  /// Una columna jsonb que guarda una lista de textos, como texto JSON.
+  /// Roble rechaza una List nativa; lo que no sea lista (ni texto JSON de una
+  /// lista) se guarda como lista vacía.
+  String _encodeJsonList(Object? raw) {
+    List<String> asList;
+    if (raw is List) {
+      asList = raw.map((e) => e.toString()).toList();
+    } else if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        asList = (decoded is List)
+            ? decoded.map((e) => e.toString()).toList()
+            : <String>[];
+      } catch (_) {
+        asList = <String>[];
+      }
+    } else {
+      asList = <String>[];
+    }
+    return jsonEncode(asList);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateProject(
+    String projectId,
+    Map<String, dynamic> fields,
+  ) async {
+    // Solo se codifican las listas que vienen: editar el título no debe
+    // vaciar `jobs` ni `skills`.
+    final payload = Map<String, dynamic>.from(fields);
+    for (final key in ['jobs', 'skills']) {
+      if (payload.containsKey(key)) {
+        payload[key] = _encodeJsonList(payload[key]);
+      }
+    }
+    loggy.debug('updateProject id=$projectId payload: $payload');
+    try {
+      await _client.db.update(RobleClient.projects, projectId, payload);
+    } on RobleApiHttpException catch (e) {
+      loggy.error('updateProject HTTP ${e.statusCode}: ${e.message}');
+      rethrow;
+    }
+    return {'_id': projectId, ...fields};
   }
 
   @override
