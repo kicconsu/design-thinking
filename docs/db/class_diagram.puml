@@ -1,5 +1,5 @@
-@startuml v3
-title Imker - UML v3
+@startuml v4
+title Imker - UML v4
 
 hide circle
 skinparam shadowing false
@@ -47,6 +47,7 @@ entity project {
 * skills : jsonb
 * status : open | closed
 * total_tasks: int
+* progress: int
 }
 
 note bottom of project
@@ -80,7 +81,7 @@ entity project_member {
 --
 * user_id : uuid <<FK>>
 * project_id : uuid <<FK>>
-* role : json {name: owner | member}
+* role : json {name: owner | collaborator}
 * status : active | left | removed
 * joinedAt : timestamptz
   leftAt : timestamptz
@@ -107,8 +108,10 @@ entity task {
 * title : text
   description : text
 * status : todo | doing | done
-* deadline: timestamptz
-* finished_at: timestamptz
+ deadline: timestamptz
+ finished_at: timestamptz
+ asignee_id: uuid <<FK>>
+ checklist: json
 }
 
 entity contribution  {
@@ -140,6 +143,7 @@ project ||--o{ project_invitation : invita
 project ||--o{ task
 
 project_member ||--o{ contribution : "(user_id, project_id)"
+user_system ||--o{ task: "user_id"
 task ||--o{ contribution
 
 ' ───────── Notas ─────────
