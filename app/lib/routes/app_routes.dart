@@ -5,6 +5,9 @@ abstract class AppRoutes {
   /// (Discover · Projects · Profile).
   static const home = '/home';
 
+  /// Primeros datos del perfil tras crear la cuenta (omitible).
+  static const onboarding = '/onboarding';
+
   static const login = '/auth/login';
 
   static const register = '/auth/register';

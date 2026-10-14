@@ -5,6 +5,7 @@ import 'package:imker/features/auth/ui/pages/register_page.dart';
 import 'package:imker/features/auth/ui/pages/upgrade_account_page.dart';
 import 'package:imker/features/discover/discover_dependencies.dart';
 import 'package:imker/features/home/ui/pages/home_page.dart';
+import 'package:imker/features/profile/ui/pages/onboarding_page.dart';
 import 'package:imker/features/home/ui/pages/splash_page.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
@@ -57,6 +58,7 @@ abstract class AppPages {
       page: () => const HomePage(),
       binding: HomeBinding(),
     ),
+    GetPage(name: AppRoutes.onboarding, page: () => const OnboardingPage()),
     GetPage(name: AppRoutes.login, page: () => const LoginPage()),
     GetPage(name: AppRoutes.register, page: () => const RegisterPage()),
     GetPage(
