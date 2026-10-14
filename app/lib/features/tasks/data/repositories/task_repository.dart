@@ -139,6 +139,28 @@ class TaskRepository with UiLoggy implements ITaskRepository {
   }
 
   @override
+  Future<int> releaseUnfinishedTasks({
+    required String projectId,
+    required String userId,
+  }) async {
+    final rows = await _guard(() => _source.readTasks(projectId));
+    final mine = rows
+        .map(_toTask)
+        .where((t) => t.assigneeId == userId && !t.isDone);
+    var released = 0;
+    for (final task in mine) {
+      await _guard(
+        () => _source.updateTask(task.id, {
+          'assignee_id': null,
+          'status': TaskStatus.todo.name,
+        }),
+      );
+      released++;
+    }
+    return released;
+  }
+
+  @override
   Future<void> deleteTask(ProjectTask task) async {
     await _guard(() => _source.deleteTask(task.id));
     await _syncProgress(task.projectId);

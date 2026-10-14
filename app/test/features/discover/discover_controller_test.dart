@@ -57,6 +57,19 @@ class _MockFailingRepository implements IProjectRepository {
   Future<List<String>> getActiveMemberUserIds(String projectId) async => [];
 
   @override
+  Future<void> leaveProject({
+    required String projectId,
+    required String userId,
+  }) async {}
+
+  @override
+  Future<void> removeMember({
+    required String projectId,
+    required String memberUserId,
+    required String requestedBy,
+  }) async {}
+
+  @override
   Future<List<Project>> getProjects() async {
     throw const ProjectFailure('Error de prueba');
   }
