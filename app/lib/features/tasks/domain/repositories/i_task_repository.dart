@@ -17,6 +17,17 @@ abstract class ITaskRepository {
     required TaskStatus status,
   });
 
+  /// Reserva una tarea pendiente para [userId]: queda `doing` con esa persona
+  /// como responsable. Lee la tarea justo antes de escribir y, si otra persona
+  /// ya la tomó, lanza `ProjectFailure` en vez de pisarla.
+  ///
+  /// Roble no tiene escrituras condicionales: esto reduce la ventana de
+  /// carrera, pero no la elimina del todo.
+  Future<ProjectTask> reserveTask({
+    required ProjectTask task,
+    required String userId,
+  });
+
   /// Borra la tarea y recalcula el progreso del proyecto.
   Future<void> deleteTask(ProjectTask task);
 
