@@ -64,4 +64,12 @@ abstract class IProjectRepository {
 
   /// IDs de proyectos donde ese usuario es miembro sin ser su creador.
   Future<List<String>> getMemberProjectIds(String userId);
+
+  /// Cancela las solicitudes `pending` de ese usuario a ese proyecto.
+  /// Devuelve cuántas canceló. Se usa cuando ya es miembro por otra vía
+  /// (p. ej. aceptó una invitación): la solicitud quedó obsoleta.
+  Future<int> cancelPendingJoinRequests({
+    required String projectId,
+    required String userId,
+  });
 }

@@ -96,6 +96,24 @@ void main() {
       expect(controller.unappliedSavedProjects.map((p) => p.id), ['b']);
     });
 
+    test('pendiente y activo a la vez: gana Activos y no queda pendiente', () {
+      controller.savedProjects.add(_project('a'));
+      controller.appliedProjectIds.add('a');
+      controller.activeProjects.add(_project('a'));
+
+      expect(controller.pendingProjects, isEmpty);
+      expect(controller.unappliedSavedProjects, isEmpty);
+    });
+
+    test('addActiveProject quita la postulación pendiente a ese proyecto', () {
+      controller.appliedProjectIds.add('a');
+
+      controller.addActiveProject(_project('a'));
+
+      expect(controller.appliedProjectIds, isNot(contains('a')));
+      expect(controller.activeProjects.map((p) => p.id), ['a']);
+    });
+
     test('clear vacía todo lo de la sesión', () {
       controller.coCreatedProjects.add(_project('mio'));
       controller.savedProjects.add(_project('g'));

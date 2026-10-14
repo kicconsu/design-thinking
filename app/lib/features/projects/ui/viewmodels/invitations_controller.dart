@@ -61,8 +61,12 @@ class InvitationsController extends GetxController {
     try {
       isLoading.value = true;
       final pending = await _repository.getPendingInvitations(userId);
+      // Una invitación a un proyecto donde ya colaboro (p. ej. me aceptaron
+      // una solicitud) no tiene nada que responder.
+      final memberOf = (await _repository.getMemberProjectIds(userId)).toSet();
       final shown = <ProjectInvitation>[];
       for (final inv in pending) {
+        if (memberOf.contains(inv.projectId)) continue;
         final project =
             projects[inv.projectId] ??
             await _repository.getProjectById(inv.projectId);
@@ -109,6 +113,20 @@ class InvitationsController extends GetxController {
       return e.message;
     } catch (_) {
       return 'No se pudo responder la invitación.';
+    }
+
+    // Ya es miembro: su solicitud pendiente a este proyecto (si la había)
+    // quedó obsoleta y el dueño no debería seguir viéndola. No es crítico: si
+    // falla, el proyecto ya cuenta como Activo y esa solicitud no se muestra.
+    if (accept) {
+      try {
+        await _repository.cancelPendingJoinRequests(
+          projectId: invitation.projectId,
+          userId: userId,
+        );
+      } on ProjectFailure {
+        // Se limpia en la próxima oportunidad.
+      }
     }
 
     invitations.removeWhere((i) => i.id == invitation.id);

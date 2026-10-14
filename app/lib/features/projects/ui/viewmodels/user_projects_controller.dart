@@ -244,9 +244,16 @@ class UserProjectsController extends GetxController {
       )
       .toList();
 
-  // Proyectos donde el usuario ya envió postulación y espera validación
-  List<Project> get pendingProjects =>
-      savedProjects.where((p) => appliedProjectIds.contains(p.id)).toList();
+  // Proyectos donde el usuario ya envió postulación y espera validación.
+  // Un proyecto sale en UNA sola sección: Activos gana a Pendientes y esta
+  // a Guardados.
+  List<Project> get pendingProjects => savedProjects
+      .where(
+        (p) =>
+            appliedProjectIds.contains(p.id) &&
+            !activeProjects.any((a) => a.id == p.id),
+      )
+      .toList();
 
   // Proyectos donde el usuario ya trabaja activamente
   List<Project> get activeCollaborationProjects => activeProjects;
@@ -270,6 +277,8 @@ class UserProjectsController extends GetxController {
 
   /// Añade un proyecto a "Activos" (p. ej. tras aceptar una invitación).
   void addActiveProject(Project project) {
+    // Ya colabora: una postulación pendiente a este proyecto quedó obsoleta.
+    appliedProjectIds.remove(project.id);
     if (activeProjects.any((p) => p.id == project.id)) return;
     activeProjects.removeWhere(
       (p) => p.owner == 'demo-owner' || p.id == DummyData.solariaId,
@@ -377,6 +386,9 @@ class UserProjectsController extends GetxController {
         }
       }
 
+      // Si ya es miembro (p. ej. por una invitación), la solicitud pendiente
+      // al mismo proyecto no cuenta.
+      pendingIds.removeAll(acceptedIds);
       appliedProjectIds.assignAll(pendingIds);
 
       // 1. Cargar proyectos aceptados en activeProjects (sección "Activos")

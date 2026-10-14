@@ -300,6 +300,31 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     );
   }
 
+  @override
+  Future<int> cancelPendingJoinRequests({
+    required String projectId,
+    required String userId,
+  }) async {
+    final mine = await getJoinRequestsByUser(userId);
+    final stale = mine.where(
+      (r) =>
+          r.projectId == projectId &&
+          r.statusState.toLowerCase() == 'pending' &&
+          r.id.isNotEmpty,
+    );
+    for (final request in stale) {
+      // `reviewed_by` es quien cambió el estado: aquí, la propia persona.
+      await _guard(
+        () => _source.updateJoinRequestStatus(
+          requestId: request.id,
+          status: 'cancelled',
+          reviewedBy: userId,
+        ),
+      );
+    }
+    return stale.length;
+  }
+
   // ─── Invitaciones ─────────────────────────────────────────────────────────
   @override
   Future<List<ProjectInvitation>> getPendingInvitations(String userId) async {
