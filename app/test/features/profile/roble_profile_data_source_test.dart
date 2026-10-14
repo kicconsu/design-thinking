@@ -118,6 +118,33 @@ void main() {
     });
   });
 
+  group('RobleProfileDataSource.readProfileOf', () {
+    test('devuelve la fila de esa persona y pide solo esa al servidor', () async {
+      final db = _FakeRobleDb(
+        sessionUserId: _yo,
+        rows: [_filaMia, _filaAjena],
+      );
+
+      final row = await dataSource(db).readProfileOf(_otro);
+
+      expect(row?['_id'], 'ajena');
+      expect(db.lastFilters, {'_owner': _otro});
+    });
+
+    test('devuelve null si no tiene fila, nunca la de otra persona', () async {
+      final db = _FakeRobleDb(sessionUserId: _yo, rows: [_filaMia]);
+
+      expect(await dataSource(db).readProfileOf(_otro), isNull);
+    });
+
+    test('con un id vacío no lee nada', () async {
+      final db = _FakeRobleDb(sessionUserId: _yo, rows: [_filaMia]);
+
+      expect(await dataSource(db).readProfileOf(''), isNull);
+      expect(db.lastFilters, isNull);
+    });
+  });
+
   group('RobleProfileDataSource.ensureMyProfile', () {
     test('no crea nada si la fila ya existe', () async {
       final db = _FakeRobleDb(sessionUserId: _yo, rows: [_filaMia]);

@@ -6,6 +6,7 @@ import 'package:imker/core/widgets/imker_bottom_nav_bar.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/ui/pages/member_profile_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_members_controller.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
@@ -168,6 +169,7 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
           error: _members.error.value,
           isMe: _members.isMe,
           onRetry: _members.load,
+          onOpenMember: (m) => Get.to(() => MemberProfilePage(member: m)),
         );
       default:
         // La pestaña Info. básica llega en su propia rama.

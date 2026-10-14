@@ -22,6 +22,10 @@ class InMemoryProfileDataSource implements IProfileDataSource {
   Future<Map<String, dynamic>?> readMyProfile() async => _row;
 
   @override
+  Future<Map<String, dynamic>?> readProfileOf(String userId) async =>
+      userId == _row['_owner'] ? _row : null;
+
+  @override
   Future<Map<String, dynamic>?> ensureMyProfile({required String name}) async =>
       _row;
 

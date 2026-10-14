@@ -23,6 +23,12 @@ class _FakeDataSource implements IProfileDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>?> readProfileOf(String userId) async {
+    _throwIfFailing();
+    return row;
+  }
+
+  @override
   Future<Map<String, dynamic>?> ensureMyProfile({required String name}) async {
     _throwIfFailing();
     return row ??= {'name': name, 'skills': <dynamic>[]};
@@ -153,6 +159,27 @@ void main() {
       expect(profile.bio, isEmpty);
       expect(profile.skills, isEmpty);
       expect(profile.academicInfo, isEmpty);
+    });
+
+    test('getProfileOf lee el perfil de otra persona', () async {
+      final repo = ProfileRepository(
+        _FakeDataSource({
+          'description': 'Hola',
+          'career': {'program': 'Derecho'},
+          'skills': ['Oratoria'],
+        }),
+      );
+
+      final profile = await repo.getProfileOf('otra-persona');
+
+      expect(profile.program, 'Derecho');
+      expect(profile.skills, ['Oratoria']);
+    });
+
+    test('getProfileOf sin fila devuelve un perfil vacío', () async {
+      final repo = ProfileRepository(_FakeDataSource(null));
+
+      expect((await repo.getProfileOf('otra-persona')).isComplete, isFalse);
     });
 
     test('traduce RobleApiNetworkException a ProfileFailure comprensible', () async {

@@ -19,6 +19,12 @@ class ProfileRepository implements IProfileRepository {
   }
 
   @override
+  Future<UserProfile> getProfileOf(String userId) async {
+    final row = await _guard(() => _source.readProfileOf(userId), isWrite: false);
+    return _toProfile(row ?? const {});
+  }
+
+  @override
   Future<void> ensureMyProfile({required String name}) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
