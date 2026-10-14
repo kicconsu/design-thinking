@@ -26,20 +26,25 @@ void main() {
       expect(ProfileFormController().isEmpty, isTrue);
     });
 
-    test('addSkill recorta, ignora vacíos y repetidos sin importar mayúsculas', () {
-      final form = ProfileFormController();
+    test(
+      'addSkill recorta, ignora vacíos y repetidos sin importar mayúsculas',
+      () {
+        final form = ProfileFormController();
 
-      for (final text in ['  Dart ', '', 'dart', 'SQL']) {
-        form.newSkill.text = text;
-        form.addSkill();
-      }
+        for (final text in ['  Dart ', '', 'dart', 'SQL']) {
+          form.newSkill.text = text;
+          form.addSkill();
+        }
 
-      expect(form.skills, ['Dart', 'SQL']);
-      expect(form.newSkill.text, isEmpty);
-    });
+        expect(form.skills, ['Dart', 'SQL']);
+        expect(form.newSkill.text, isEmpty);
+      },
+    );
 
     test('removeSkill quita y avisa a quien escucha', () {
-      final form = ProfileFormController(const UserProfile(skills: ['Dart', 'SQL']));
+      final form = ProfileFormController(
+        const UserProfile(skills: ['Dart', 'SQL']),
+      );
       var notified = 0;
       form.addListener(() => notified++);
 
@@ -50,20 +55,28 @@ void main() {
     });
   });
 
-  testWidgets('ProfileFormFields muestra y agrega habilidades', (tester) async {
+  testWidgets('ProfileFormFields agrega una habilidad con el botón', (
+    tester,
+  ) async {
     final form = ProfileFormController(const UserProfile(skills: ['Dart']));
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: SingleChildScrollView(child: ProfileFormFields(form: form))),
+        home: Scaffold(
+          body: SingleChildScrollView(child: ProfileFormFields(form: form)),
+        ),
       ),
     );
 
     expect(find.text('Dart'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextField, 'p. ej. Pandas, DuckDB...').first, 'SQL');
-    await tester.tap(find.text('Aceptar'));
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Escribe una habilidad'),
+      'Kotlin',
+    );
+    await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
-    expect(find.text('SQL'), findsOneWidget);
+    expect(find.text('Kotlin'), findsOneWidget);
+    expect(form.skills, ['Dart', 'Kotlin']);
   });
 }

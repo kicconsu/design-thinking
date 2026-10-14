@@ -29,12 +29,14 @@ class ProfileFormController extends ChangeNotifier {
       bioText.isEmpty &&
       _skills.isEmpty;
 
+  bool hasSkill(String value) =>
+      _skills.any((s) => s.toLowerCase() == value.trim().toLowerCase());
+
   void addSkill() {
-    final value = newSkill.text.trim();
+    final text = newSkill.text.trim();
     newSkill.clear();
-    if (value.isEmpty) return;
-    final exists = _skills.any((s) => s.toLowerCase() == value.toLowerCase());
-    if (!exists) _skills.add(value);
+    if (text.isEmpty) return;
+    if (!hasSkill(text)) _skills.add(text);
     notifyListeners();
   }
 
@@ -59,17 +61,20 @@ class ProfileFormFields extends StatelessWidget {
 
   final ProfileFormController form;
 
-  InputDecoration _decoration(ColorScheme cs, String hint, {bool dense = false}) =>
-      InputDecoration(
-        filled: true,
-        fillColor: cs.surface,
-        hintText: hint,
-        isDense: dense,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: cs.outline),
-        ),
-      );
+  InputDecoration _decoration(
+    ColorScheme cs,
+    String hint, {
+    bool dense = false,
+  }) => InputDecoration(
+    filled: true,
+    fillColor: cs.surface,
+    hintText: hint,
+    isDense: dense,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.zero,
+      borderSide: BorderSide(color: cs.outline),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -103,29 +108,44 @@ class ProfileFormFields extends StatelessWidget {
           maxLines: 5,
           minLines: 3,
           textCapitalization: TextCapitalization.sentences,
-          decoration: _decoration(cs, 'Cuéntale al resto de estudiantes sobre ti...'),
+          decoration: _decoration(
+            cs,
+            'Cuéntale al resto de estudiantes sobre ti...',
+          ),
         ),
         const SizedBox(height: 20),
         Text('Habilidades', style: title),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: form.newSkill,
-                decoration: _decoration(cs, 'p. ej. Pandas, DuckDB...', dense: true),
-                onSubmitted: (_) => form.addSkill(),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: form.newSkill,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.done,
+                  decoration: _decoration(cs, 'Escribe una habilidad'),
+                  onSubmitted: (_) => form.addSkill(),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Agregar',
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(56, 56),
+                    padding: EdgeInsets.zero,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  onPressed: form.addSkill,
+                  child: const Icon(Icons.add),
+                ),
               ),
-              onPressed: form.addSkill,
-              child: const Text('Aceptar'),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         ListenableBuilder(
@@ -133,21 +153,26 @@ class ProfileFormFields extends StatelessWidget {
           builder: (context, _) => Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: form.skills
-                .map(
-                  (s) => Chip(
-                    label: Text(s),
-                    backgroundColor: cs.secondaryContainer,
-                    labelStyle: TextStyle(color: cs.onSecondaryContainer),
-                    deleteIcon: Icon(Icons.close, size: 16, color: cs.onSecondaryContainer),
-                    onDeleted: () => form.removeSkill(s),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                      side: BorderSide(color: cs.outline),
-                    ),
+            children: [
+              for (final s in form.skills)
+                InputChip(
+                  label: Text(s),
+                  backgroundColor: cs.secondaryContainer,
+                  labelStyle: tt.labelLarge?.copyWith(
+                    color: cs.onSecondaryContainer,
                   ),
-                )
-                .toList(),
+                  deleteIcon: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: cs.onSecondaryContainer,
+                  ),
+                  onDeleted: () => form.removeSkill(s),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                    side: BorderSide(color: cs.outline),
+                  ),
+                ),
+            ],
           ),
         ),
       ],

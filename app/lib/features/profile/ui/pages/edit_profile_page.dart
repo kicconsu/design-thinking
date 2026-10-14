@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:imker/core/widgets/operation_done_page.dart';
-import 'package:imker/core/widgets/segmented_tab_switch.dart';
+import 'package:imker/core/widgets/profile_avatar.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 
@@ -74,63 +74,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final controller = Get.find<ProfileController>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final profile = controller.profile;
-
     return Scaffold(
       backgroundColor: cs.primaryContainer,
       appBar: AppBar(
         backgroundColor: cs.tertiaryContainer,
-        title: const Text('Imker'),
+        title: const Text('Editar perfil'),
         centerTitle: true,
         elevation: 0,
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           children: [
-            Text(
-              'Mi Perfil',
-              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-            ),
+            Center(child: ProfileAvatar(name: auth.loggedName, radius: 40)),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: cs.tertiaryContainer,
-                  child: Icon(
-                    Icons.person,
-                    color: cs.onTertiaryContainer,
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        auth.loggedName,
-                        style: tt.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (profile != null && profile.academicInfo.isNotEmpty)
-                        Text(profile.academicInfo, style: tt.bodySmall),
-                    ],
-                  ),
-                ),
-              ],
+            Text(
+              auth.loggedName,
+              textAlign: TextAlign.center,
+              style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            // Las pestañas se mantienen por consistencia visual con el
-            // perfil de lectura; solo "Perfil General" es editable aquí.
-            SegmentedTabSwitch(
-              tabs: const ['Perfil General', 'Proyectos'],
-              selectedIndex: 0,
-              onTabSelected: (_) {},
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             ProfileFormFields(form: _form),
             const SizedBox(height: 32),
             Obx(
