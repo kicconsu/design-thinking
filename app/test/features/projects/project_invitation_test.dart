@@ -111,6 +111,67 @@ void main() {
       expect(source.cascadeCalls, 0);
     });
 
+    test('invitarse a sí mismo aborta todo: no se escribe nada', () async {
+      source.currentUserId = 'uuid-ana@correo.com';
+      final before = (await source.readProjects()).length;
+
+      await expectLater(
+        repo.createProject(
+          title: 'Nunca debe existir',
+          description: 'x',
+          jobs: [],
+          skills: [],
+          inviteEmails: ['ANA@correo.com'],
+        ),
+        throwsA(
+          isA<ProjectFailure>().having(
+            (e) => e.message,
+            'message',
+            contains('propio proyecto'),
+          ),
+        ),
+      );
+
+      expect((await source.readProjects()).length, before);
+      expect(source.sentInvitations, isEmpty);
+    });
+
+    test('sin sesión no se bloquea ningún correo', () async {
+      source.currentUserId = '';
+
+      final project = await repo.createProject(
+        title: 'Con equipo',
+        description: 'x',
+        jobs: [],
+        skills: [],
+        inviteEmails: ['ana@correo.com'],
+      );
+
+      expect(project.title, 'Con equipo');
+    });
+
+    test(
+      'las invitaciones que alguien se hizo a sí mismo no se listan',
+      () async {
+        Map<String, dynamic> row(String owner, String project) => {
+          'project_id': project,
+          'email': 'ana@correo.com',
+          'user_id': 'ana-id',
+          'status': 'pending',
+          '_owner': owner,
+        };
+        await source.createInvitations([
+          row('ana-id', 'p1'),
+          row('otra-persona', 'p2'),
+        ]);
+
+        final pending = await repo.getPendingInvitations('ana-id');
+
+        expect(pending, hasLength(1));
+        expect(pending.single.invitedBy, 'otra-persona');
+      },
+    );
+
     test(
       'si las invitaciones fallan se deshace la creación completa',
       () async {

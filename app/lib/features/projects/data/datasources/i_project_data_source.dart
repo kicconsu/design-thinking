@@ -1,4 +1,7 @@
 abstract class IProjectDataSource {
+  /// `user_id` de la sesión activa; vacío si no hay sesión.
+  String get currentUserId;
+
   Future<List<Map<String, dynamic>>> readProjects();
   Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId);
   Future<Map<String, dynamic>?> readProjectById(String id);

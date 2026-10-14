@@ -12,6 +12,9 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   final RobleClient _client;
 
   @override
+  String get currentUserId => _client.currentUserId ?? '';
+
+  @override
   Future<List<Map<String, dynamic>>> readProjects() =>
       _client.readPublicOrPrivate(RobleClient.projects);
 
