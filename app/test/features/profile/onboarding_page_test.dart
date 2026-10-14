@@ -33,6 +33,9 @@ class _FakeProfiles implements IProfileRepository {
   Future<UserProfile> getMyProfile() async => const UserProfile();
 
   @override
+  Future<UserProfile> getProfileOf(String userId) async => const UserProfile();
+
+  @override
   Future<void> ensureMyProfile({required String name}) async {}
 
   @override

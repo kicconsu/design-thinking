@@ -72,6 +72,12 @@ abstract class IProjectDataSource {
     required String status,
   });
 
+  /// Termina la estancia activa de [userId] en [projectId]: marca `status`
+  /// ([status] = `left` o `removed`) y `leftAt`. Marca todas las filas activas
+  /// del par (Roble no garantiza unicidad). Devuelve cuántas cerró; 0 si no
+  /// había ninguna. Lectura estricta: si falla, la excepción sube.
+  Future<int> endMembership(String projectId, String userId, String status);
+
   /// Filas de `project_member` de ese usuario, en cualquier proyecto.
   Future<List<Map<String, dynamic>>> readMembershipsByUser(String userId);
 }

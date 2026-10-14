@@ -120,6 +120,27 @@ abstract class IProjectRepository {
   /// La persona rechaza una invitación. No toca la membresía.
   Future<void> declineInvitation(ProjectInvitation invitation);
 
+  // ─── Salir de un proyecto ─────────────────────────────────────────────────
+  // Lo crítico (cerrar la estancia) va primero; la limpieza es opcional y no
+  // tumba la operación. Se pueden reintentar: si ya no hay estancia activa
+  // cuentan como hechas. Lanzan [ProjectFailure].
+
+  /// [userId] sale del proyecto: su estancia pasa a `left` y se borra su
+  /// guardado del proyecto. El creador no puede salir.
+  Future<void> leaveProject({
+    required String projectId,
+    required String userId,
+  });
+
+  /// El creador ([requestedBy]) saca a [memberUserId]: su estancia pasa a
+  /// `removed`. No se puede sacar al creador ni a uno mismo. Su guardado se
+  /// conserva (es una preferencia suya).
+  Future<void> removeMember({
+    required String projectId,
+    required String memberUserId,
+    required String requestedBy,
+  });
+
   /// `user_id` de quienes colaboran hoy en el proyecto (sin duplicados).
   Future<List<String>> getActiveMemberUserIds(String projectId);
 }

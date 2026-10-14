@@ -87,17 +87,52 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
               Obx(
                 () => Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
+                    horizontal: 4,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: cs.surface,
                     border: Border.all(color: cs.outline),
                   ),
-                  child: Text(
-                    _controller.project.value.title,
-                    textAlign: TextAlign.center,
-                    style: tt.headlineMedium,
+                  // Título centrado entre dos huecos iguales; en uno va el
+                  // menú. El creador no puede salir: sin menú no hay nada que
+                  // ofrecerle (aquí irá «Cerrar proyecto»).
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 48),
+                      Expanded(
+                        child: Text(
+                          _controller.project.value.title,
+                          textAlign: TextAlign.center,
+                          style: tt.headlineMedium,
+                        ),
+                      ),
+                      if (_isCreator)
+                        const SizedBox(width: 48)
+                      else
+                        PopupMenuButton<String>(
+                          tooltip: 'Más acciones',
+                          onSelected: (_) => _confirmLeave(),
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: 'leave',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.logout, color: cs.error, size: 20),
+                                  const SizedBox(width: 12),
+                                  Flexible(
+                                    child: Text(
+                                      'Salir del proyecto',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(color: cs.error),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -155,6 +190,69 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
     if (mounted) _controller.reload();
   }
 
+  /// Quien creó el proyecto: puede quitar gente y no puede salir.
+  bool get _isCreator {
+    final owner = _controller.project.value.owner;
+    if (owner.isNotEmpty && owner == _members.currentUserId) return true;
+    return widget.currentUserId == null &&
+        Get.isRegistered<UserProjectsController>() &&
+        Get.find<UserProjectsController>().isOwner(_controller.project.value);
+  }
+
+  Future<void> _confirmLeave() async {
+    final title = _controller.project.value.title;
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('¿Salir de «$title»?'),
+        content: const Text(
+          'Dejarás de ser parte del proyecto y tus tareas sin terminar '
+          'quedarán libres. Se conservan las que ya terminaste. Para volver '
+          'tendrás que postular de nuevo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Get.back(result: true),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final error = await _members.leave();
+    if (error != null) {
+      Get.snackbar('Error', error, snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    Get.back();
+    Get.snackbar(
+      'Listo',
+      'Saliste de «$title».',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  /// Si en la ficha se quitó a alguien, la lista se recarga al volver.
+  Future<void> _openMember(ProjectMember member) async {
+    final removed = await Get.to<bool>(
+      () => MemberProfilePage(
+        member: member,
+        projectId: widget.project.id,
+        viewerIsCreator: _isCreator,
+        currentUserId: widget.currentUserId,
+      ),
+    );
+    if (removed == true && mounted) _members.load();
+  }
+
   void _selectTab(int index) {
     setState(() => _tab = index);
     // Los miembros se leen la primera vez que se abre la pestaña.
@@ -173,6 +271,8 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
           error: _members.error.value,
           isMe: _members.isMe,
           onRetry: _members.load,
+          onOpenMember: _openMember,
+          canManage: _isCreator,
         );
       default:
         return ProjectBasicInfoTab(

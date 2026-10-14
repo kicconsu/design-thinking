@@ -49,6 +49,16 @@ abstract class ITaskRepository {
     required String body,
   });
 
+  /// Libera las tareas sin terminar (`todo` o `doing`) que tenía [userId]:
+  /// quedan sin responsable y vuelven a `todo`. Las terminadas no se tocan:
+  /// siguen a nombre de quien las hizo. Devuelve cuántas liberó.
+  ///
+  /// El progreso del proyecto no cambia (solo cuentan las terminadas).
+  Future<int> releaseUnfinishedTasks({
+    required String projectId,
+    required String userId,
+  });
+
   /// Borra la tarea y recalcula el progreso del proyecto.
   Future<void> deleteTask(ProjectTask task);
 

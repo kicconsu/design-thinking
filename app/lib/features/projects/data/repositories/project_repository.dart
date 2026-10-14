@@ -494,6 +494,67 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     }.toList();
   }
 
+  @override
+  Future<void> leaveProject({
+    required String projectId,
+    required String userId,
+  }) async {
+    if (projectId.isEmpty || userId.isEmpty) {
+      throw const ProjectFailure('Falta el proyecto o la sesión.');
+    }
+    if (await _isCreator(projectId, userId)) {
+      throw const ProjectFailure('El creador no puede salir del proyecto.');
+    }
+    await _guard(() => _source.endMembership(projectId, userId, 'left'));
+    // Salir borra el propio guardado; quedaría en Guardados un proyecto del
+    // que la persona acaba de irse.
+    await _bestEffort(
+      () => unsaveProject(userId: userId, projectId: projectId),
+    );
+  }
+
+  @override
+  Future<void> removeMember({
+    required String projectId,
+    required String memberUserId,
+    required String requestedBy,
+  }) async {
+    if (projectId.isEmpty || memberUserId.isEmpty || requestedBy.isEmpty) {
+      throw const ProjectFailure('Falta el proyecto o la sesión.');
+    }
+    if (memberUserId == requestedBy) {
+      throw const ProjectFailure('Para irte del proyecto usa «Salir».');
+    }
+    if (!await _isCreator(projectId, requestedBy)) {
+      throw const ProjectFailure('Solo el creador puede quitar a alguien.');
+    }
+    if (await _isCreator(projectId, memberUserId)) {
+      throw const ProjectFailure('No se puede quitar al creador.');
+    }
+    await _guard(
+      () => _source.endMembership(projectId, memberUserId, 'removed'),
+    );
+  }
+
+  /// Es el creador si el proyecto es suyo (`_owner`) o si su estancia activa
+  /// tiene el papel `owner`. Se miran las dos cosas: ninguna es infalible
+  /// (filas viejas sin papel, lecturas parciales).
+  Future<bool> _isCreator(String projectId, String userId) async {
+    final project = await _guard(() => _source.readProjectById(projectId));
+    final owner =
+        (project?['_owner'] ?? project?['owner'])?.toString().trim() ?? '';
+    if (owner.isNotEmpty && owner == userId) return true;
+    final rows = await _guard(
+      () => _source.readProjectMembers(projectId: projectId),
+    );
+    return rows.any(
+      (r) =>
+          r['user_id']?.toString() == userId &&
+          _isActiveMember(r) &&
+          _roleName(r['role']) == 'owner',
+    );
+  }
+
   /// Cierra las invitaciones `pending` de esa persona a ese proyecto.
   Future<void> _cancelPendingInvitations(
     String projectId,

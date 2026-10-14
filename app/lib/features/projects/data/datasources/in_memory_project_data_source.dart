@@ -153,17 +153,27 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     return row;
   }
 
-  /// Termina la estancia activa de alguien (`left` o `removed`). Solo para
-  /// pruebas: la app todavía no tiene la acción de salir ni la de echar.
-  void endMembership(String projectId, String userId, String status) {
+  /// Inserta una fila tal cual, sin la comprobación de duplicados. Solo para
+  /// pruebas: Roble no tiene UNIQUE y la app debe tolerar filas repetidas.
+  void insertRawMember(Map<String, dynamic> row) => _projectMembers.add(row);
+
+  @override
+  Future<int> endMembership(
+    String projectId,
+    String userId,
+    String status,
+  ) async {
+    var ended = 0;
     for (final r in _projectMembers) {
       if (r['project_id'] == projectId &&
           r['user_id'] == userId &&
           (r['status'] ?? 'active') == 'active') {
         r['status'] = status;
         r['leftAt'] = DateTime.now().toUtc().toIso8601String();
+        ended++;
       }
     }
+    return ended;
   }
 
   @override

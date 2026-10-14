@@ -124,6 +124,18 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   `trust_indicators_page.dart`, `collaboration_history_page.dart` —
   Pantallas.
 
+## Salir y quitar miembros
+
+- `ProjectRepository.leaveProject` / `removeMember` cierran la estancia en
+  `project_member` (`left` / `removed` + `leftAt`) con
+  `IProjectDataSource.endMembership`. El creador no puede salir ni ser
+  quitado. Salir también borra el `project_saved` propio. Son repetibles.
+- `ITaskRepository.releaseUnfinishedTasks` libera las tareas `todo`/`doing` de
+  quien se va; las terminadas se conservan a su nombre. No cambia el progreso.
+- Salir: menú ⋮ en la tarjeta del título de `ProjectInfoPage` (el creador no lo
+  ve). Quitar: botón en `MemberProfilePage` (ficha del miembro, se abre desde
+  la pestaña Miembros), solo para el creador sobre colaboradores.
+
 ## Projects / Discover / Home
 
 - `features/projects` — Proyectos (`project`), guardados, postulaciones y
