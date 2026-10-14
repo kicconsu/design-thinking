@@ -29,12 +29,32 @@ class ProfileFormController extends ChangeNotifier {
       bioText.isEmpty &&
       _skills.isEmpty;
 
+  /// Habilidades que se ofrecen de un toque; ayudan a escribirlas igual que
+  /// el resto de la gente.
+  static const suggestedSkills = [
+    'Python',
+    'SQL',
+    'Flutter',
+    'Diseño UI',
+    'Análisis de datos',
+    'Excel',
+    'Redacción',
+    'Marketing',
+  ];
+
+  bool hasSkill(String value) =>
+      _skills.any((s) => s.toLowerCase() == value.trim().toLowerCase());
+
   void addSkill() {
-    final value = newSkill.text.trim();
+    final value = newSkill.text;
     newSkill.clear();
-    if (value.isEmpty) return;
-    final exists = _skills.any((s) => s.toLowerCase() == value.toLowerCase());
-    if (!exists) _skills.add(value);
+    addSkillNamed(value);
+  }
+
+  void addSkillNamed(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return;
+    if (!hasSkill(text)) _skills.add(text);
     notifyListeners();
   }
 
@@ -59,17 +79,20 @@ class ProfileFormFields extends StatelessWidget {
 
   final ProfileFormController form;
 
-  InputDecoration _decoration(ColorScheme cs, String hint, {bool dense = false}) =>
-      InputDecoration(
-        filled: true,
-        fillColor: cs.surface,
-        hintText: hint,
-        isDense: dense,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: cs.outline),
-        ),
-      );
+  InputDecoration _decoration(
+    ColorScheme cs,
+    String hint, {
+    bool dense = false,
+  }) => InputDecoration(
+    filled: true,
+    fillColor: cs.surface,
+    hintText: hint,
+    isDense: dense,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.zero,
+      borderSide: BorderSide(color: cs.outline),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -103,52 +126,94 @@ class ProfileFormFields extends StatelessWidget {
           maxLines: 5,
           minLines: 3,
           textCapitalization: TextCapitalization.sentences,
-          decoration: _decoration(cs, 'Cuéntale al resto de estudiantes sobre ti...'),
+          decoration: _decoration(
+            cs,
+            'Cuéntale al resto de estudiantes sobre ti...',
+          ),
         ),
         const SizedBox(height: 20),
         Text('Habilidades', style: title),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: form.newSkill,
-                decoration: _decoration(cs, 'p. ej. Pandas, DuckDB...', dense: true),
-                onSubmitted: (_) => form.addSkill(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              ),
+        TextField(
+          controller: form.newSkill,
+          textCapitalization: TextCapitalization.sentences,
+          textInputAction: TextInputAction.done,
+          decoration: _decoration(cs, 'Escribe una habilidad').copyWith(
+            suffixIcon: IconButton(
+              tooltip: 'Agregar',
+              icon: Icon(Icons.add_circle_outline, color: cs.primary),
               onPressed: form.addSkill,
-              child: const Text('Aceptar'),
             ),
-          ],
+          ),
+          onSubmitted: (_) => form.addSkill(),
         ),
         const SizedBox(height: 12),
         ListenableBuilder(
           listenable: form,
-          builder: (context, _) => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: form.skills
-                .map(
-                  (s) => Chip(
-                    label: Text(s),
-                    backgroundColor: cs.secondaryContainer,
-                    labelStyle: TextStyle(color: cs.onSecondaryContainer),
-                    deleteIcon: Icon(Icons.close, size: 16, color: cs.onSecondaryContainer),
-                    onDeleted: () => form.removeSkill(s),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                      side: BorderSide(color: cs.outline),
+          builder: (context, _) {
+            final suggestions = ProfileFormController.suggestedSkills
+                .where((s) => !form.hasSkill(s))
+                .toList();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (form.skills.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final s in form.skills)
+                        InputChip(
+                          label: Text(s),
+                          backgroundColor: cs.secondaryContainer,
+                          labelStyle: tt.labelLarge?.copyWith(
+                            color: cs.onSecondaryContainer,
+                          ),
+                          deleteIcon: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: cs.onSecondaryContainer,
+                          ),
+                          onDeleted: () => form.removeSkill(s),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                            side: BorderSide(color: cs.outline),
+                          ),
+                        ),
+                    ],
+                  ),
+                if (suggestions.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'SUGERIDAS',
+                    style: tt.labelSmall?.copyWith(
+                      letterSpacing: 1.2,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
-                )
-                .toList(),
-          ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final s in suggestions)
+                        ActionChip(
+                          avatar: Icon(Icons.add, size: 16, color: cs.primary),
+                          label: Text(s),
+                          backgroundColor: Colors.transparent,
+                          labelStyle: tt.labelLarge,
+                          onPressed: () => form.addSkillNamed(s),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                            side: BorderSide(color: cs.outline),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );
