@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 
 import 'package:imker/core/utils/career_label.dart';
-import 'package:imker/core/utils/string_list.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 
 import '../../domain/models/applicant.dart';
@@ -133,7 +132,6 @@ class CollaborationRequestsController extends GetxController {
     }
 
     final name = (profile?['name'] as String?)?.trim() ?? '';
-    final bio = (profile?['description'] as String?)?.trim() ?? '';
     return Applicant(
       id: req.id,
       projectId: req.projectId,
@@ -144,18 +142,7 @@ class CollaborationRequestsController extends GetxController {
                 ? 'Usuario ${req.userId.substring(0, 8)}'
                 : 'Aspirante'),
       academicInfo: formatCareer(profile?['career']),
-      requestedRole: 'Colaborador',
       appliedAgo: _formatAgo(req.createdAt),
-      commonProjects: 0,
-      commitmentScore: 0,
-      onTimeScore: 0,
-      responseRateScore: 0,
-      completedProjectsScore: 0,
-      bio: bio.isNotEmpty
-          ? bio
-          : 'Esta persona aún no escribió una descripción.',
-      skills: decodeStringList(profile?['skills']),
-      experience: const [],
       statusState: req.statusState,
     );
   }

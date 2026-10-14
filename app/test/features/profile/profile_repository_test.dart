@@ -53,19 +53,22 @@ class _FakeDataSource implements IProfileDataSource {
 
 void main() {
   group('ProfileRepository', () {
-    test('mapea skills cuando vienen como array en la raíz de la columna', () async {
-      final repo = ProfileRepository(
-        _FakeDataSource({
-          'description': 'Resumen',
-          'skills': ['Python', 'SQL'],
-        }),
-      );
+    test(
+      'mapea skills cuando vienen como array en la raíz de la columna',
+      () async {
+        final repo = ProfileRepository(
+          _FakeDataSource({
+            'description': 'Resumen',
+            'skills': ['Python', 'SQL'],
+          }),
+        );
 
-      final profile = await repo.getMyProfile();
+        final profile = await repo.getMyProfile();
 
-      expect(profile.bio, 'Resumen');
-      expect(profile.skills, ['Python', 'SQL']);
-    });
+        expect(profile.bio, 'Resumen');
+        expect(profile.skills, ['Python', 'SQL']);
+      },
+    );
 
     test('decodifica skills serializadas como jsonb en texto', () async {
       final repo = ProfileRepository(
@@ -79,7 +82,11 @@ void main() {
 
     test('devuelve skills vacías si la columna no es un array', () async {
       final repo = ProfileRepository(
-        _FakeDataSource({'skills': {'values': ['Python']}}),
+        _FakeDataSource({
+          'skills': {
+            'values': ['Python'],
+          },
+        }),
       );
 
       final profile = await repo.getMyProfile();
@@ -90,7 +97,10 @@ void main() {
     test('arma academicInfo desde el objeto career', () async {
       final repo = ProfileRepository(
         _FakeDataSource({
-          'career': {'program': 'Ing. Sistemas', 'institution': 'U. de la Costa'},
+          'career': {
+            'program': 'Ing. Sistemas',
+            'institution': 'U. de la Costa',
+          },
         }),
       );
 
@@ -113,7 +123,11 @@ void main() {
     });
 
     test('los indicadores de confianza valen 0 y no hay historial', () async {
-      final repo = ProfileRepository(_FakeDataSource({'skills': ['Dart']}));
+      final repo = ProfileRepository(
+        _FakeDataSource({
+          'skills': ['Dart'],
+        }),
+      );
 
       final profile = await repo.getMyProfile();
 
@@ -124,14 +138,28 @@ void main() {
 
     test('isComplete exige carrera y al menos una habilidad', () async {
       Future<bool> complete(Map<String, dynamic> row) async =>
-          (await ProfileRepository(_FakeDataSource(row)).getMyProfile())
-              .isComplete;
+          (await ProfileRepository(
+            _FakeDataSource(row),
+          ).getMyProfile()).isComplete;
 
       expect(await complete({}), isFalse);
-      expect(await complete({'career': {'program': 'X'}}), isFalse);
-      expect(await complete({'skills': ['Dart']}), isFalse);
       expect(
-        await complete({'career': {'program': 'X'}, 'skills': ['Dart']}),
+        await complete({
+          'career': {'program': 'X'},
+        }),
+        isFalse,
+      );
+      expect(
+        await complete({
+          'skills': ['Dart'],
+        }),
+        isFalse,
+      );
+      expect(
+        await complete({
+          'career': {'program': 'X'},
+          'skills': ['Dart'],
+        }),
         isTrue,
       );
     });
@@ -151,14 +179,23 @@ void main() {
       expect(profile.skills, ['Oratoria']);
     });
 
-    test('devuelve un perfil vacío si el usuario todavía no tiene fila', () async {
-      final repo = ProfileRepository(_FakeDataSource(null));
+    test(
+      'devuelve un perfil vacío si el usuario todavía no tiene fila',
+      () async {
+        final repo = ProfileRepository(_FakeDataSource(null));
 
-      final profile = await repo.getMyProfile();
+        final profile = await repo.getMyProfile();
 
-      expect(profile.bio, isEmpty);
-      expect(profile.skills, isEmpty);
-      expect(profile.academicInfo, isEmpty);
+        expect(profile.bio, isEmpty);
+        expect(profile.skills, isEmpty);
+        expect(profile.academicInfo, isEmpty);
+      },
+    );
+
+    test('lee el nombre guardado en la fila', () async {
+      final repo = ProfileRepository(_FakeDataSource({'name': '  Ana Pérez '}));
+
+      expect((await repo.getProfileOf('ana')).name, 'Ana Pérez');
     });
 
     test('getProfileOf lee el perfil de otra persona', () async {
@@ -182,21 +219,24 @@ void main() {
       expect((await repo.getProfileOf('otra-persona')).isComplete, isFalse);
     });
 
-    test('traduce RobleApiNetworkException a ProfileFailure comprensible', () async {
-      final source = _FakeDataSource()
-        ..exception = const RobleApiNetworkException('Network error');
-      final repo = ProfileRepository(source);
+    test(
+      'traduce RobleApiNetworkException a ProfileFailure comprensible',
+      () async {
+        final source = _FakeDataSource()
+          ..exception = const RobleApiNetworkException('Network error');
+        final repo = ProfileRepository(source);
 
-      expect(
-        () => repo.getMyProfile(),
-        throwsA(
-          isA<ProfileFailure>().having(
-            (e) => e.message,
-            'message',
-            contains('Sin conexión'),
+        expect(
+          () => repo.getMyProfile(),
+          throwsA(
+            isA<ProfileFailure>().having(
+              (e) => e.message,
+              'message',
+              contains('Sin conexión'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   });
 }

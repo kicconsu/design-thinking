@@ -25,6 +25,8 @@ class PersonProfilePage extends StatefulWidget {
     this.member,
     this.viewerIsCreator = false,
     this.currentUserId,
+    this.header,
+    this.bottomBar,
   });
 
   final String userId;
@@ -32,6 +34,13 @@ class PersonProfilePage extends StatefulWidget {
   final String? projectId;
   final ProjectMember? member;
   final bool viewerIsCreator;
+
+  /// Contenido propio de quien abre la ficha (p. ej. los datos de una
+  /// solicitud), encima del perfil.
+  final Widget? header;
+
+  /// Barra fija al pie (p. ej. aceptar o rechazar una solicitud).
+  final Widget? bottomBar;
 
   /// Sustituye a la sesión real: solo para pruebas.
   final String Function()? currentUserId;
@@ -128,6 +137,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
         centerTitle: true,
         elevation: 0,
       ),
+      bottomNavigationBar: widget.bottomBar,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _controller.load,
@@ -138,6 +148,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(24),
                 children: [
+                  if (widget.header != null) widget.header!,
                   const SizedBox(height: 80),
                   if (_controller.error.value != null) ...[
                     Text(
@@ -158,6 +169,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               children: [
+                if (widget.header != null) ...[
+                  widget.header!,
+                  const SizedBox(height: 16),
+                ],
                 if (widget.member != null) ...[
                   _InThisProjectCard(controller: _controller),
                   const SizedBox(height: 16),

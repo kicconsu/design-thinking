@@ -143,6 +143,10 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   activos). Si se abre desde un proyecto del que es miembro, añade «En este
   proyecto» y el creador puede quitarla. `openPersonProfile` es la entrada
   común: a un invitado le pide cuenta.
+- `ApplicantDetailPage` (solicitudes) es esa misma ficha con la solicitud
+  encima (`header`) y aceptar/rechazar al pie (`bottomBar`). Las invitaciones
+  dicen «Te invitó X ›» (`InviterRow`); los nombres salen de `PeopleDirectory`,
+  caché de sesión con una lectura por persona.
 - Se abre desde la pestaña Miembros y desde «Integrantes» del detalle de un
   proyecto (lista real, ya no textos).
 

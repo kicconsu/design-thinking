@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/widgets/segmented_tab_switch.dart';
-import 'package:imker/core/widgets/trust_indicators.dart';
-
-import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
+import '../../domain/models/project.dart';
+import '../pages/person_profile_page.dart';
 import '../viewmodels/collaboration_requests_controller.dart';
 import 'request_decision_result_page.dart';
 
-/// Pantallas "Requests-Profile" / "Requests-Profile-Projects" del flujo de
-/// Figma: detalle de una solicitud, con pestañas de perfil general y
-/// proyectos, y las acciones de aceptar/rechazar.
+/// Detalle de una solicitud de colaboración: el perfil de quien la hizo (la
+/// misma ficha que se abre desde cualquier otro sitio) con los datos de la
+/// solicitud encima y las acciones de aceptar o rechazar al pie.
 class ApplicantDetailPage extends StatefulWidget {
   final Project project;
   final Applicant applicant;
@@ -27,7 +25,6 @@ class ApplicantDetailPage extends StatefulWidget {
 }
 
 class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
-  int _tab = 0; // 0: Perfil General, 1: Proyectos
   bool _isSubmitting = false;
 
   Future<void> _decide(bool accepted) async {
@@ -53,307 +50,111 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
     final applicant = widget.applicant;
 
-    return Scaffold(
-      backgroundColor: cs.primaryContainer,
-      appBar: AppBar(
-        backgroundColor: cs.tertiaryContainer,
-        title: const Text('Imker'),
-        centerTitle: true,
-        elevation: 0,
+    return PersonProfilePage(
+      userId: applicant.userId,
+      name: applicant.name,
+      header: _RequestHeader(
+        projectTitle: widget.project.title,
+        appliedAgo: applicant.appliedAgo,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Solicitud de colaboración',
-                          style: tt.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Text(applicant.appliedAgo, style: tt.bodySmall),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: cs.tertiaryContainer,
-                        child: Icon(
-                          Icons.person,
-                          color: cs.onTertiaryContainer,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              applicant.name,
-                              style: tt.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(applicant.academicInfo, style: tt.bodySmall),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: cs.secondaryContainer,
-                              ),
-                              child: Text(
-                                'Rol solicitado: ${applicant.requestedRole}',
-                                style: TextStyle(
-                                  color: cs.onSecondaryContainer,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (applicant.commonProjects > 0)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 16,
-                          color: cs.onPrimaryContainer,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${applicant.commonProjects} colaborador${applicant.commonProjects == 1 ? '' : 'es'} en común contigo',
-                          style: tt.bodySmall,
-                        ),
-                      ],
+      bottomBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isSubmitting ? null : () => _decide(false),
+                  style: OutlinedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
                     ),
-                  const SizedBox(height: 16),
-                  SegmentedTabSwitch(
-                    tabs: [
-                      'Perfil General',
-                      'Proyectos (${applicant.experience.length})',
-                    ],
-                    selectedIndex: _tab,
-                    onTabSelected: (i) => setState(() => _tab = i),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  const SizedBox(height: 16),
-                  if (_tab == 0)
-                    _GeneralProfileTab(applicant: applicant, cs: cs, tt: tt)
-                  else
-                    _ProjectsTab(applicant: applicant, cs: cs, tt: tt),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isSubmitting ? null : () => _decide(false),
-                      style: OutlinedButton.styleFrom(
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Rechazar'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton(
-                      onPressed: _isSubmitting ? null : () => _decide(true),
-                      style: FilledButton.styleFrom(
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Aceptar solicitud'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GeneralProfileTab extends StatelessWidget {
-  final Applicant applicant;
-  final ColorScheme cs;
-  final TextTheme tt;
-
-  const _GeneralProfileTab({
-    required this.applicant,
-    required this.cs,
-    required this.tt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (applicant.commitmentScore > 0) ...[
-          TrustIndicators(
-            commitmentScore: applicant.commitmentScore,
-            onTimeScore: applicant.onTimeScore,
-            responseRateScore: applicant.responseRateScore,
-            completedProjectsScore: applicant.completedProjectsScore,
-          ),
-          const SizedBox(height: 24),
-        ],
-        Text(
-          'Sobre esta persona',
-          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            border: Border.all(color: cs.outline),
-          ),
-          child: Text(applicant.bio, style: tt.bodyMedium),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'Habilidades',
-          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: applicant.skills
-              .map(
-                (s) => Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: cs.secondaryContainer,
-                    border: Border.all(color: cs.outline),
-                  ),
-                  child: Text(
-                    s,
-                    style: TextStyle(color: cs.onSecondaryContainer),
-                  ),
+                  child: _isSubmitting
+                      ? const _Spinner()
+                      : const Text('Rechazar'),
                 ),
-              )
-              .toList(),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: FilledButton(
+                  onPressed: _isSubmitting ? null : () => _decide(true),
+                  style: FilledButton.styleFrom(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: _isSubmitting
+                      ? const _Spinner()
+                      : const Text('Aceptar solicitud'),
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }
 
-class _ProjectsTab extends StatelessWidget {
-  final Applicant applicant;
-  final ColorScheme cs;
-  final TextTheme tt;
+class _Spinner extends StatelessWidget {
+  const _Spinner();
 
-  const _ProjectsTab({
-    required this.applicant,
-    required this.cs,
-    required this.tt,
-  });
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+    width: 20,
+    height: 20,
+    child: CircularProgressIndicator(strokeWidth: 2),
+  );
+}
+
+/// Qué pide esta persona y cuándo lo pidió.
+class _RequestHeader extends StatelessWidget {
+  const _RequestHeader({required this.projectTitle, required this.appliedAgo});
+
+  final String projectTitle;
+  final String appliedAgo;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Historial de participación en proyectos académicos y de investigación.',
-          style: tt.bodySmall,
-        ),
-        const SizedBox(height: 16),
-        if (applicant.experience.isEmpty)
-          Text('Aún no hay proyectos registrados.', style: tt.bodyMedium),
-        ...applicant.experience.map(
-          (exp) => Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cs.surface,
-              border: Border.all(color: cs.outline),
-            ),
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.tertiaryContainer,
+        border: Border.all(color: cs.onTertiaryContainer),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.how_to_reg_outlined, color: cs.onTertiaryContainer),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        exp.title,
-                        style: tt.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      exp.status,
-                      style: tt.labelMedium?.copyWith(
-                        color: exp.status == 'Completado'
-                            ? Colors.green.shade700
-                            : cs.error,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(exp.description, style: tt.bodyMedium),
-                const SizedBox(height: 6),
                 Text(
-                  'Evaluación de pares: ${exp.peerEvaluation.toStringAsFixed(1)}/5.0',
-                  style: tt.bodySmall,
+                  'Solicitud de colaboración',
+                  style: tt.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: cs.onTertiaryContainer,
+                  ),
+                ),
+                Text(
+                  'Quiere colaborar en «$projectTitle» · $appliedAgo',
+                  style: tt.bodySmall?.copyWith(color: cs.onTertiaryContainer),
                 ),
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

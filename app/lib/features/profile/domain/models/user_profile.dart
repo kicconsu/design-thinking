@@ -5,6 +5,7 @@
 /// habilidades y carrera).
 class UserProfile {
   const UserProfile({
+    this.name = '',
     this.program = '',
     this.institution = '',
     this.bio = '',
@@ -17,6 +18,9 @@ class UserProfile {
     this.completedProjectsScore = 0,
   });
 
+  /// Nombre guardado en la fila de `profile`. En el perfil propio el nombre de
+  /// pantalla sale de la sesión; esto sirve para mostrar a otras personas.
+  final String name;
   final String program;
   final String institution;
   final String bio;
@@ -47,6 +51,7 @@ class UserProfile {
     String? bio,
     List<String>? skills,
   }) => UserProfile(
+    name: name,
     program: program ?? this.program,
     institution: institution ?? this.institution,
     bio: bio ?? this.bio,

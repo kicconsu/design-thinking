@@ -8,6 +8,7 @@ import 'package:imker/core/utils/error_message.dart';
 import 'package:imker/features/auth/domain/models/authentication_user.dart';
 import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
+import 'package:imker/features/profile/ui/viewmodels/people_directory.dart';
 import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
@@ -87,6 +88,9 @@ class AuthenticationController extends GetxController with UiLoggy {
   void _dropProfileCache() {
     if (Get.isRegistered<ProfileController>()) {
       Get.find<ProfileController>().clear();
+    }
+    if (Get.isRegistered<PeopleDirectory>()) {
+      Get.find<PeopleDirectory>().clear();
     }
   }
 
