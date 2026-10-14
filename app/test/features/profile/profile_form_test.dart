@@ -55,16 +55,7 @@ void main() {
     });
   });
 
-  test('addSkillNamed agrega una sugerida y la oculta de las sugeridas', () {
-    final form = ProfileFormController();
-
-    form.addSkillNamed('Python');
-
-    expect(form.skills, ['Python']);
-    expect(form.hasSkill('python'), isTrue);
-  });
-
-  testWidgets('ProfileFormFields agrega con el botón y con una sugerida', (
+  testWidgets('ProfileFormFields agrega una habilidad con el botón', (
     tester,
   ) async {
     final form = ProfileFormController(const UserProfile(skills: ['Dart']));
@@ -82,15 +73,10 @@ void main() {
       find.widgetWithText(TextField, 'Escribe una habilidad'),
       'Kotlin',
     );
-    await tester.tap(find.byTooltip('Agregar'));
+    await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
+
     expect(find.text('Kotlin'), findsOneWidget);
-
-    await tester.ensureVisible(find.text('SQL'));
-    await tester.tap(find.text('SQL'));
-    await tester.pump();
-
-    expect(form.skills, ['Dart', 'Kotlin', 'SQL']);
-    expect(find.text('SUGERIDAS'), findsOneWidget);
+    expect(form.skills, ['Dart', 'Kotlin']);
   });
 }

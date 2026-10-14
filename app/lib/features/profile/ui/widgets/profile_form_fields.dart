@@ -29,30 +29,12 @@ class ProfileFormController extends ChangeNotifier {
       bioText.isEmpty &&
       _skills.isEmpty;
 
-  /// Habilidades que se ofrecen de un toque; ayudan a escribirlas igual que
-  /// el resto de la gente.
-  static const suggestedSkills = [
-    'Python',
-    'SQL',
-    'Flutter',
-    'Diseño UI',
-    'Análisis de datos',
-    'Excel',
-    'Redacción',
-    'Marketing',
-  ];
-
   bool hasSkill(String value) =>
       _skills.any((s) => s.toLowerCase() == value.trim().toLowerCase());
 
   void addSkill() {
-    final value = newSkill.text;
+    final text = newSkill.text.trim();
     newSkill.clear();
-    addSkillNamed(value);
-  }
-
-  void addSkillNamed(String value) {
-    final text = value.trim();
     if (text.isEmpty) return;
     if (!hasSkill(text)) _skills.add(text);
     notifyListeners();
@@ -134,86 +116,64 @@ class ProfileFormFields extends StatelessWidget {
         const SizedBox(height: 20),
         Text('Habilidades', style: title),
         const SizedBox(height: 8),
-        TextField(
-          controller: form.newSkill,
-          textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.done,
-          decoration: _decoration(cs, 'Escribe una habilidad').copyWith(
-            suffixIcon: IconButton(
-              tooltip: 'Agregar',
-              icon: Icon(Icons.add_circle_outline, color: cs.primary),
-              onPressed: form.addSkill,
-            ),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: form.newSkill,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.done,
+                  decoration: _decoration(cs, 'Escribe una habilidad'),
+                  onSubmitted: (_) => form.addSkill(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Agregar',
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(56, 56),
+                    padding: EdgeInsets.zero,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  onPressed: form.addSkill,
+                  child: const Icon(Icons.add),
+                ),
+              ),
+            ],
           ),
-          onSubmitted: (_) => form.addSkill(),
         ),
         const SizedBox(height: 12),
         ListenableBuilder(
           listenable: form,
-          builder: (context, _) {
-            final suggestions = ProfileFormController.suggestedSkills
-                .where((s) => !form.hasSkill(s))
-                .toList();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (form.skills.isNotEmpty)
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final s in form.skills)
-                        InputChip(
-                          label: Text(s),
-                          backgroundColor: cs.secondaryContainer,
-                          labelStyle: tt.labelLarge?.copyWith(
-                            color: cs.onSecondaryContainer,
-                          ),
-                          deleteIcon: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: cs.onSecondaryContainer,
-                          ),
-                          onDeleted: () => form.removeSkill(s),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                            side: BorderSide(color: cs.outline),
-                          ),
-                        ),
-                    ],
+          builder: (context, _) => Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in form.skills)
+                InputChip(
+                  label: Text(s),
+                  backgroundColor: cs.secondaryContainer,
+                  labelStyle: tt.labelLarge?.copyWith(
+                    color: cs.onSecondaryContainer,
                   ),
-                if (suggestions.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'SUGERIDAS',
-                    style: tt.labelSmall?.copyWith(
-                      letterSpacing: 1.2,
-                      color: cs.onSurfaceVariant,
-                    ),
+                  deleteIcon: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: cs.onSecondaryContainer,
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final s in suggestions)
-                        ActionChip(
-                          avatar: Icon(Icons.add, size: 16, color: cs.primary),
-                          label: Text(s),
-                          backgroundColor: Colors.transparent,
-                          labelStyle: tt.labelLarge,
-                          onPressed: () => form.addSkillNamed(s),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                            side: BorderSide(color: cs.outline),
-                          ),
-                        ),
-                    ],
+                  onDeleted: () => form.removeSkill(s),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                    side: BorderSide(color: cs.outline),
                   ),
-                ],
-              ],
-            );
-          },
+                ),
+            ],
+          ),
         ),
       ],
     );
