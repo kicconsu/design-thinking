@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import 'package:imker/core/utils/clock.dart';
 
+import '../../domain/models/task_deadline.dart';
+
 /// Diálogo para crear una tarea. Se cierra con
 /// `({title, description, deadlineDay})` o con `null` si se cancela.
 ///
@@ -46,11 +48,6 @@ class _NewTaskDialogState extends State<NewTaskDialog> {
       helpText: 'Fecha límite',
     );
     if (picked != null) setState(() => _deadlineDay = picked);
-  }
-
-  String _format(DateTime day) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(day.day)}/${two(day.month)}/${day.year}';
   }
 
   void _submit() {
@@ -106,7 +103,7 @@ class _NewTaskDialogState extends State<NewTaskDialog> {
                   label: Text(
                     day == null
                         ? 'Fecha límite (opcional)'
-                        : 'Límite: ${_format(day)}',
+                        : 'Límite: ${TaskDeadline.formatDay(day)}',
                   ),
                 ),
               ),

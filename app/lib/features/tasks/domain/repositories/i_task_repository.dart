@@ -23,6 +23,15 @@ abstract class ITaskRepository {
     required TaskStatus status,
   });
 
+  /// Cambia o quita ([deadline] null) la fecha límite de una tarea que no esté
+  /// terminada, y deja un comentario automático de [userId] con el cambio.
+  /// Quién puede hacerlo lo decide quien llama (ver `TaskDeadline.canEdit`).
+  Future<ProjectTask> updateTaskDeadline({
+    required ProjectTask task,
+    required DateTime? deadline,
+    required String userId,
+  });
+
   /// Reserva una tarea pendiente para [userId]: queda `doing` con esa persona
   /// como responsable. Lee la tarea justo antes de escribir y, si otra persona
   /// ya la tomó, lanza `ProjectFailure` en vez de pisarla.

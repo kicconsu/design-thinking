@@ -12,6 +12,7 @@ class ProjectTask {
     this.assigneeId,
     this.subtasks = const [],
     this.deadline,
+    this.creatorId,
   });
 
   final String id;
@@ -30,7 +31,14 @@ class ProjectTask {
   /// fecha límite.
   final DateTime? deadline;
 
+  /// `_owner` de la fila: quien creó la tarea. Null si Roble no lo informó.
+  final String? creatorId;
+
   bool get isDone => status == TaskStatus.done;
+
+  /// Vencida: tiene fecha límite, ya pasó y la tarea no está terminada.
+  bool isOverdueAt(DateTime now) =>
+      deadline != null && !isDone && now.toUtc().isAfter(deadline!);
 
   /// Avance del checklist entre 0 y 1; 0 si no hay subtareas.
   double get checklistProgress {
@@ -56,6 +64,7 @@ class ProjectTask {
       assigneeId: assigneeId ?? this.assigneeId,
       subtasks: subtasks ?? this.subtasks,
       deadline: clearDeadline ? null : deadline ?? this.deadline,
+      creatorId: creatorId,
     );
   }
 
