@@ -56,6 +56,7 @@ class _ProfileContent extends StatelessWidget {
     final projects = Get.find<UserProjectsController>();
     await Future.wait([
       Get.find<ProfileController>().loadProfile(),
+      Get.find<ProfileController>().loadTrust(),
       projects.fetchCoCreatedProjects(),
       projects.fetchUserApplications(),
     ]);
@@ -83,7 +84,7 @@ class _ProfileContent extends StatelessWidget {
         );
       }
 
-      final profile = profileController.profile ?? const UserProfile();
+      final profile = profileController.profileWithTrust ?? const UserProfile();
       final created = projectsController.coCreatedProjects.toList();
       final collaborating = projectsController.activeProjects.toList();
       final myProjects = [...created, ...collaborating];
@@ -103,7 +104,12 @@ class _ProfileContent extends StatelessWidget {
               onComplete: () => Get.to(() => const EditProfilePage()),
               onOpenProject: (p) => Get.to(() => ProjectDetailPage(project: p)),
               onOpenIndicators: () =>
-                  Get.to(() => TrustIndicatorsPage(profile: profile)),
+                  Get.to(() => const OwnTrustIndicatorsPage()),
+              trustLoading:
+                  profileController.isLoadingTrust.value &&
+                  profileController.trust.value == null,
+              trustError: profileController.trustError.value,
+              onRetryTrust: profileController.loadTrust,
               onOpenHistory: () => Get.to(
                 () => CollaborationHistoryPage(
                   created: created,

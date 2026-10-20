@@ -96,7 +96,9 @@ class AuthenticationController extends GetxController with UiLoggy {
 
   void _refreshProfile() {
     if (Get.isRegistered<ProfileController>()) {
-      Get.find<ProfileController>().loadProfile();
+      final profile = Get.find<ProfileController>();
+      profile.loadProfile();
+      profile.loadTrust();
     }
   }
 

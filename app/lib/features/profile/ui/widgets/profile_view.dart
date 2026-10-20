@@ -23,6 +23,9 @@ class ProfileView extends StatelessWidget {
     this.onOpenProject,
     this.onOpenIndicators,
     this.onOpenHistory,
+    this.trustLoading = false,
+    this.trustError,
+    this.onRetryTrust,
   });
 
   final String name;
@@ -44,6 +47,14 @@ class ProfileView extends StatelessWidget {
   /// Si hay historial se muestran los primeros proyectos y un botón para
   /// verlos todos; sin él (perfil de otra persona) se muestran todos.
   final VoidCallback? onOpenHistory;
+
+  /// Los indicadores se están calculando y todavía no hay ninguno que mostrar.
+  final bool trustLoading;
+
+  /// Por qué no se pudieron calcular. Si no es null, la sección no muestra
+  /// números sino este mensaje con [onRetryTrust].
+  final String? trustError;
+  final VoidCallback? onRetryTrust;
 
   static const _previewCount = 2;
 
@@ -160,7 +171,11 @@ class ProfileView extends StatelessWidget {
         const SizedBox(height: 28),
         _Section(
           title: 'Indicadores de confianza',
-          child: profile.hasTrustHistory
+          child: trustError != null
+              ? _TrustError(message: trustError!, onRetry: onRetryTrust)
+              : trustLoading
+              ? const _TrustLoading()
+              : profile.hasTrustHistory
               ? InkWell(
                   onTap: onOpenIndicators,
                   child: Container(
@@ -459,6 +474,60 @@ class _CompleteProfileCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Mientras se calculan los indicadores.
+class _TrustLoading extends StatelessWidget {
+  const _TrustLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      key: const Key('profile.trust.loading'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(border: Border.all(color: cs.outline)),
+      child: const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+/// Cuando no se pudieron calcular: el mensaje y cómo reintentar, nunca ceros.
+class _TrustError extends StatelessWidget {
+  const _TrustError({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      key: const Key('profile.trust.error'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(border: Border.all(color: cs.outline)),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off, color: cs.error),
+          const SizedBox(width: 14),
+          Expanded(child: Text(message, style: tt.bodyMedium)),
+          if (onRetry != null)
+            TextButton(
+              key: const Key('profile.trust.retry'),
+              onPressed: onRetry,
+              child: const Text('Reintentar'),
+            ),
+        ],
       ),
     );
   }
