@@ -41,3 +41,68 @@ SELECT DISTINCT p.*
 FROM project p
 JOIN project_member m ON m.project_id = p._id
 WHERE m.user_id = $1::uuid;
+
+-- proyectos_filtrados ($1 = carrera, $2 = habilidad, $3 = solo abiertos, $4 = tamaño de página, $5 = desplazamiento)
+--   Usada por: feed de Descubrir (filtros y paginación en el servidor).
+--   $1 y $2 son claves normalizadas (ver normalizeLabel en core/utils); '' = todas.
+--   $3 es 'true' o 'false'. `total` = proyectos que cumplen el filtro, sin paginar.
+--   Requiere project."createdAt" (timestamptz, con valor por defecto now()).
+SELECT p._id, p._owner, p.title, p.description, p."imageUrl",
+       p.jobs, p.skills, p.status, p.progress, p."createdAt",
+       (SELECT COUNT(*) FROM project_member m
+         WHERE m.project_id = p._id AND m.status = 'active') AS member_count,
+       COUNT(*) OVER () AS total
+FROM project p
+WHERE ($3::text <> 'true' OR p.status = 'open')
+  AND ($1::text = '' OR EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(p.jobs) AS j
+        CROSS JOIN LATERAL (SELECT trim(regexp_replace(regexp_replace(
+              translate(lower(j), 'áéíóúüñàèìòù', 'aeiouunaeiou'),
+              '[.,/-]', ' ', 'g'), '\s+', ' ', 'g'))) AS n(key)
+        WHERE n.key = $1::text))
+  AND ($2::text = '' OR EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(p.skills) AS s
+        CROSS JOIN LATERAL (SELECT trim(regexp_replace(regexp_replace(
+              translate(lower(s), 'áéíóúüñàèìòù', 'aeiouunaeiou'),
+              '[.,/-]', ' ', 'g'), '\s+', ' ', 'g'))) AS n(key)
+        WHERE n.key = $2::text))
+ORDER BY p."createdAt" DESC, p._id
+LIMIT $4::int OFFSET $5::int;
+
+-- opciones_filtros_proyectos ($1 = carrera elegida, $2 = solo abiertos)
+--   Usada por: selectores de la hoja de filtros de Descubrir.
+--   Una fila por opción: kind ('career' | 'skill'), key (normalizada), label (variante
+--   más frecuente; en empate la primera alfabéticamente) y project_count.
+--   Las carreras no dependen de la habilidad elegida; las habilidades sí de la carrera.
+--   La normalización debe coincidir con normalizeLabel (core/utils/normalize_label.dart).
+WITH base AS (
+  SELECT p._id, p.jobs, p.skills FROM project p
+  WHERE $2::text <> 'true' OR p.status = 'open'
+),
+c AS (
+  SELECT DISTINCT b._id, 'career'::text AS kind, n.key, j AS label
+  FROM base b
+  CROSS JOIN LATERAL jsonb_array_elements_text(b.jobs) AS j
+  CROSS JOIN LATERAL (SELECT trim(regexp_replace(regexp_replace(
+        translate(lower(j), 'áéíóúüñàèìòù', 'aeiouunaeiou'),
+        '[.,/-]', ' ', 'g'), '\s+', ' ', 'g'))) AS n(key)
+  WHERE n.key <> ''
+),
+s AS (
+  SELECT DISTINCT b._id, 'skill'::text AS kind, n.key, x AS label
+  FROM base b
+  CROSS JOIN LATERAL jsonb_array_elements_text(b.skills) AS x
+  CROSS JOIN LATERAL (SELECT trim(regexp_replace(regexp_replace(
+        translate(lower(x), 'áéíóúüñàèìòù', 'aeiouunaeiou'),
+        '[.,/-]', ' ', 'g'), '\s+', ' ', 'g'))) AS n(key)
+  WHERE n.key <> ''
+    AND ($1::text = '' OR b._id IN (SELECT _id FROM c WHERE key = $1::text))
+),
+u AS (SELECT * FROM c UNION ALL SELECT * FROM s),
+variants AS (SELECT kind, key, label, COUNT(*) AS n FROM u GROUP BY kind, key, label),
+totals   AS (SELECT kind, key, COUNT(DISTINCT _id) AS project_count FROM u GROUP BY kind, key)
+SELECT DISTINCT ON (v.kind, v.key) v.kind, v.key, v.label, t.project_count
+FROM variants v JOIN totals t USING (kind, key)
+ORDER BY v.kind, v.key, v.n DESC, v.label;
