@@ -9,8 +9,7 @@ class Project {
     required this.jobs,
     required this.skills,
     this.status = 'open',
-    this.members = const [],
-    this.applicantsCount = 0,
+    this.memberCount = 0,
     this.progress = 0,
   });
 
@@ -22,8 +21,8 @@ class Project {
   final List<String> jobs;
   final List<String> skills;
   final String status;
-  final List<String> members;
-  final int applicantsCount;
+  /// Miembros activos del proyecto, el creador incluido.
+  final int memberCount;
 
   /// Porcentaje (0–100) de tareas terminadas, calculado al cambiar una tarea.
   final double progress;
@@ -39,8 +38,7 @@ class Project {
     List<String>? jobs,
     List<String>? skills,
     String? status,
-    List<String>? members,
-    int? applicantsCount,
+    int? memberCount,
     double? progress,
   }) {
     return Project(
@@ -52,8 +50,7 @@ class Project {
       jobs: jobs ?? this.jobs,
       skills: skills ?? this.skills,
       status: status ?? this.status,
-      members: members ?? this.members,
-      applicantsCount: applicantsCount ?? this.applicantsCount,
+      memberCount: memberCount ?? this.memberCount,
       progress: progress ?? this.progress,
     );
   }

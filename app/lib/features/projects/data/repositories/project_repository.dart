@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:loggy/loggy.dart';
 import 'package:roble/roble.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
 import 'package:imker/core/utils/career_label.dart';
 import 'package:imker/core/utils/string_list.dart';
 import 'package:imker/features/projects/domain/models/project_member.dart';
@@ -23,23 +22,23 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
   @override
   Future<List<Project>> getProjects() async {
     final rows = await _guard(() => _source.readProjects());
-    final membersMap = await _getMembersMap();
-    return rows.map((r) => _toProject(r, membersMap)).toList();
+    final memberCounts = await _getMemberCounts();
+    return rows.map((r) => _toProject(r, memberCounts)).toList();
   }
 
   @override
   Future<List<Project>> getProjectsByOwner(String ownerId) async {
     final rows = await _guard(() => _source.readProjectsByOwner(ownerId));
-    final membersMap = await _getMembersMap();
-    return rows.map((r) => _toProject(r, membersMap)).toList();
+    final memberCounts = await _getMemberCounts();
+    return rows.map((r) => _toProject(r, memberCounts)).toList();
   }
 
   @override
   Future<Project?> getProjectById(String id) async {
     final row = await _guard(() => _source.readProjectById(id));
     if (row == null) return null;
-    final membersMap = await _getMembersMap(projectId: id);
-    return _toProject(row, membersMap);
+    final memberCounts = await _getMemberCounts(projectId: id);
+    return _toProject(row, memberCounts);
   }
 
   @override
@@ -155,8 +154,8 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
 
     final resultRow = await _guard(() => _source.createProject(payload));
     final createdId = (resultRow['_id'] ?? resultRow['id'])?.toString() ?? '';
-    final membersMap = await _getMembersMap(projectId: createdId);
-    return _toProject(resultRow, membersMap);
+    final memberCounts = await _getMemberCounts(projectId: createdId);
+    return _toProject(resultRow, memberCounts);
   }
 
   @override
@@ -784,8 +783,9 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     }
   }
 
-  Future<Map<String, List<String>>> _getMembersMap({String? projectId}) async {
-    final Map<String, List<String>> map = {};
+  /// Miembros activos por proyecto. Una persona cuenta una sola vez.
+  Future<Map<String, int>> _getMemberCounts({String? projectId}) async {
+    final Map<String, int> counts = {};
     try {
       final memberRows = await _source.readProjectMembers(projectId: projectId);
       final seen = <String>{};
@@ -798,53 +798,23 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
         if (pId.isEmpty) continue;
         // ROBLE no garantiza unicidad: una persona cuenta una sola vez.
         if (uId.isNotEmpty && !seen.add('$pId/$uId')) continue;
-
-        final role = row['role'];
-        String roleName = '';
-        if (role is Map) {
-          roleName = (role['name'] ?? '').toString();
-        } else if (role is String) {
-          roleName = role;
-        }
-
-        String displayName;
-        if (roleName == 'owner' || roleName == 'creador') {
-          displayName = 'Creador del proyecto';
-        } else if (roleName == 'member' || roleName == 'collaborator') {
-          displayName = 'Colaborador';
-        } else if (roleName.isNotEmpty) {
-          displayName = 'Colaborador ($roleName)';
-        } else {
-          displayName = uId.length > 8
-              ? 'Usuario ${uId.substring(0, 8)}'
-              : 'Miembro';
-        }
-
-        map.putIfAbsent(pId, () => []).add(displayName);
+        counts[pId] = (counts[pId] ?? 0) + 1;
       }
     } catch (_) {}
-    return map;
+    return counts;
   }
 
   // ─── Mappers ──────────────────────────────────────────────────────────────
   Project _toProject(
     Map<String, dynamic> row, [
-    Map<String, List<String>>? membersMap,
+    Map<String, int>? memberCounts,
   ]) {
     final id = (row['_id'] ?? row['id'])?.toString() ?? '';
     final owner =
         (row['_owner'] ?? row['owner'] ?? row['user_id'])?.toString() ?? '';
 
-    List<String> membersList = membersMap?[id] ?? [];
-    if (membersList.isEmpty) {
-      if (id == DummyData.kircheId) {
-        membersList = DummyData.kircheProject.members;
-      } else if (id == DummyData.solariaId) {
-        membersList = DummyData.solariaProject.members;
-      } else {
-        membersList = ['Creador del proyecto'];
-      }
-    }
+    // El creador siempre es miembro: sin filas legibles cuenta como uno.
+    final memberCount = memberCounts?[id] ?? (owner.isNotEmpty ? 1 : 0);
 
     return Project(
       id: id,
@@ -855,7 +825,7 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
       jobs: decodeStringList(row['jobs']),
       skills: decodeStringList(row['skills']),
       status: (row['status'] as String?) ?? 'open',
-      members: membersList,
+      memberCount: memberCount,
       // Las filas anteriores a la columna vienen con null: cuentan como 0.
       progress: ((row['progress'] as num?)?.toDouble() ?? 0).clamp(0, 100),
     );

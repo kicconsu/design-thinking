@@ -211,15 +211,11 @@ class UserProjectsController extends GetxController {
       );
       userCreatedProjectIds.add(newProject.id);
 
-      final createdProject = newProject.members.isEmpty
-          ? newProject.copyWith(members: ['Tú (Creador)'])
-          : newProject;
-
       coCreatedProjects.removeWhere(
         (p) => p.id == DummyData.kircheId || p.owner == 'demo-owner',
       );
-      coCreatedProjects.insert(0, createdProject);
-      return createdProject;
+      coCreatedProjects.insert(0, newProject);
+      return newProject;
     } finally {
       isCreating.value = false;
     }
