@@ -29,6 +29,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     required String projectId,
     required String title,
     String description = '',
+    DateTime? deadline,
   }) async {
     final row = await _guard(
       () => _source.createTask({
@@ -36,6 +37,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
         'title': title,
         'description': description,
         'status': TaskStatus.todo.name,
+        if (deadline != null) 'deadline': deadline.toUtc().toIso8601String(),
       }),
     );
     await _syncDerived(projectId);
@@ -299,6 +301,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     status: TaskStatus.fromName(row['status']?.toString()),
     assigneeId: _nonEmpty(row['assignee_id']),
     subtasks: _decodeChecklist(row['checklist']),
+    deadline: _instant(row['deadline']),
   );
 
   TaskComment _toComment(Map<String, dynamic> row) => TaskComment(
@@ -323,6 +326,12 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     }
     if (raw is! List) return const [];
     return [for (final entry in raw) ?Subtask.tryFromJson(entry)];
+  }
+
+  /// `timestamptz` llega como texto ISO; lo ilegible o vacío es "sin fecha".
+  DateTime? _instant(Object? value) {
+    final text = value?.toString().trim() ?? '';
+    return DateTime.tryParse(text)?.toUtc();
   }
 
   String? _nonEmpty(Object? value) {

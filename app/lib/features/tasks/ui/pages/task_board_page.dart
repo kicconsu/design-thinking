@@ -60,13 +60,14 @@ class _TaskBoardPageState extends State<TaskBoardPage> {
       Get.snackbar(title, message, snackPosition: SnackPosition.BOTTOM);
 
   Future<void> _createTask() async {
-    final result = await Get.dialog<({String title, String description})>(
-      const NewTaskDialog(),
-    );
+    final result = await Get.dialog<
+      ({String title, String description, DateTime? deadlineDay})
+    >(const NewTaskDialog());
     if (result == null) return;
     final error = await _controller.createTask(
       title: result.title,
       description: result.description,
+      deadlineDay: result.deadlineDay,
     );
     if (error != null) {
       _toast('No se pudo crear la tarea', error);
