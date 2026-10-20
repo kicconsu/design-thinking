@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:imker/core/utils/clock.dart';
+
 import '../../domain/models/project_task.dart';
+import '../../domain/models/task_deadline.dart';
 import '../../domain/models/task_status.dart';
 
 /// Tarjeta de una tarea en el gabinete. Las pendientes traen el botón
@@ -13,6 +16,7 @@ class TaskCard extends StatelessWidget {
     this.busy = false,
     this.onTap,
     this.onReserve,
+    this.clock = systemClock,
   });
 
   final ProjectTask task;
@@ -22,6 +26,9 @@ class TaskCard extends StatelessWidget {
   final bool busy;
   final VoidCallback? onTap;
   final VoidCallback? onReserve;
+
+  /// De dónde sale «ahora», para marcar las tareas vencidas.
+  final Clock clock;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +62,15 @@ class TaskCard extends StatelessWidget {
                   color: cs.primary,
                 ),
               ],
+              if (task.deadline case final deadline?) ...[
+                const SizedBox(height: 6),
+                _DeadlineLabel(
+                  key: Key('task.card.deadline.${task.id}'),
+                  deadline: deadline,
+                  overdue: task.isOverdueAt(clock()),
+                  done: task.isDone,
+                ),
+              ],
               if (assignee != null) ...[
                 const SizedBox(height: 6),
                 Text(
@@ -81,6 +97,50 @@ class TaskCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// «Vence el 20/03/2026», o «Vencida el …» en rojo si ya pasó sin terminarse.
+class _DeadlineLabel extends StatelessWidget {
+  const _DeadlineLabel({
+    super.key,
+    required this.deadline,
+    required this.overdue,
+    required this.done,
+  });
+
+  final DateTime deadline;
+  final bool overdue;
+  final bool done;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final color = overdue ? cs.error : cs.onSurfaceVariant;
+    final day = TaskDeadline.formatDay(deadline);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          overdue ? Icons.warning_amber_rounded : Icons.event_outlined,
+          size: 16,
+          color: color,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          overdue
+              ? 'Vencida el $day'
+              : done
+              ? 'Límite: $day'
+              : 'Vence el $day',
+          style: tt.bodySmall?.copyWith(
+            color: color,
+            fontWeight: overdue ? FontWeight.bold : null,
+          ),
+        ),
+      ],
     );
   }
 }

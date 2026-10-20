@@ -1,11 +1,13 @@
 import 'package:get/get.dart';
 
 import 'package:imker/core/roble/session_user.dart';
+import 'package:imker/core/utils/clock.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 
 import '../../domain/models/project_task.dart';
 import '../../domain/models/subtask.dart';
 import '../../domain/models/task_comment.dart';
+import '../../domain/models/task_deadline.dart';
 import '../../domain/models/task_status.dart';
 import '../../domain/repositories/i_task_repository.dart';
 import 'user_name_cache.dart';
@@ -14,20 +16,27 @@ import 'user_name_cache.dart';
 /// comentarios. Una instancia por entrada.
 class TaskProgressController extends GetxController {
   /// [currentUserId] sustituye a la sesión real: solo para pruebas.
+  /// [projectOwnerId] es el creador del proyecto, que también puede mover la
+  /// fecha límite. [clock] decide qué tareas están vencidas.
   TaskProgressController(
     ProjectTask initial, {
     String Function()? currentUserId,
+    this.projectOwnerId = '',
+    this.clock = systemClock,
   }) : task = initial.obs,
        checklist = List<Subtask>.of(initial.subtasks).obs,
        _userIdOverride = currentUserId;
 
   final Rx<ProjectTask> task;
   final String Function()? _userIdOverride;
+  final String projectOwnerId;
+  final Clock clock;
 
   /// Borrador del checklist: lo que se ve en pantalla antes de guardar.
   final RxList<Subtask> checklist;
 
   final RxBool isSaving = false.obs;
+  final RxBool isSavingDeadline = false.obs;
 
   final RxList<TaskComment> comments = <TaskComment>[].obs;
   final RxBool isLoadingComments = false.obs;
@@ -56,6 +65,54 @@ class TaskProgressController extends GetxController {
     return task.value.status == TaskStatus.todo
         ? 'Reserva la tarea para poder editarla.'
         : 'Solo quien reservó la tarea puede editarla.';
+  }
+
+  /// Quien creó la tarea y el creador del proyecto cambian o quitan la fecha
+  /// límite mientras la tarea no esté terminada.
+  bool get canEditDeadline => TaskDeadline.canEdit(
+    task: task.value,
+    userId: currentUserId,
+    projectOwnerId: projectOwnerId,
+  );
+
+  /// Pasó la fecha límite y la tarea sigue sin terminar.
+  bool get isOverdue => task.value.isOverdueAt(clock());
+
+  /// Hoy, a medianoche local: el primer día que se puede elegir.
+  DateTime get today {
+    final now = clock();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// Fija el día límite de la tarea (o la quita con null). Devuelve null si
+  /// salió bien o el mensaje de error para mostrar.
+  Future<String?> setDeadline(DateTime? day) async {
+    if (!canEditDeadline) {
+      return task.value.isDone
+          ? 'La tarea ya está terminada: su fecha límite no se puede cambiar.'
+          : 'Solo quien creó la tarea o el creador del proyecto puede cambiar '
+                'la fecha límite.';
+    }
+    if (day != null && DateTime(day.year, day.month, day.day).isBefore(today)) {
+      return 'La fecha límite no puede ser anterior a hoy.';
+    }
+    if (isSavingDeadline.value) return null;
+    isSavingDeadline.value = true;
+    try {
+      task.value = await _repository.updateTaskDeadline(
+        task: task.value,
+        deadline: day == null ? null : TaskDeadline.endOfDay(day),
+        userId: currentUserId,
+      );
+      // El cambio deja un comentario automático: si la pestaña ya estaba
+      // cargada, hay que releerla para que aparezca.
+      if (commentsLoaded.value) await loadComments();
+      return null;
+    } on ProjectFailure catch (e) {
+      return e.message;
+    } finally {
+      isSavingDeadline.value = false;
+    }
   }
 
   /// Nombre de quien escribió un comentario.

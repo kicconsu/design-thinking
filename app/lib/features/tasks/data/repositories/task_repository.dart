@@ -9,6 +9,7 @@ import '../../domain/models/member_stay.dart';
 import '../../domain/models/project_task.dart';
 import '../../domain/models/subtask.dart';
 import '../../domain/models/task_comment.dart';
+import '../../domain/models/task_deadline.dart';
 import '../../domain/models/task_status.dart';
 import '../../domain/repositories/i_task_repository.dart';
 import '../datasources/i_task_data_source.dart';
@@ -57,6 +58,44 @@ class TaskRepository with UiLoggy implements ITaskRepository {
           : null,
     );
     return task.copyWith(status: status);
+  }
+
+  @override
+  Future<ProjectTask> updateTaskDeadline({
+    required ProjectTask task,
+    required DateTime? deadline,
+    required String userId,
+  }) async {
+    final rows = await _guard(() => _source.readTasks(task.projectId));
+    final current = rows.map(_toTask).where((t) => t.id == task.id).firstOrNull;
+    if (current == null) {
+      throw const ProjectFailure('La tarea ya no existe.');
+    }
+    if (current.isDone) {
+      throw const ProjectFailure(
+        'La tarea ya está terminada: su fecha límite no se puede cambiar.',
+      );
+    }
+    final next = deadline?.toUtc();
+    if (next == current.deadline) return current;
+    await _guard(
+      () => _source.updateTask(task.id, {'deadline': next?.toIso8601String()}),
+    );
+    final updated = next == null
+        ? current.copyWith(clearDeadline: true)
+        : current.copyWith(deadline: next);
+    // El aviso en el hilo de comentarios es parte del cambio (Q-04), pero ya
+    // está hecho: si el aviso falla no se deshace la fecha.
+    try {
+      await addComment(
+        task: updated,
+        userId: userId,
+        body: TaskDeadline.changeNote(before: current.deadline, after: next),
+      );
+    } on ProjectFailure catch (e) {
+      loggy.warning('No se pudo avisar el cambio de fecha límite: ${e.message}');
+    }
+    return updated;
   }
 
   @override
@@ -302,6 +341,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     assigneeId: _nonEmpty(row['assignee_id']),
     subtasks: _decodeChecklist(row['checklist']),
     deadline: _instant(row['deadline']),
+    creatorId: _nonEmpty(row['_owner']),
   );
 
   TaskComment _toComment(Map<String, dynamic> row) => TaskComment(

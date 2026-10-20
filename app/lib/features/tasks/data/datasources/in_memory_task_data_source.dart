@@ -18,9 +18,17 @@ class InMemoryTaskDataSource implements ITaskDataSource {
       if (t['project_id'] == projectId) Map<String, dynamic>.from(t),
   ];
 
+  /// Quién figura como creador (`_owner`) de lo que se crea, como haría Roble
+  /// con la sesión. Null: la fila queda sin dueño.
+  String? currentUserId;
+
   @override
   Future<Map<String, dynamic>> createTask(Map<String, dynamic> taskData) async {
-    final row = {...taskData, '_id': 'local-task-${++_seq}'};
+    final row = {
+      ...taskData,
+      '_id': 'local-task-${++_seq}',
+      '_owner': ?currentUserId,
+    };
     _tasks.add(row);
     return Map<String, dynamic>.from(row);
   }

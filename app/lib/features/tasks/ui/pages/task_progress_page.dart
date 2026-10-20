@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:imker/core/utils/clock.dart';
 import 'package:imker/core/widgets/checklist_editor.dart';
 import 'package:imker/core/widgets/imker_app_bar.dart';
 import 'package:imker/core/widgets/imker_bottom_nav_bar.dart';
@@ -10,6 +11,7 @@ import 'package:imker/features/projects/domain/models/project.dart';
 
 import '../../domain/models/project_task.dart';
 import '../../domain/models/subtask.dart';
+import '../../domain/models/task_deadline.dart';
 import '../../domain/models/task_status.dart';
 import '../viewmodels/task_progress_controller.dart';
 import '../widgets/task_comments_view.dart';
@@ -22,6 +24,7 @@ class TaskProgressPage extends StatefulWidget {
     required this.project,
     required this.task,
     this.currentUserId,
+    this.clock = systemClock,
   });
 
   final Project project;
@@ -29,6 +32,9 @@ class TaskProgressPage extends StatefulWidget {
 
   /// Sustituye a la sesión real: solo para pruebas.
   final String Function()? currentUserId;
+
+  /// De dónde sale «ahora» (vencida o no): solo se cambia en pruebas.
+  final Clock clock;
 
   @override
   State<TaskProgressPage> createState() => _TaskProgressPageState();
@@ -46,7 +52,12 @@ class _TaskProgressPageState extends State<TaskProgressPage> {
     // Un controlador por entrada: abrir otra tarea no hereda la anterior.
     _tag = '${widget.task.id}#${identityHashCode(this)}';
     _controller = Get.put(
-      TaskProgressController(widget.task, currentUserId: widget.currentUserId),
+      TaskProgressController(
+        widget.task,
+        currentUserId: widget.currentUserId,
+        projectOwnerId: widget.project.owner,
+        clock: widget.clock,
+      ),
       tag: _tag,
     );
     _description.text = widget.task.description;
@@ -68,6 +79,28 @@ class _TaskProgressPageState extends State<TaskProgressPage> {
     if (index == 1 && !_controller.commentsLoaded.value) {
       _controller.loadComments();
     }
+  }
+
+  Future<void> _pickDeadline() async {
+    final today = _controller.today;
+    final current = _controller.task.value.deadline?.toLocal();
+    final initial = current == null || current.isBefore(today)
+        ? today
+        : current;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: today,
+      lastDate: DateTime(today.year + 5, today.month, today.day),
+      helpText: 'Fecha límite',
+    );
+    if (picked == null) return;
+    await _changeDeadline(picked);
+  }
+
+  Future<void> _changeDeadline(DateTime? day) async {
+    final error = await _controller.setDeadline(day);
+    if (error != null) _toast('No se pudo cambiar la fecha', error);
   }
 
   Future<void> _save() async {
@@ -197,6 +230,7 @@ class _TaskProgressPageState extends State<TaskProgressPage> {
           style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         Divider(color: cs.outline),
+        _deadline(cs, tt),
         if (reason != null) ...[
           Text(
             reason,
@@ -243,6 +277,66 @@ class _TaskProgressPageState extends State<TaskProgressPage> {
         ),
       ],
     );
+  }
+
+  /// Fecha límite de la tarea, con la señal de vencida y, para quien puede
+  /// moverla, los botones de cambiar y quitar.
+  Widget _deadline(ColorScheme cs, TextTheme tt) {
+    return Obx(() {
+      final task = _controller.task.value;
+      final deadline = task.deadline;
+      final overdue = _controller.isOverdue;
+      final canEdit = _controller.canEditDeadline;
+      if (deadline == null && !canEdit) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Icon(
+              overdue ? Icons.warning_amber_rounded : Icons.event_outlined,
+              size: 20,
+              color: overdue ? cs.error : cs.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                key: const Key('task.deadline'),
+                deadline == null
+                    ? 'Sin fecha límite'
+                    : overdue
+                    ? 'Vencida el ${TaskDeadline.formatDay(deadline)}'
+                    : 'Vence el ${TaskDeadline.formatDay(deadline)}',
+                style: tt.bodyMedium?.copyWith(
+                  color: overdue ? cs.error : null,
+                  fontWeight: overdue ? FontWeight.bold : null,
+                ),
+              ),
+            ),
+            if (canEdit) ...[
+              IconButton(
+                key: const Key('task.deadline.edit'),
+                tooltip: deadline == null
+                    ? 'Poner fecha límite'
+                    : 'Cambiar fecha límite',
+                onPressed: _controller.isSavingDeadline.value
+                    ? null
+                    : _pickDeadline,
+                icon: const Icon(Icons.edit_calendar_outlined),
+              ),
+              if (deadline != null)
+                IconButton(
+                  key: const Key('task.deadline.clear'),
+                  tooltip: 'Quitar fecha límite',
+                  onPressed: _controller.isSavingDeadline.value
+                      ? null
+                      : () => _changeDeadline(null),
+                  icon: const Icon(Icons.event_busy_outlined),
+                ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 
   Widget _comments() {
