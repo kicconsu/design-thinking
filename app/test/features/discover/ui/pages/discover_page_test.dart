@@ -108,10 +108,7 @@ void main() {
     controller.filter.value = const ProjectFilter(career: 'software');
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Ningún proyecto coincide con los filtros.'),
-      findsOneWidget,
-    );
+    expect(find.text('Ningún proyecto coincide con Software.'), findsOneWidget);
   });
 
   testWidgets('un aviso del controlador sale como snackbar', (tester) async {
