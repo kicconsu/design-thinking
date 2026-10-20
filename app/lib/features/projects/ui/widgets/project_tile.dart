@@ -55,7 +55,9 @@ class ProjectTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${project.members.length} miembros',
+                    project.memberCount == 1
+                        ? '1 miembro'
+                        : '${project.memberCount} miembros',
                     style: tt.bodySmall,
                   ),
                   Expanded(

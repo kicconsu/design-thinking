@@ -38,9 +38,8 @@ class DummyData {
         'Proyecto de renovación urbana enfocado en la integración de tecnologías sostenibles en edificios históricos.',
     jobs: ['Ing. Software', 'Ing. Ambiental', 'Ing. Electrónica', 'Ing. Industrial'],
     skills: ['Modelación', 'Análisis de datos', 'Desarrollo de software', 'Diseño de software'],
-    members: ['Pedro Jiménez', 'Alberto Mendoza', 'Juana De Arco'],
+    memberCount: 3,
     status: 'open',
-    applicantsCount: 1,
   );
 
   static const Project solariaProject = Project(
@@ -52,9 +51,8 @@ class DummyData {
         'Implementación de microrredes solares conectadas entre vecinos para compartir excedentes de energía limpia.',
     jobs: ['Ing. Eléctrica', 'Desarrollador IoT'],
     skills: ['Hardware', 'Firmware', 'C++', 'Sistemas Embebidos'],
-    members: ['Santiago Vargas', 'Tú (Colaborador)', 'Mariana Ruiz'],
+    memberCount: 3,
     status: 'open',
-    applicantsCount: 5,
   );
 
   void _seed() {
