@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
+import 'package:imker/features/profile/ui/pages/collaboration_history_page.dart';
 import 'package:imker/features/profile/ui/widgets/profile_view.dart';
 
 import '../../domain/models/project_member.dart';
@@ -24,6 +25,7 @@ class PersonProfilePage extends StatefulWidget {
     this.projectId,
     this.member,
     this.viewerIsCreator = false,
+    this.showTrust = false,
     this.currentUserId,
     this.header,
     this.bottomBar,
@@ -34,6 +36,11 @@ class PersonProfilePage extends StatefulWidget {
   final String? projectId;
   final ProjectMember? member;
   final bool viewerIsCreator;
+
+  /// Añade sus indicadores de confianza y el historial de proyectos
+  /// anteriores. Para quien decide sobre una solicitud; en el resto de las
+  /// fichas no se pide.
+  final bool showTrust;
 
   /// Contenido propio de quien abre la ficha (p. ej. los datos de una
   /// solicitud), encima del perfil.
@@ -65,6 +72,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
         projectId: widget.projectId,
         member: widget.member,
         viewerIsCreator: widget.viewerIsCreator,
+        showTrust: widget.showTrust,
         currentUserId: widget.currentUserId,
       ),
       tag: _tag,
@@ -121,6 +129,20 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
       'Listo',
       '$name ya no está en el proyecto.',
       snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  /// El historial de proyectos anteriores, solo en la ficha de una solicitud y
+  /// si se pudieron leer.
+  VoidCallback? _openHistory() {
+    final participated = _controller.participated.value;
+    if (!widget.showTrust || participated == null) return null;
+    return () => Get.to(
+      () => CollaborationHistoryPage(
+        created: const [],
+        collaborating: participated,
+        onlyPrevious: true,
+      ),
     );
   }
 
@@ -183,6 +205,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                   projects: _controller.projects.value,
                   onOpenProject: (p) =>
                       Get.to(() => ProjectDetailPage(project: p)),
+                  onOpenHistory: _openHistory(),
                 ),
                 if (_controller.canRemove) ...[
                   const SizedBox(height: 32),

@@ -80,4 +80,8 @@ abstract class IProjectDataSource {
 
   /// Filas de `project_member` de ese usuario, en cualquier proyecto.
   Future<List<Map<String, dynamic>>> readMembershipsByUser(String userId);
+
+  /// Filas de `project` en las que [userId] tiene o tuvo una fila de
+  /// `project_member`, en cualquier estado y con cualquier rol.
+  Future<List<Map<String, dynamic>>> readProjectsParticipatedBy(String userId);
 }
