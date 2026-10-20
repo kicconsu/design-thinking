@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:loggy/loggy.dart';
 import 'package:roble/roble.dart';
 
+import 'package:imker/core/utils/clock.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 
 import '../../domain/models/member_stay.dart';
@@ -15,9 +16,26 @@ import '../../domain/repositories/i_task_repository.dart';
 import '../datasources/i_task_data_source.dart';
 
 class TaskRepository with UiLoggy implements ITaskRepository {
-  TaskRepository(this._source);
+  /// [clock] da el instante de cierre (`finished_at`); solo se cambia en
+  /// pruebas.
+  TaskRepository(this._source, {this.clock = systemClock});
 
   final ITaskDataSource _source;
+  final Clock clock;
+
+  /// Lo que hay que escribir en `finished_at` cuando una tarea pasa de
+  /// [before] a [after]: el instante actual al terminarse, nulo al reabrirse y
+  /// nada si no cambió terminada/no terminada (así un guardado que no cambia
+  /// el estado no mueve la hora de cierre).
+  Map<String, dynamic> _finishedAtFields(TaskStatus before, TaskStatus after) {
+    final wasDone = before == TaskStatus.done;
+    final isDone = after == TaskStatus.done;
+    if (isDone && !wasDone) {
+      return {'finished_at': clock().toUtc().toIso8601String()};
+    }
+    if (wasDone && !isDone) return {'finished_at': null};
+    return const {};
+  }
 
   @override
   Future<List<ProjectTask>> getTasks(String projectId) async {
@@ -50,14 +68,30 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     required ProjectTask task,
     required TaskStatus status,
   }) async {
-    await _guard(() => _source.updateTask(task.id, {'status': status.name}));
+    final finishedAt = _finishedAtFields(task.status, status);
+    await _guard(
+      () => _source.updateTask(task.id, {
+        'status': status.name,
+        ...finishedAt,
+      }),
+    );
     await _syncDerived(
       task.projectId,
       finishedOfAssigneeOf: task.isDone != (status == TaskStatus.done)
           ? task.id
           : null,
     );
-    return task.copyWith(status: status);
+    return _withFinishedAt(task.copyWith(status: status), finishedAt);
+  }
+
+  /// [task] con `finished_at` al día según lo que se escribió ([written], vacío
+  /// si no se tocó).
+  ProjectTask _withFinishedAt(ProjectTask task, Map<String, dynamic> written) {
+    if (!written.containsKey('finished_at')) return task;
+    final value = written['finished_at'];
+    return value == null
+        ? task.copyWith(clearFinishedAt: true)
+        : task.copyWith(finishedAt: DateTime.parse(value as String));
   }
 
   @override
@@ -136,11 +170,13 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     required List<Subtask> subtasks,
   }) async {
     final status = ProjectTask.statusAfterSaving(task.status, subtasks);
+    final finishedAt = _finishedAtFields(task.status, status);
     await _guard(
       () => _source.updateTask(task.id, {
         'description': description,
         'checklist': [for (final s in subtasks) s.toJson()],
         'status': status.name,
+        ...finishedAt,
       }),
     );
     // Solo si cambió terminada/no terminada se mueve el progreso del proyecto.
@@ -148,10 +184,13 @@ class TaskRepository with UiLoggy implements ITaskRepository {
         (status == TaskStatus.done || task.status == TaskStatus.done)) {
       await _syncDerived(task.projectId, finishedOfAssigneeOf: task.id);
     }
-    return task.copyWith(
-      description: description,
-      subtasks: List.unmodifiable(subtasks),
-      status: status,
+    return _withFinishedAt(
+      task.copyWith(
+        description: description,
+        subtasks: List.unmodifiable(subtasks),
+        status: status,
+      ),
+      finishedAt,
     );
   }
 
@@ -183,7 +222,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
         'project_id': task.projectId,
         'task_id': task.id,
         'description': body,
-        'createdAt': DateTime.now().toUtc().toIso8601String(),
+        'createdAt': clock().toUtc().toIso8601String(),
       }),
     );
     return _toComment(row);
@@ -341,6 +380,7 @@ class TaskRepository with UiLoggy implements ITaskRepository {
     assigneeId: _nonEmpty(row['assignee_id']),
     subtasks: _decodeChecklist(row['checklist']),
     deadline: _instant(row['deadline']),
+    finishedAt: _instant(row['finished_at']),
     creatorId: _nonEmpty(row['_owner']),
   );
 
