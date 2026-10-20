@@ -68,20 +68,20 @@ void main() {
       ]);
       source.deliveries.add({
         'user_id': 'ana',
-        'con_deadline': '5',
-        'a_tiempo': '4',
+        'con_deadline': '4',
+        'a_tiempo': '3',
       });
 
       final m = await repo.getTrustMetricsOf('ana');
 
-      expect(m.commitment, 38); // (50 + 25) / 2 = 37.5
-      expect(m.responseRate, 88); // (75 + 100) / 2 = 87.5
-      expect(m.onTime, 80);
+      expect(m.fulfillment, 88); // (75 + 100) / 2 = 87.5
+      expect(m.onTime, 75);
       expect(m.completedProjects, 50);
+      expect(m.commitment, 71); // (87.5 + 75 + 50) / 3 = 70.8
       expect(m.hasHistory, isTrue);
     });
 
-    test('el caso de la base real: un proyecto cerrado sin tareas', () async {
+    test('un proyecto cerrado sin tareas no cuenta como completado', () async {
       source.participations.add(_participation('ana', 'p1', progress: 100));
       source.deliveries.add({
         'user_id': 'ana',
@@ -91,25 +91,27 @@ void main() {
 
       final m = await repo.getTrustMetricsOf('ana');
 
-      // Sin tareas no hay compromiso que medir, aunque el proyecto esté al 100.
-      expect(m.commitment, 0);
-      expect(m.hasHistory, isFalse);
-      expect(m.completedProjects, 100);
+      // Participó (hay historial), pero sin tareas no hay nada que medir.
+      expect(m.hasHistory, isTrue);
+      expect(m.fulfillment, isNull);
+      expect(m.onTime, isNull);
+      expect(m.completedProjects, 0);
     });
 
     test('solo cuenta a esa persona', () async {
       source.participations.addAll([
-        _participation('ana', 'p1', finished: '1', total: '2'),
-        _participation('luis', 'p1', finished: '2', total: '2'),
+        _participation('ana', 'p1', finished: '1', taken: '2', total: '2'),
+        _participation('luis', 'p1', finished: '2', taken: '2', total: '2'),
       ]);
 
-      expect((await repo.getTrustMetricsOf('ana')).commitment, 50);
+      expect((await repo.getTrustMetricsOf('ana')).fulfillment, 50);
     });
 
     test('sin historial son indicadores vacíos', () async {
       final m = await repo.getTrustMetricsOf('ana');
       expect(m.hasHistory, isFalse);
-      expect(m.onTime, 0);
+      expect(m.commitment, isNull);
+      expect(m.onTime, isNull);
     });
 
     test('un id vacío no consulta nada', () async {
@@ -120,34 +122,75 @@ void main() {
   });
 
   group('getCommitmentScores', () {
-    test('trae a todos en una sola consulta', () async {
+    test('trae a todos con dos consultas, no una por persona', () async {
       source.participations.addAll([
-        _participation('ana', 'p1', finished: '1', total: '2'),
-        _participation('ana', 'p2', finished: '3', total: '4'),
-        _participation('luis', 'p1', finished: '2', total: '2'),
+        _participation(
+          'ana',
+          'p1',
+          finished: '1',
+          taken: '2',
+          total: '2',
+          progress: 0,
+        ),
+        _participation(
+          'ana',
+          'p2',
+          finished: '3',
+          taken: '4',
+          total: '4',
+          progress: 100,
+        ),
+        _participation(
+          'luis',
+          'p1',
+          finished: '2',
+          taken: '2',
+          total: '2',
+          progress: 100,
+        ),
       ]);
 
       final scores = await repo.getCommitmentScores(['ana', 'luis', 'ana']);
 
-      expect(scores, {'ana': 63, 'luis': 100});
+      // ana: (62.5 cumplimiento + 50 completados) / 2 = 56.25
+      expect(scores, {'ana': 56, 'luis': 100});
       expect(source.participationReads, 1);
-      expect(source.deliveryReads, 0);
+      expect(source.deliveryReads, 1);
     });
 
-    test('quien no tiene historial no aparece', () async {
-      source.participations.addAll([
-        _participation('ana', 'p1', finished: '1', total: '2'),
-        _participation('luis', 'p1'),
-      ]);
+    test('incluye la entrega a tiempo de cada persona', () async {
+      source.participations.add(
+        _participation(
+          'ana',
+          'p1',
+          finished: '1',
+          taken: '2',
+          total: '2',
+          progress: 100,
+        ),
+      );
+      source.deliveries.add({
+        'user_id': 'ana',
+        'con_deadline': '2',
+        'a_tiempo': '1',
+      });
 
-      final scores = await repo.getCommitmentScores(['ana', 'luis', 'eva']);
+      // (50 cumplimiento + 50 a tiempo + 100 completados) / 3 = 66.7
+      expect(await repo.getCommitmentScores(['ana']), {'ana': 67});
+    });
 
-      expect(scores, {'ana': 50});
+    test('un 0 real aparece; quien no tiene historial no', () async {
+      source.participations.add(_participation('luis', 'p1', total: '3'));
+
+      final scores = await repo.getCommitmentScores(['luis', 'eva']);
+
+      expect(scores, {'luis': 0});
     });
 
     test('sin ids no consulta', () async {
       expect(await repo.getCommitmentScores(['', '']), isEmpty);
       expect(source.participationReads, 0);
+      expect(source.deliveryReads, 0);
     });
   });
 

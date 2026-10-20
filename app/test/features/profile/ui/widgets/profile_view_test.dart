@@ -101,7 +101,7 @@ void main() {
         _host(
           const ProfileView(
             name: 'Ana',
-            profile: UserProfile(commitmentScore: 90, onTimeScore: 80),
+            profile: UserProfile(hasTrustHistory: true, commitmentScore: 90, onTimeScore: 80),
             isOwn: true,
           ),
         ),

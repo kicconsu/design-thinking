@@ -5,7 +5,8 @@ abstract class ITrustRepository {
   /// colaboración. Sin historial, [TrustMetrics.none].
   Future<TrustMetrics> getTrustMetricsOf(String userId);
 
-  /// Índice general de compromiso (0–100) de cada una de [userIds], en una sola
-  /// consulta. Quien no tiene historial no aparece en el mapa.
+  /// Índice general de compromiso (0–100) de cada una de [userIds], con dos
+  /// consultas para todas. Quien no tiene historial (o ningún indicador con
+  /// datos) no aparece en el mapa; un 0 es un 0 real.
   Future<Map<String, int>> getCommitmentScores(Iterable<String> userIds);
 }

@@ -11,11 +11,12 @@ class UserProfile {
     this.bio = '',
     this.skills = const [],
     // Los indicadores de confianza salen del historial de colaboración (ver
-    // `features/trust`): sin historial valen 0 y no se muestran.
-    this.commitmentScore = 0,
-    this.onTimeScore = 0,
-    this.responseRateScore = 0,
-    this.completedProjectsScore = 0,
+    // `features/trust`). Nulo es "sin datos", no 0 %.
+    this.hasTrustHistory = false,
+    this.commitmentScore,
+    this.onTimeScore,
+    this.fulfillmentScore,
+    this.completedProjectsScore,
   });
 
   /// Nombre guardado en la fila de `profile`. En el perfil propio el nombre de
@@ -25,10 +26,11 @@ class UserProfile {
   final String institution;
   final String bio;
   final List<String> skills;
-  final int commitmentScore;
-  final int onTimeScore;
-  final int responseRateScore;
-  final int completedProjectsScore;
+  final bool hasTrustHistory;
+  final int? commitmentScore;
+  final int? onTimeScore;
+  final int? fulfillmentScore;
+  final int? completedProjectsScore;
 
   /// "Programa - Institución", o lo que haya de los dos.
   String get academicInfo {
@@ -41,18 +43,15 @@ class UserProfile {
   /// La descripción es opcional.
   bool get isComplete => program.isNotEmpty && skills.isNotEmpty;
 
-  /// Mismo criterio que las solicitudes (`Applicant`): sin historial no hay
-  /// indicadores que mostrar.
-  bool get hasTrustHistory => commitmentScore > 0;
-
   UserProfile copyWith({
     String? program,
     String? institution,
     String? bio,
     List<String>? skills,
+    bool? hasTrustHistory,
     int? commitmentScore,
     int? onTimeScore,
-    int? responseRateScore,
+    int? fulfillmentScore,
     int? completedProjectsScore,
   }) => UserProfile(
     name: name,
@@ -60,9 +59,10 @@ class UserProfile {
     institution: institution ?? this.institution,
     bio: bio ?? this.bio,
     skills: skills ?? this.skills,
+    hasTrustHistory: hasTrustHistory ?? this.hasTrustHistory,
     commitmentScore: commitmentScore ?? this.commitmentScore,
     onTimeScore: onTimeScore ?? this.onTimeScore,
-    responseRateScore: responseRateScore ?? this.responseRateScore,
+    fulfillmentScore: fulfillmentScore ?? this.fulfillmentScore,
     completedProjectsScore:
         completedProjectsScore ?? this.completedProjectsScore,
   );

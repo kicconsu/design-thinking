@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 /// Sección de "Indicadores de confianza": el índice general de compromiso
-/// más los tres medidores circulares (entrega a tiempo, tasa de respuesta,
-/// proyectos completados).
+/// más los tres medidores circulares (entrega a tiempo, cumplimiento,
+/// proyectos completados). Un valor nulo es "sin datos" y se muestra como «—».
 ///
 /// Se usa tanto en el detalle de una solicitud de colaboración
 /// ([ApplicantDetailPage]) como en el propio perfil del usuario
 /// ([ProfilePage]), así que vive en core/widgets en vez de duplicarse.
 class TrustIndicators extends StatelessWidget {
-  final int commitmentScore;
-  final int onTimeScore;
-  final int responseRateScore;
-  final int completedProjectsScore;
+  final int? commitmentScore;
+  final int? onTimeScore;
+  final int? fulfillmentScore;
+  final int? completedProjectsScore;
 
   /// Falso cuando quien lo usa ya pone su propio título (p. ej. una tarjeta).
   final bool showTitle;
@@ -20,7 +20,7 @@ class TrustIndicators extends StatelessWidget {
     super.key,
     required this.commitmentScore,
     required this.onTimeScore,
-    required this.responseRateScore,
+    required this.fulfillmentScore,
     required this.completedProjectsScore,
     this.showTitle = true,
   });
@@ -46,7 +46,7 @@ class TrustIndicators extends StatelessWidget {
               child: Text('Índice general de compromiso', style: tt.bodyMedium),
             ),
             Text(
-              '$commitmentScore%',
+              commitmentScore == null ? '—' : '$commitmentScore%',
               style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
@@ -54,7 +54,7 @@ class TrustIndicators extends StatelessWidget {
         const SizedBox(height: 4),
         ClipRRect(
           child: LinearProgressIndicator(
-            value: commitmentScore / 100,
+            value: (commitmentScore ?? 0) / 100,
             minHeight: 8,
             backgroundColor: cs.surfaceContainerHighest,
             color: cs.primary,
@@ -64,8 +64,18 @@ class TrustIndicators extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _ScoreGauge(label: 'Entrega a tiempo', value: onTimeScore, cs: cs, tt: tt),
-            _ScoreGauge(label: 'Tasa de respuesta', value: responseRateScore, cs: cs, tt: tt),
+            _ScoreGauge(
+              label: 'Entrega a tiempo',
+              value: onTimeScore,
+              cs: cs,
+              tt: tt,
+            ),
+            _ScoreGauge(
+              label: 'Cumplimiento',
+              value: fulfillmentScore,
+              cs: cs,
+              tt: tt,
+            ),
             _ScoreGauge(
               label: 'Proyectos completados',
               value: completedProjectsScore,
@@ -81,7 +91,7 @@ class TrustIndicators extends StatelessWidget {
 
 class _ScoreGauge extends StatelessWidget {
   final String label;
-  final int value;
+  final int? value;
   final ColorScheme cs;
   final TextTheme tt;
 
@@ -105,12 +115,15 @@ class _ScoreGauge extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
-                  value: value / 100,
+                  value: (value ?? 0) / 100,
                   strokeWidth: 6,
                   backgroundColor: cs.surfaceContainerHighest,
                   color: cs.primary,
                 ),
-                Text('$value%', style: tt.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  value == null ? '—' : '$value%',
+                  style: tt.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),

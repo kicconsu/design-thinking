@@ -31,20 +31,37 @@ class TrustRepository implements ITrustRepository {
   Future<Map<String, int>> getCommitmentScores(Iterable<String> userIds) async {
     final ids = userIds.where((id) => id.isNotEmpty).toSet().toList();
     if (ids.isEmpty) return const {};
-    final rows = await _guard(() => _source.readParticipations(ids));
+    // Dos consultas para todas las personas, no una por persona.
+    final [participationRows, deliveryRows] = await _guard(
+      () => Future.wait([
+        _source.readParticipations(ids),
+        _source.readDeliveries(ids),
+      ]),
+    );
 
-    final byUser = <String, List<ProjectParticipation>>{};
-    for (final row in rows) {
+    final participationsByUser = <String, List<ProjectParticipation>>{};
+    for (final row in participationRows) {
       final userId = row['user_id']?.toString() ?? '';
       if (userId.isEmpty) continue;
-      byUser.putIfAbsent(userId, () => []).add(_toParticipation(row));
+      participationsByUser
+          .putIfAbsent(userId, () => [])
+          .add(_toParticipation(row));
     }
-    return {
-      for (final entry in byUser.entries)
-        if (TrustMetrics.commitmentOf(entry.value) case final score
-            when score > 0)
-          entry.key: score,
+    final deliveriesByUser = {
+      for (final row in deliveryRows)
+        if (row['user_id']?.toString() case final id? when id.isNotEmpty)
+          id: _toDeliveries(row),
     };
+
+    final scores = <String, int>{};
+    for (final entry in participationsByUser.entries) {
+      final metrics = TrustMetrics.calculate(
+        participations: entry.value,
+        deliveries: deliveriesByUser[entry.key] ?? const OnTimeDeliveries(),
+      );
+      if (metrics.commitment case final score?) scores[entry.key] = score;
+    }
+    return scores;
   }
 
   // ─── Mappers ──────────────────────────────────────────────────────────────

@@ -138,9 +138,10 @@ class PersonProfileController extends GetxController {
     profile.value = metrics == null
         ? fetched
         : fetched.copyWith(
+            hasTrustHistory: metrics.hasHistory,
             commitmentScore: metrics.commitment,
             onTimeScore: metrics.onTime,
-            responseRateScore: metrics.responseRate,
+            fulfillmentScore: metrics.fulfillment,
             completedProjectsScore: metrics.completedProjects,
           );
   }

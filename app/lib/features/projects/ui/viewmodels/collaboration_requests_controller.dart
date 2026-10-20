@@ -73,7 +73,7 @@ class CollaborationRequestsController extends GetxController {
       final commitment = await _commitmentScores(pending.map((r) => r.userId));
       final loaded = <Applicant>[];
       for (final req in pending) {
-        loaded.add(await _toApplicant(req, commitment[req.userId] ?? 0));
+        loaded.add(await _toApplicant(req, commitment[req.userId]));
       }
       if (epoch != _epoch) return;
       applicants.removeWhere((a) => a.projectId == projectId);
@@ -148,7 +148,7 @@ class CollaborationRequestsController extends GetxController {
     }
   }
 
-  Future<Applicant> _toApplicant(ProjectJoinRequest req, int commitment) async {
+  Future<Applicant> _toApplicant(ProjectJoinRequest req, int? commitment) async {
     Map<String, dynamic>? profile;
     if (req.userId.isNotEmpty) {
       try {
