@@ -41,7 +41,7 @@ class TrustIndicatorsPage extends StatelessWidget {
                   ? TrustIndicators(
                       commitmentScore: profile.commitmentScore,
                       onTimeScore: profile.onTimeScore,
-                      responseRateScore: profile.responseRateScore,
+                      fulfillmentScore: profile.fulfillmentScore,
                       completedProjectsScore: profile.completedProjectsScore,
                       showTitle: false,
                     )

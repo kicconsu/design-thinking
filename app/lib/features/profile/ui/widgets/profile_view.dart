@@ -172,7 +172,7 @@ class ProfileView extends StatelessWidget {
                     child: TrustIndicators(
                       commitmentScore: profile.commitmentScore,
                       onTimeScore: profile.onTimeScore,
-                      responseRateScore: profile.responseRateScore,
+                      fulfillmentScore: profile.fulfillmentScore,
                       completedProjectsScore: profile.completedProjectsScore,
                       showTitle: false,
                     ),
@@ -340,7 +340,9 @@ class _Header extends StatelessWidget {
                 ),
                 divider,
                 stat(
-                  profile.hasTrustHistory ? '${profile.commitmentScore}%' : '—',
+                  profile.hasTrustHistory && profile.commitmentScore != null
+                      ? '${profile.commitmentScore}%'
+                      : '—',
                   'Confianza',
                 ),
               ],

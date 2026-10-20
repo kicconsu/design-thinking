@@ -132,11 +132,11 @@ class _ApplicantTile extends StatelessWidget {
             ),
             if (applicant.academicInfo.isNotEmpty)
               Text(applicant.academicInfo, style: tt.bodySmall),
-            if (applicant.commitmentScore > 0) ...[
+            if (applicant.commitmentScore case final score?) ...[
               const SizedBox(height: 8),
               ClipRRect(
                 child: LinearProgressIndicator(
-                  value: applicant.commitmentScore / 100,
+                  value: score / 100,
                   minHeight: 6,
                   backgroundColor: cs.surfaceContainerHighest,
                   color: cs.primary,
@@ -144,7 +144,7 @@ class _ApplicantTile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Compromiso ${applicant.commitmentScore}%',
+                'Compromiso $score%',
                 style: tt.bodySmall,
               ),
             ],

@@ -36,8 +36,9 @@ class _Trust implements ITrustRepository {
   TrustMetrics metrics = const TrustMetrics(
     commitment: 62,
     onTime: 80,
-    responseRate: 88,
+    fulfillment: 88,
     completedProjects: 50,
+    hasHistory: true,
   );
   Map<String, int> scores = {};
   TrustFailure? failure;
@@ -148,7 +149,7 @@ void main() {
       await controller.fetchForProject('p1');
 
       expect(by(controller, 'ana').commitmentScore, 75);
-      expect(by(controller, 'luis').commitmentScore, 0);
+      expect(by(controller, 'luis').commitmentScore, isNull);
       expect(trust.scoresAsked, hasLength(1));
       expect(trust.scoresAsked.single, unorderedEquals(['ana', 'luis']));
     });
@@ -160,7 +161,7 @@ void main() {
       await controller.fetchForProject('p1');
 
       expect(controller.pendingCount('p1'), 2);
-      expect(by(controller, 'ana').commitmentScore, 0);
+      expect(by(controller, 'ana').commitmentScore, isNull);
     });
 
     testWidgets('la tarjeta muestra el compromiso, solo si hay', (
@@ -274,7 +275,7 @@ void main() {
       expect(find.text('88%'), findsOneWidget);
       expect(find.text('50%'), findsOneWidget);
       expect(find.text('Entrega a tiempo'), findsOneWidget);
-      expect(find.text('Tasa de respuesta'), findsOneWidget);
+      expect(find.text('Cumplimiento'), findsOneWidget);
       expect(find.text('Proyectos completados'), findsOneWidget);
     });
 

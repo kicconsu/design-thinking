@@ -131,8 +131,8 @@ void main() {
 
       final profile = await repo.getMyProfile();
 
-      expect(profile.commitmentScore, 0);
-      expect(profile.completedProjectsScore, 0);
+      expect(profile.commitmentScore, isNull);
+      expect(profile.completedProjectsScore, isNull);
       expect(profile.hasTrustHistory, isFalse);
     });
 
