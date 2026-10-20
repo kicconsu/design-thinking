@@ -723,6 +723,13 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
   }
 
   @override
+  Future<List<Project>> getProjectsParticipatedBy(String userId) async {
+    if (userId.isEmpty) return const [];
+    final rows = await _guard(() => _source.readProjectsParticipatedBy(userId));
+    return rows.map(_toProject).toList();
+  }
+
+  @override
   Future<List<String>> getMemberProjectIds(String userId) async {
     final rows = await _guard(() => _source.readMembershipsByUser(userId));
     return {

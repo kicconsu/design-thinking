@@ -6,6 +6,9 @@ import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/profile_failure.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/tasks/domain/repositories/i_task_repository.dart';
+import 'package:imker/features/trust/domain/models/trust_metrics.dart';
+import 'package:imker/features/trust/domain/repositories/i_trust_repository.dart';
+import 'package:imker/features/trust/domain/trust_failure.dart';
 
 import '../../domain/models/project.dart';
 import '../../domain/models/project_member.dart';
@@ -16,7 +19,9 @@ import 'member_exit.dart';
 /// Estado de la ficha de una persona: su perfil (solo lectura) y en qué anda
 /// (sus proyectos). Si se abre desde un proyecto y es miembro de él ([member]
 /// y [projectId]), añade lo que ha hecho ahí y, para el creador, la acción de
-/// quitarla. Una instancia por ficha abierta.
+/// quitarla. Con [showTrust] (la ficha de una solicitud) añade además sus
+/// indicadores de confianza y el historial de los proyectos en los que
+/// participó. Una instancia por ficha abierta.
 class PersonProfileController extends GetxController {
   /// [viewerIsCreator]: quien mira es el creador del proyecto.
   /// [currentUserId] sustituye a la sesión real: solo para pruebas.
@@ -26,6 +31,7 @@ class PersonProfileController extends GetxController {
     this.projectId,
     this.member,
     this.viewerIsCreator = false,
+    this.showTrust = false,
     String Function()? currentUserId,
   }) : _userIdOverride = currentUserId;
 
@@ -39,7 +45,14 @@ class PersonProfileController extends GetxController {
   /// de un proyecto (feed, solicitudes, invitaciones).
   final ProjectMember? member;
   final bool viewerIsCreator;
+
+  /// Cargar y mostrar sus indicadores de confianza y su historial. Solo lo
+  /// pide quien está decidiendo sobre una solicitud.
+  final bool showTrust;
   final String Function()? _userIdOverride;
+
+  /// El perfil tal como llegó de la base, antes de añadirle los indicadores.
+  UserProfile? _fetched;
 
   final Rxn<UserProfile> profile = Rxn<UserProfile>();
   final RxBool isLoading = false.obs;
@@ -48,6 +61,15 @@ class PersonProfileController extends GetxController {
   /// En qué anda: sus proyectos creados y activos; null si no se pudieron leer
   /// (entonces no se muestra la sección en vez de decir «ninguno»).
   final Rxn<List<Project>> projects = Rxn<List<Project>>();
+
+  /// Sus indicadores de confianza; null si no se pidieron ([showTrust]) o no se
+  /// pudieron calcular (entonces la ficha no los afirma).
+  final Rxn<TrustMetrics> trust = Rxn<TrustMetrics>();
+
+  /// Todos los proyectos en los que participó alguna vez, menos aquel desde el
+  /// que se abrió la ficha ([projectId]). De aquí sale su historial. Null si no
+  /// se pidieron o no se pudieron leer.
+  final Rxn<List<Project>> participated = Rxn<List<Project>>();
 
   /// Tareas de esta persona en el proyecto; null si no se pudieron leer.
   final RxnInt tasksDone = RxnInt();
@@ -77,7 +99,14 @@ class PersonProfileController extends GetxController {
     if (isLoading.value) return;
     isLoading.value = true;
     try {
-      await Future.wait([_loadProfile(), _loadProjects(), _loadTasks()]);
+      await Future.wait([
+        _loadProfile(),
+        _loadProjects(),
+        _loadTasks(),
+        _loadTrust(),
+        _loadParticipated(),
+      ]);
+      _publishProfile();
     } finally {
       isLoading.value = false;
     }
@@ -85,7 +114,9 @@ class PersonProfileController extends GetxController {
 
   Future<void> _loadProfile() async {
     try {
-      profile.value = await Get.find<IProfileRepository>().getProfileOf(userId);
+      _fetched = await Get.find<IProfileRepository>().getProfileOf(userId);
+      // Sin indicadores que esperar, el perfil sale en cuanto llega.
+      if (!showTrust) _publishProfile();
       error.value = null;
     } on ProfileFailure catch (e) {
       error.value = e.message;
@@ -94,6 +125,50 @@ class PersonProfileController extends GetxController {
         e,
         fallback: 'No se pudo cargar el perfil de $name.',
       );
+    }
+  }
+
+  /// Muestra el perfil. Con [showTrust] espera a tener también los
+  /// indicadores: así no se ve un instante «aparecerán cuando colabore» antes
+  /// de que lleguen.
+  void _publishProfile() {
+    final fetched = _fetched;
+    if (fetched == null) return;
+    final metrics = trust.value;
+    profile.value = metrics == null
+        ? fetched
+        : fetched.copyWith(
+            commitmentScore: metrics.commitment,
+            onTimeScore: metrics.onTime,
+            responseRateScore: metrics.responseRate,
+            completedProjectsScore: metrics.completedProjects,
+          );
+  }
+
+  /// Sin indicadores calculables la ficha cae al texto de «sin historial».
+  Future<void> _loadTrust() async {
+    if (!showTrust || !Get.isRegistered<ITrustRepository>()) return;
+    try {
+      trust.value = await Get.find<ITrustRepository>().getTrustMetricsOf(
+        userId,
+      );
+    } on TrustFailure {
+      trust.value = null;
+    }
+  }
+
+  /// Sin proyectos legibles la ficha no muestra el historial.
+  Future<void> _loadParticipated() async {
+    if (!showTrust || !Get.isRegistered<IProjectRepository>()) return;
+    try {
+      final all = await Get.find<IProjectRepository>()
+          .getProjectsParticipatedBy(userId);
+      participated.value = [
+        for (final p in all)
+          if (p.id != projectId) p,
+      ];
+    } on ProjectFailure {
+      participated.value = null;
     }
   }
 

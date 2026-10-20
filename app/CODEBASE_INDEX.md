@@ -14,7 +14,7 @@ tokens ni construye peticiones HTTP a mano.
 
 - [`lib/main.dart`](lib/main.dart) — Punto de entrada. Registra `RobleClient`
   (sólo si hay contrato), `registerProfileData()`, `registerAuth()`,
-  `registerProjects()` y arranca `MyApp`.
+  `registerProjects()`, `registerTasks()`, `registerTrust()` y arranca `MyApp`.
 - [`lib/core/roble/roble_config.dart`](lib/core/roble/roble_config.dart) —
   `baseUrl`, `contractId` y el flag `DEV_LOGIN`, todos por `--dart-define`.
 - [`lib/core/roble/roble_client.dart`](lib/core/roble/roble_client.dart) — Un
@@ -131,7 +131,8 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   `IProjectDataSource.endMembership`. El creador no puede salir ni ser
   quitado. Salir también borra el `project_saved` propio. Son repetibles.
 - `ITaskRepository.releaseUnfinishedTasks` libera las tareas `todo`/`doing` de
-  quien se va; las terminadas se conservan a su nombre. No cambia el progreso.
+  quien se va; las terminadas se conservan a su nombre. No cambia el progreso
+  ni `tasks_taken`: lo soltado sigue contando como tomado.
 - Salir: menú ⋮ en la tarjeta del título de `ProjectInfoPage` (el creador no lo
   ve). Quitar: botón en `MemberProfilePage` (ficha del miembro, se abre desde
   la pestaña Miembros), solo para el creador sobre colaboradores.
@@ -154,7 +155,15 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
   proyecto» y el creador puede quitarla. `openPersonProfile` es la entrada
   común: a un invitado le pide cuenta.
 - `ApplicantDetailPage` (solicitudes) es esa misma ficha con la solicitud
-  encima (`header`) y aceptar/rechazar al pie (`bottomBar`). Las invitaciones
+  encima (`header`) y aceptar/rechazar al pie (`bottomBar`). Es la única que
+  pasa `showTrust`: carga además sus indicadores de confianza
+  (`ITrustRepository.getTrustMetricsOf`; si no se pueden calcular se ve el
+  texto de «sin historial») y ofrece el historial, que es
+  `CollaborationHistoryPage(onlyPrevious: true)` con
+  `IProjectRepository.getProjectsParticipatedBy` (proyectos con estancia en
+  cualquier estado, menos el de la solicitud). «Anterior» es lo que la página ya
+  define: un proyecto cerrado. Para incluir también los abiertos basta con no
+  pasar `onlyPrevious`. Las invitaciones
   dicen «Te invitó X ›» (`InviterRow`); los nombres salen de `PeopleDirectory`,
   caché de sesión con una lectura por persona.
 - Se abre desde la pestaña Miembros y desde «Integrantes» del detalle de un
@@ -172,11 +181,30 @@ Register   -> signUp() -> register + login -> /home  (ya dentro)
 - `features/tasks` — Tareas (`task`) y progreso. `TaskRepository` recalcula
   `project.progress` (tareas `done` / total) tras crear, cambiar de estado o
   borrar una tarea, y reserva tareas (`assignee_id`) sin pisar a quien se
-  adelantó. `TaskBoardPage` es el gabinete y `TaskProgressPage` el progreso
+  adelantó. También mantiene los contadores que alimentan las métricas de
+  confianza: `project.total_tasks` (se recalcula con el progreso) y, en
+  `project_member`, `tasks_taken` (incremental: +1 al reservar, -1 al borrar la
+  tarea) y `tasks_finished` (se recalcula desde `task` al terminar o reabrir;
+  con varias estancias, cada fila anota solo lo nuevo: regla en
+  `domain/models/member_stay.dart`). Los contadores son derivados: si fallan
+  la tarea no se deshace. `TaskBoardPage` es el gabinete y `TaskProgressPage` el progreso
   de una tarea: descripción y checklist (`task.checklist`, jsonb; lo edita
   solo quien la reservó; completarlo termina la tarea y desmarcarlo la
   reabre) y comentarios (`contribution`, planos: sin respuestas ni votos).
   `core/widgets/checklist_editor.dart` es el editor de checklist compartido.
+- `features/trust` — Indicadores de confianza de una persona (compromiso,
+  entrega a tiempo, tasa de respuesta, proyectos completados), de 0 a 100.
+  `TrustMetrics.calculate` es la regla pura: cada proyecto en el que participó
+  pesa igual; compromiso = promedio de `tasks_finished / total_tasks` por
+  proyecto, tasa de respuesta = promedio de `tasks_finished / tasks_taken`,
+  completados = proyectos con `progress = 100` entre todos, entrega a tiempo =
+  `finished_at <= deadline` entre las terminadas con `deadline`. Un proyecto sin
+  denominador no entra en el promedio. Lee con las consultas guardadas
+  `metricas_compromiso_por_proyecto` y `entregas_a_tiempo` (ver
+  `docs/db/saved_queries.sql`), que se piden por lotes de ids; dependen de los
+  contadores que mantiene `features/tasks`. `getCommitmentScores` alimenta, con
+  una sola consulta por proyecto, el «Compromiso N %» de la lista de solicitudes
+  (`CollaborationRequestsController`).
 - `features/discover` — Feed de descubrimiento.
 - `features/home` — `SplashPage` (restaura sesión y enruta) y `HomePage`
   (IndexedStack de pestañas).

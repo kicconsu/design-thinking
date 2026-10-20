@@ -19,12 +19,14 @@ void main() {
     WidgetTester tester, {
     List<Project> created = const [],
     List<Project> collaborating = const [],
+    bool onlyPrevious = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         home: CollaborationHistoryPage(
           created: created,
           collaborating: collaborating,
+          onlyPrevious: onlyPrevious,
         ),
       ),
     );
@@ -100,5 +102,24 @@ void main() {
     expect(find.text('No ha creado proyectos abiertos.'), findsOneWidget);
     expect(y(tester, 'Mio'), greaterThan(y(tester, 'Proyectos anteriores')));
     expect(y(tester, 'Ajeno'), greaterThan(y(tester, 'Proyectos anteriores')));
+  });
+
+  testWidgets('onlyPrevious deja solo los proyectos anteriores', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      collaborating: [
+        _project('Vivo'),
+        _project('Viejo', status: 'closed'),
+      ],
+      onlyPrevious: true,
+    );
+
+    expect(find.text('Proyectos anteriores'), findsOneWidget);
+    expect(find.text('Viejo'), findsOneWidget);
+    expect(find.text('Vivo'), findsNothing);
+    expect(find.text('Colaborando ahora'), findsNothing);
+    expect(find.text('Proyectos creados'), findsNothing);
   });
 }
