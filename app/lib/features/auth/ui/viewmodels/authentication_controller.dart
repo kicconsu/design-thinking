@@ -7,6 +7,7 @@ import 'package:imker/core/data/dummy_data.dart';
 import 'package:imker/core/utils/error_message.dart';
 import 'package:imker/features/auth/domain/models/authentication_user.dart';
 import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
+import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/viewmodels/people_directory.dart';
 import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
@@ -80,6 +81,9 @@ class AuthenticationController extends GetxController with UiLoggy {
     }
     if (Get.isRegistered<InvitationsController>()) {
       Get.find<InvitationsController>().clear();
+    }
+    if (Get.isRegistered<DiscoverController>()) {
+      Get.find<DiscoverController>().clear();
     }
   }
 
@@ -217,6 +221,9 @@ class AuthenticationController extends GetxController with UiLoggy {
     }
     if (Get.isRegistered<InvitationsController>()) {
       Get.find<InvitationsController>().fetch();
+    }
+    if (Get.isRegistered<DiscoverController>()) {
+      Get.find<DiscoverController>().loadProjects();
     }
   }
 

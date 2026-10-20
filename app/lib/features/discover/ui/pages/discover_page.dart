@@ -4,13 +4,53 @@ import 'package:get/get.dart';
 import '../viewmodels/discover_controller.dart';
 import '../widgets/project_card.dart';
 
-class DiscoverPage extends StatelessWidget {
+class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<DiscoverController>();
+  State<DiscoverPage> createState() => _DiscoverPageState();
+}
 
+class _DiscoverPageState extends State<DiscoverPage> {
+  /// Cuántas tarjetas antes del final se pide la página siguiente.
+  static const _prefetchDistance = 3;
+
+  final controller = Get.find<DiscoverController>();
+
+  // Estable: si se creara en `build`, cada cambio de la lista reiniciaría la posición.
+  final _pageController = PageController(viewportFraction: 0.92);
+  final _workers = <Worker>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _workers.add(
+      ever(controller.resetCount, (_) {
+        if (_pageController.hasClients) _pageController.jumpToPage(0);
+      }),
+    );
+    _workers.add(
+      ever(controller.notice, (message) {
+        if (message == null || !mounted) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+        controller.clearNotice();
+      }),
+    );
+  }
+
+  @override
+  void dispose() {
+    for (final worker in _workers) {
+      worker.dispose();
+    }
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Obx(() {
       if (controller.isLoading.value && controller.projects.isEmpty) {
         return const Center(child: CircularProgressIndicator());
@@ -42,6 +82,24 @@ class DiscoverPage extends StatelessWidget {
         );
       }
 
+      if (controller.projects.isEmpty && !controller.filter.value.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.filter_alt_off, size: 48, color: Colors.grey),
+              const SizedBox(height: 12),
+              const Text('Ningún proyecto coincide con los filtros.'),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: controller.clearFilters,
+                child: const Text('Limpiar filtros'),
+              ),
+            ],
+          ),
+        );
+      }
+
       if (controller.projects.isEmpty) {
         return Center(
           child: Column(
@@ -65,8 +123,13 @@ class DiscoverPage extends StatelessWidget {
         onRefresh: controller.loadProjects,
         child: PageView.builder(
           scrollDirection: Axis.vertical,
-          controller: PageController(viewportFraction: 0.92),
+          controller: _pageController,
           itemCount: controller.projects.length,
+          onPageChanged: (index) {
+            if (index >= controller.projects.length - _prefetchDistance) {
+              controller.loadMore();
+            }
+          },
           itemBuilder: (context, index) {
             final project = controller.projects[index];
             return Padding(
