@@ -1,18 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'package:imker/core/widgets/trust_indicators.dart';
 
 import '../../domain/models/user_profile.dart';
+import '../viewmodels/profile_controller.dart';
 
 /// Detalle de los indicadores de confianza de un perfil.
 ///
-/// Los indicadores se calculan a partir del historial de colaboración (tareas
-/// y contribuciones), que todavía no existe: sin historial no se muestra
-/// ningún número.
+/// Los indicadores se calculan a partir del historial de colaboración: sin
+/// historial no se muestra ningún número, y si no se pudieron calcular se
+/// muestra el motivo con un botón para reintentar, nunca ceros.
 class TrustIndicatorsPage extends StatelessWidget {
-  const TrustIndicatorsPage({super.key, required this.profile});
+  const TrustIndicatorsPage({
+    super.key,
+    required this.profile,
+    this.loading = false,
+    this.error,
+    this.onRetry,
+  });
 
   final UserProfile profile;
+
+  /// Se están calculando y todavía no hay ninguno que mostrar.
+  final bool loading;
+
+  /// Por qué no se pudieron calcular; con [onRetry] ofrece reintentar.
+  final String? error;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +52,27 @@ class TrustIndicatorsPage extends StatelessWidget {
                 color: cs.surface,
                 border: Border.all(color: cs.outline),
               ),
-              child: profile.hasTrustHistory
+              child: error != null
+                  ? Row(
+                      key: const Key('trust.page.error'),
+                      children: [
+                        Icon(Icons.cloud_off, color: cs.error),
+                        const SizedBox(width: 14),
+                        Expanded(child: Text(error!, style: tt.bodyMedium)),
+                        if (onRetry != null)
+                          TextButton(
+                            key: const Key('trust.page.retry'),
+                            onPressed: onRetry,
+                            child: const Text('Reintentar'),
+                          ),
+                      ],
+                    )
+                  : loading
+                  ? const Center(
+                      key: Key('trust.page.loading'),
+                      child: CircularProgressIndicator(),
+                    )
+                  : profile.hasTrustHistory
                   ? TrustIndicators(
                       commitmentScore: profile.commitmentScore,
                       onTimeScore: profile.onTimeScore,
@@ -63,7 +98,7 @@ class TrustIndicatorsPage extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           'Se calculan a partir de la colaboración en proyectos: '
-                          'compromiso, entrega a tiempo, tasa de respuesta y '
+                          'compromiso, entrega a tiempo, cumplimiento y '
                           'proyectos completados. Aparecerán cuando haya historial.',
                           style: tt.bodyMedium,
                         ),
@@ -72,6 +107,26 @@ class TrustIndicatorsPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// El detalle de mis propios indicadores: sigue al [ProfileController], así
+/// que se actualiza solo al reintentar o al refrescar el perfil.
+class OwnTrustIndicatorsPage extends StatelessWidget {
+  const OwnTrustIndicatorsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<ProfileController>();
+    return Obx(
+      () => TrustIndicatorsPage(
+        profile: controller.profileWithTrust ?? const UserProfile(),
+        loading:
+            controller.isLoadingTrust.value && controller.trust.value == null,
+        error: controller.trustError.value,
+        onRetry: controller.loadTrust,
       ),
     );
   }
