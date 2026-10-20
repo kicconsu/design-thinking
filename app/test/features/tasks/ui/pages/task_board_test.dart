@@ -67,6 +67,34 @@ void main() {
       expect(c.assigneeLabel(c.tasks.single), 'Tú');
     });
 
+    test('la fecha límite elegida vence al final de ese día', () async {
+      final c = TaskBoardController(
+        DummyData.kircheProject,
+        currentUserId: () => 'ana',
+      );
+
+      expect(
+        await c.createTask(title: 'Login', deadlineDay: DateTime(2026, 3, 20, 8)),
+        isNull,
+      );
+
+      expect(
+        c.tasks.single.deadline,
+        DateTime(2026, 3, 20, 23, 59, 59, 999).toUtc(),
+      );
+    });
+
+    test('sin fecha elegida, la tarea no tiene deadline', () async {
+      final c = TaskBoardController(
+        DummyData.kircheProject,
+        currentUserId: () => 'ana',
+      );
+
+      await c.createTask(title: 'Login');
+
+      expect(c.tasks.single.deadline, isNull);
+    });
+
     test('reservar sin sesión devuelve un mensaje y no escribe', () async {
       final c = TaskBoardController(
         DummyData.kircheProject,

@@ -7,11 +7,12 @@ abstract class ITaskRepository {
   Future<List<ProjectTask>> getTasks(String projectId);
 
   /// Crea la tarea (siempre `todo`) y recalcula el progreso y el total de
-  /// tareas del proyecto.
+  /// tareas del proyecto. [deadline] es opcional (ver `TaskDeadline`).
   Future<ProjectTask> createTask({
     required String projectId,
     required String title,
     String description = '',
+    DateTime? deadline,
   });
 
   /// Cambia el estado y recalcula el progreso del proyecto. Si la tarea tiene

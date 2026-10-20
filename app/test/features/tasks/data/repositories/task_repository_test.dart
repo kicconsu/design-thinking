@@ -14,6 +14,60 @@ void main() {
     repo = TaskRepository(source);
   });
 
+  group('fecha límite al crear', () {
+    test('sin fecha, la tarea se crea con deadline nulo', () async {
+      final task = await repo.createTask(projectId: projectId, title: 'a');
+
+      expect(task.deadline, isNull);
+      final stored = (await repo.getTasks(projectId)).single;
+      expect(stored.deadline, isNull);
+    });
+
+    test('con fecha, se guarda el instante en UTC y se lee igual', () async {
+      final deadline = DateTime(2026, 3, 20, 23, 59, 59, 999).toUtc();
+
+      final task = await repo.createTask(
+        projectId: projectId,
+        title: 'a',
+        deadline: deadline,
+      );
+
+      expect(task.deadline, deadline);
+      final stored = (await repo.getTasks(projectId)).single;
+      expect(stored.deadline, deadline);
+      expect(stored.deadline!.isUtc, isTrue);
+    });
+
+    test('lo que se manda a Roble es texto ISO en UTC', () async {
+      final deadline = DateTime(2026, 3, 20, 23, 59, 59, 999).toUtc();
+
+      await repo.createTask(projectId: projectId, title: 'a', deadline: deadline);
+
+      final raw = (await source.readTasks(projectId)).single['deadline'];
+      expect(raw, deadline.toIso8601String());
+      expect(raw, endsWith('Z'));
+    });
+
+    test('un deadline ilegible o vacío se lee como "sin fecha"', () async {
+      await source.createTask({
+        'project_id': projectId,
+        'title': 'rota',
+        'status': 'todo',
+        'deadline': 'no es una fecha',
+      });
+      await source.createTask({
+        'project_id': projectId,
+        'title': 'vacía',
+        'status': 'todo',
+        'deadline': '',
+      });
+
+      final tasks = await repo.getTasks(projectId);
+
+      expect(tasks.map((t) => t.deadline), [null, null]);
+    });
+  });
+
   test('progressOf: sin tareas es 0 y no divide entre cero', () {
     expect(ProjectTask.progressOf(const []), 0);
   });

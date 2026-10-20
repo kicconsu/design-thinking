@@ -11,6 +11,7 @@ class ProjectTask {
     this.status = TaskStatus.todo,
     this.assigneeId,
     this.subtasks = const [],
+    this.deadline,
   });
 
   final String id;
@@ -24,6 +25,10 @@ class ProjectTask {
 
   /// Checklist de progreso de la tarea.
   final List<Subtask> subtasks;
+
+  /// Instante UTC en que vence la tarea (ver `TaskDeadline`); null si no tiene
+  /// fecha límite.
+  final DateTime? deadline;
 
   bool get isDone => status == TaskStatus.done;
 
@@ -39,6 +44,8 @@ class ProjectTask {
     TaskStatus? status,
     String? assigneeId,
     List<Subtask>? subtasks,
+    DateTime? deadline,
+    bool clearDeadline = false,
   }) {
     return ProjectTask(
       id: id,
@@ -48,6 +55,7 @@ class ProjectTask {
       status: status ?? this.status,
       assigneeId: assigneeId ?? this.assigneeId,
       subtasks: subtasks ?? this.subtasks,
+      deadline: clearDeadline ? null : deadline ?? this.deadline,
     );
   }
 

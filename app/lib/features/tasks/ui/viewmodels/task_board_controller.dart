@@ -5,6 +5,7 @@ import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 
 import '../../domain/models/project_task.dart';
+import '../../domain/models/task_deadline.dart';
 import '../../domain/models/task_status.dart';
 import '../../domain/repositories/i_task_repository.dart';
 import 'user_name_cache.dart';
@@ -65,17 +66,20 @@ class TaskBoardController extends GetxController {
     }
   }
 
-  /// Crea una tarea pendiente. Devuelve null si salió bien o el mensaje de
-  /// error para mostrar.
+  /// Crea una tarea pendiente. [deadlineDay] es el día límite elegido (opcional);
+  /// la tarea vence al final de ese día. Devuelve null si salió bien o el
+  /// mensaje de error para mostrar.
   Future<String?> createTask({
     required String title,
     String description = '',
+    DateTime? deadlineDay,
   }) async {
     try {
       final task = await _repository.createTask(
         projectId: project.id,
         title: title,
         description: description,
+        deadline: deadlineDay == null ? null : TaskDeadline.endOfDay(deadlineDay),
       );
       tasks.add(task);
       return null;
