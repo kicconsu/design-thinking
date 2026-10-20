@@ -17,7 +17,8 @@ abstract class ITaskRepository {
 
   /// Cambia el estado y recalcula el progreso del proyecto. Si la tarea tiene
   /// responsable y pasa a (o deja de estar) terminada, recalcula también las
-  /// terminadas de esa persona.
+  /// terminadas de esa persona. Al pasar a terminada escribe `finished_at` con
+  /// el instante actual; al reabrirla lo borra.
   Future<ProjectTask> updateTaskStatus({
     required ProjectTask task,
     required TaskStatus status,
@@ -48,7 +49,8 @@ abstract class ITaskRepository {
 
   /// Guarda descripción y checklist en una sola escritura. El estado lo
   /// decide [ProjectTask.statusAfterSaving]; si cambia, se recalcula el
-  /// progreso del proyecto. Devuelve la tarea ya con los valores guardados.
+  /// progreso del proyecto y `finished_at` (se escribe al terminarse, se borra
+  /// al reabrirse). Devuelve la tarea ya con los valores guardados.
   Future<ProjectTask> saveTaskProgress({
     required ProjectTask task,
     required String description,

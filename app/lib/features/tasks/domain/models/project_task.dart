@@ -13,6 +13,7 @@ class ProjectTask {
     this.subtasks = const [],
     this.deadline,
     this.creatorId,
+    this.finishedAt,
   });
 
   final String id;
@@ -34,6 +35,10 @@ class ProjectTask {
   /// `_owner` de la fila: quien creó la tarea. Null si Roble no lo informó.
   final String? creatorId;
 
+  /// Instante UTC en que la tarea pasó a terminada; null mientras no lo esté.
+  /// Si se reabre y se vuelve a terminar, es el del último cierre.
+  final DateTime? finishedAt;
+
   bool get isDone => status == TaskStatus.done;
 
   /// Vencida: tiene fecha límite, ya pasó y la tarea no está terminada.
@@ -54,6 +59,8 @@ class ProjectTask {
     List<Subtask>? subtasks,
     DateTime? deadline,
     bool clearDeadline = false,
+    DateTime? finishedAt,
+    bool clearFinishedAt = false,
   }) {
     return ProjectTask(
       id: id,
@@ -65,6 +72,7 @@ class ProjectTask {
       subtasks: subtasks ?? this.subtasks,
       deadline: clearDeadline ? null : deadline ?? this.deadline,
       creatorId: creatorId,
+      finishedAt: clearFinishedAt ? null : finishedAt ?? this.finishedAt,
     );
   }
 
