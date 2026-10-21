@@ -1,4 +1,4 @@
-package com.example.f_clean_template
+package co.edu.uninorte.imker
 
 import io.flutter.embedding.android.FlutterActivity
 
