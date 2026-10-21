@@ -26,72 +26,75 @@ void main() {
   }
 
   tearDown(Get.reset);
+  group('CoCreatedProjectsPage', () {
+    testWidgets('sin proyectos propios lo dice y ofrece crear el primero', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-  testWidgets('sin proyectos propios lo dice y ofrece crear el primero', (
-    tester,
-  ) async {
-    await pumpPage(tester);
+      expect(find.text('Aún no tienes proyectos propios.'), findsOneWidget);
+      expect(find.text('Crear mi primer proyecto'), findsOneWidget);
+    });
 
-    expect(find.text('Aún no tienes proyectos propios.'), findsOneWidget);
-    expect(find.text('Crear mi primer proyecto'), findsOneWidget);
-  });
+    testWidgets('«Crear mi primer proyecto» abre el formulario', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-  testWidgets('«Crear mi primer proyecto» abre el formulario', (tester) async {
-    await pumpPage(tester);
+      await tester.tap(find.text('Crear mi primer proyecto'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Crear mi primer proyecto'));
-    await tester.pumpAndSettle();
+      expect(find.text('Crear Proyecto'), findsOneWidget);
+      expect(find.text('Nombre del proyecto'), findsOneWidget);
+    });
 
-    expect(find.text('Crear Proyecto'), findsOneWidget);
-    expect(find.text('Nombre del proyecto'), findsOneWidget);
-  });
+    testWidgets('mientras carga y no hay nada, muestra una espera', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-  testWidgets('mientras carga y no hay nada, muestra una espera', (
-    tester,
-  ) async {
-    await pumpPage(tester);
+      projects.isLoadingProjects.value = true;
+      await tester.pump();
 
-    projects.isLoadingProjects.value = true;
-    await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Aún no tienes proyectos propios.'), findsNothing);
+    });
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('Aún no tienes proyectos propios.'), findsNothing);
-  });
+    testWidgets('con proyectos los lista y ofrece «Nuevo»', (tester) async {
+      await pumpPage(tester);
 
-  testWidgets('con proyectos los lista y ofrece «Nuevo»', (tester) async {
-    await pumpPage(tester);
+      projects.coCreatedProjects.addAll([
+        aProject(id: 'a', owner: 'yo'),
+        aProject(id: 'b', owner: 'yo'),
+      ]);
+      await tester.pumpAndSettle();
 
-    projects.coCreatedProjects.addAll([
-      aProject(id: 'a', owner: 'yo'),
-      aProject(id: 'b', owner: 'yo'),
-    ]);
-    await tester.pumpAndSettle();
+      expect(find.text('Proyecto a'), findsOneWidget);
+      expect(find.text('Proyecto b'), findsOneWidget);
+      expect(find.text('Nuevo'), findsOneWidget);
+      expect(find.text('Aún no tienes proyectos propios.'), findsNothing);
+    });
 
-    expect(find.text('Proyecto a'), findsOneWidget);
-    expect(find.text('Proyecto b'), findsOneWidget);
-    expect(find.text('Nuevo'), findsOneWidget);
-    expect(find.text('Aún no tienes proyectos propios.'), findsNothing);
-  });
+    testWidgets('cada proyecto muestra cuántas solicitudes tiene', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-  testWidgets('cada proyecto muestra cuántas solicitudes tiene', (
-    tester,
-  ) async {
-    await pumpPage(tester);
+      projects.coCreatedProjects.add(aProject(id: 'a', owner: 'yo'));
+      await tester.pumpAndSettle();
 
-    projects.coCreatedProjects.add(aProject(id: 'a', owner: 'yo'));
-    await tester.pumpAndSettle();
+      expect(find.text('0 solicitudes'), findsOneWidget);
+    });
 
-    expect(find.text('0 solicitudes'), findsOneWidget);
-  });
+    testWidgets('«Nuevo» abre el formulario de creación', (tester) async {
+      await pumpPage(tester);
+      projects.coCreatedProjects.add(aProject(id: 'a', owner: 'yo'));
+      await tester.pumpAndSettle();
 
-  testWidgets('«Nuevo» abre el formulario de creación', (tester) async {
-    await pumpPage(tester);
-    projects.coCreatedProjects.add(aProject(id: 'a', owner: 'yo'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Nuevo'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Nuevo'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Crear Proyecto'), findsOneWidget);
+      expect(find.text('Crear Proyecto'), findsOneWidget);
+    });
   });
 }
