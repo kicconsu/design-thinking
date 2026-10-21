@@ -53,7 +53,7 @@ void main() {
     });
 
     test(
-      'completar el checklist termina la tarea y sube el progreso',
+      'completar el checklist sube el progreso; desmarcar lo baja',
       () async {
         final task = await reserved('ana');
 
@@ -65,26 +65,17 @@ void main() {
 
         expect(saved.status, TaskStatus.done);
         expect(source.progressByProject[projectId], 100);
+
+        final back = await repo.saveTaskProgress(
+          task: saved,
+          description: '',
+          subtasks: const [Subtask(title: 'GET')],
+        );
+
+        expect(back.status, TaskStatus.doing);
+        expect(source.progressByProject[projectId], 0);
       },
     );
-
-    test('desmarcar una terminada baja el progreso otra vez', () async {
-      final task = await reserved('ana');
-      final done = await repo.saveTaskProgress(
-        task: task,
-        description: '',
-        subtasks: const [Subtask(title: 'GET', done: true)],
-      );
-
-      final back = await repo.saveTaskProgress(
-        task: done,
-        description: '',
-        subtasks: const [Subtask(title: 'GET')],
-      );
-
-      expect(back.status, TaskStatus.doing);
-      expect(source.progressByProject[projectId], 0);
-    });
 
     test(
       'un checklist guardado como texto JSON o roto se lee sin fallar',

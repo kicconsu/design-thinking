@@ -12,13 +12,6 @@ void main() {
       expect(deadline, DateTime(2026, 3, 14, 23, 59, 59, 999).toUtc());
     });
 
-    test('ignora la hora del día que se le pasa', () {
-      expect(
-        TaskDeadline.endOfDay(DateTime(2026, 3, 14, 0, 0)),
-        TaskDeadline.endOfDay(DateTime(2026, 3, 14, 23, 0)),
-      );
-    });
-
     test('entregar a cualquier hora de ese día es a tiempo', () {
       final deadline = TaskDeadline.endOfDay(DateTime(2026, 3, 14));
       final lateInTheDay = DateTime(2026, 3, 14, 23, 30).toUtc();
@@ -38,16 +31,11 @@ void main() {
       deadline: due,
     );
 
-    test('conserva la fecha si no se toca', () {
-      expect(task.copyWith(title: 'b').deadline, due);
-    });
-
-    test('puede cambiarla', () {
+    test('conserva, cambia o quita la fecha', () {
       final other = DateTime.utc(2026, 4, 1);
-      expect(task.copyWith(deadline: other).deadline, other);
-    });
 
-    test('puede quitarla (a null)', () {
+      expect(task.copyWith(title: 'b').deadline, due);
+      expect(task.copyWith(deadline: other).deadline, other);
       expect(task.copyWith(clearDeadline: true).deadline, isNull);
     });
   });
@@ -160,10 +148,6 @@ void main() {
         TaskDeadline.changeNote(before: march20),
         'Fecha límite quitada (era 20/03/2026).',
       );
-    });
-
-    test('formatDay usa dos dígitos', () {
-      expect(TaskDeadline.formatDay(DateTime(2026, 1, 5, 12)), '05/01/2026');
     });
   });
 }

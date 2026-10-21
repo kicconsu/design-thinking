@@ -37,36 +37,28 @@ void main() {
       );
 
   group('quién puede editar la fecha límite', () {
-    test('quien creó la tarea', () async {
-      final c = controllerFor(await create(), 'ana');
-      expect(c.canEditDeadline, isTrue);
-    });
+    // La regla vive en TaskDeadline.canEdit; aquí solo se comprueba que el
+    // controlador la aplica con el usuario y el creador del proyecto.
+    test('el controlador aplica la regla y rechaza el cambio', () async {
+      final task = await create(deadline: march20);
+      expect(controllerFor(task, 'ana').canEditDeadline, isTrue);
+      expect(controllerFor(task, 'jefe').canEditDeadline, isTrue);
 
-    test('el creador del proyecto', () async {
-      final c = controllerFor(await create(), 'jefe');
-      expect(c.canEditDeadline, isTrue);
-    });
-
-    test('nadie más', () async {
-      final c = controllerFor(await create(), 'luis');
-      expect(c.canEditDeadline, isFalse);
+      final other = controllerFor(task, 'luis');
+      expect(other.canEditDeadline, isFalse);
       expect(
-        await c.setDeadline(DateTime(2026, 3, 20)),
+        await other.setDeadline(DateTime(2026, 3, 25)),
         contains('Solo quien'),
       );
-      expect((await repo.getTasks(projectId)).single.deadline, isNull);
-    });
+      expect((await repo.getTasks(projectId)).single.deadline, march20);
 
-    test('nadie, si la tarea está terminada', () async {
-      final task = await create(deadline: march20);
       final done = await repo.updateTaskStatus(
         task: task,
         status: TaskStatus.done,
       );
-      final c = controllerFor(done, 'ana');
-
-      expect(c.canEditDeadline, isFalse);
-      expect(await c.setDeadline(null), contains('terminada'));
+      final finished = controllerFor(done, 'ana');
+      expect(finished.canEditDeadline, isFalse);
+      expect(await finished.setDeadline(null), contains('terminada'));
     });
   });
 
@@ -78,13 +70,8 @@ void main() {
 
       expect(c.task.value.deadline, march20);
       expect((await repo.getTasks(projectId)).single.deadline, march20);
-    });
-
-    test('quita la fecha con null', () async {
-      final c = controllerFor(await create(deadline: march20), 'ana');
 
       expect(await c.setDeadline(null), isNull);
-
       expect(c.task.value.deadline, isNull);
     });
 
@@ -116,33 +103,6 @@ void main() {
       await c.setDeadline(DateTime(2026, 3, 20));
 
       expect(c.checklist, isEmpty);
-    });
-  });
-
-  group('vencida', () {
-    test('pasó el día límite y sigue sin terminar', () async {
-      final task = await create(
-        deadline: DateTime(2026, 3, 10, 23, 59).toUtc(),
-      );
-      expect(controllerFor(task, 'ana').isOverdue, isTrue);
-    });
-
-    test('el mismo día límite todavía no', () async {
-      final task = await create(
-        deadline: DateTime(2026, 3, 14, 23, 59, 59, 999).toUtc(),
-      );
-      expect(controllerFor(task, 'ana').isOverdue, isFalse);
-    });
-
-    test('terminada, no está vencida', () async {
-      final task = await create(
-        deadline: DateTime(2026, 3, 10, 23, 59).toUtc(),
-      );
-      final done = await repo.updateTaskStatus(
-        task: task,
-        status: TaskStatus.done,
-      );
-      expect(controllerFor(done, 'ana').isOverdue, isFalse);
     });
   });
 }

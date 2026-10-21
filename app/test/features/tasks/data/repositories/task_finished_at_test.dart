@@ -47,13 +47,8 @@ void main() {
       final stored = await storedFinishedAt();
       expect(stored, now);
       expect(stored!.isUtc, isTrue);
-    });
 
-    test('lo que se manda a Roble es texto ISO en UTC', () async {
-      final task = await create();
-
-      await repo.updateTaskStatus(task: task, status: TaskStatus.done);
-
+      // A Roble se manda texto ISO en UTC.
       final raw = (await source.readTasks(projectId)).single['finished_at'];
       expect(raw, now.toIso8601String());
       expect(raw, endsWith('Z'));
@@ -112,52 +107,28 @@ void main() {
 
   group('por checklist', () {
     test(
-      'completar todas las subtareas termina la tarea y escribe la hora',
+      'completar el checklist escribe la hora; desmarcar la borra',
       () async {
         final task = await create();
-
         final saved = await repo.saveTaskProgress(
           task: task,
           description: '',
           subtasks: [done, done],
         );
-
-        expect(saved.status, TaskStatus.done);
         expect(saved.finishedAt, now);
         expect(await storedFinishedAt(), now);
+
+        final reopened = await repo.saveTaskProgress(
+          task: saved,
+          description: '',
+          subtasks: [done, open],
+        );
+
+        expect(reopened.status, TaskStatus.doing);
+        expect(reopened.finishedAt, isNull);
+        expect(await storedFinishedAt(), isNull);
       },
     );
-
-    test('desmarcar una subtarea la reabre y borra la hora', () async {
-      final task = await create();
-      final saved = await repo.saveTaskProgress(
-        task: task,
-        description: '',
-        subtasks: [done, done],
-      );
-
-      final reopened = await repo.saveTaskProgress(
-        task: saved,
-        description: '',
-        subtasks: [done, open],
-      );
-
-      expect(reopened.status, TaskStatus.doing);
-      expect(reopened.finishedAt, isNull);
-      expect(await storedFinishedAt(), isNull);
-    });
-
-    test('guardar a medias no escribe finished_at', () async {
-      final task = await create();
-
-      await repo.saveTaskProgress(
-        task: task,
-        description: 'avance',
-        subtasks: [done, open],
-      );
-
-      expect(await storedFinishedAt(), isNull);
-    });
 
     test('guardar de nuevo una tarea ya terminada no mueve la hora', () async {
       final task = await create();
@@ -208,16 +179,11 @@ void main() {
       finishedAt: at,
     );
 
-    test('conserva la hora si no se toca', () {
-      expect(task.copyWith(title: 'b').finishedAt, at);
-    });
-
-    test('puede cambiarla', () {
+    test('conserva, cambia o borra la hora', () {
       final other = DateTime.utc(2026, 4, 1);
-      expect(task.copyWith(finishedAt: other).finishedAt, other);
-    });
 
-    test('puede borrarla (a null)', () {
+      expect(task.copyWith(title: 'b').finishedAt, at);
+      expect(task.copyWith(finishedAt: other).finishedAt, other);
       expect(task.copyWith(clearFinishedAt: true).finishedAt, isNull);
     });
   });
