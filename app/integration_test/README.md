@@ -41,25 +41,22 @@ dobles viven dentro de ella y no en `test/support/`: en web el compilador toma
 - `expectOnlyTestDoubles()` falla si algún punto de entrada de datos no es un
   doble.
 
-## Correr en web (como el CI)
+## Correr en web (Como CI)
 
-1. Dejar escuchando un ChromeDriver de la misma versión que Chrome:
-
-   ```bash
+1. Dejar el ChromeDriver escuchando en una terminal:
+```bash
    chromedriver --port=4444
-   ```
-
-2. En otra terminal, dentro de `app/`:
-
-   ```bash
-   flutter drive \
-     --driver=test_driver/integration_test.dart \
-     --target=integration_test/app_test.dart \
-     -d chrome
-   ```
-
-Sin ventana: `-d web-server --browser-name=chrome --headless`. No se puede
-apuntar `--target` a un solo archivo de `features/`.
+```
+ 
+2. En otra terminal, dentro de `app/` (en una sola línea, que también sirve
+   en PowerShell):
+```bash
+   flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d web-server --browser-name=chrome --no-headless
+```
+ 
+   `--no-headless` abre la ventana de Chrome para ver la app. Sin esa opción
+   corre sin ventana, igual que el CI. Si todo sale bien termina con
+   `All tests passed.`
 
 ## Correr en un teléfono o emulador
 
