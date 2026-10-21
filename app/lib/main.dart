@@ -1,11 +1,7 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
-import 'core/preferences/i_local_preferences.dart';
-import 'core/preferences/local_preferences_secured.dart';
-import 'core/preferences/local_preferences_shared.dart';
 import 'core/roble/roble_client.dart';
 import 'core/roble/roble_config.dart';
 import 'core/theme/theme.dart';
@@ -21,11 +17,6 @@ import 'routes/app_routes.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Loggy.initLoggy(logPrinter: const PrettyPrinter(showColors: true));
-
-  final ILocalPreferences preferences = kIsWeb
-      ? LocalPreferencesShared()
-      : LocalPreferencesSecured();
-  Get.put<ILocalPreferences>(preferences, permanent: true);
 
   // Cliente de Roble con timeout de 10s para evitar bloqueos si el servidor se satura
   if (RobleConfig.contractId.isNotEmpty) {
