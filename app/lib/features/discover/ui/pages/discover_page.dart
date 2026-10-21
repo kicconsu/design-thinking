@@ -161,6 +161,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
         child: PageView.builder(
           scrollDirection: Axis.vertical,
           controller: _pageController,
+          padEnds: false,
           itemCount: controller.projects.length,
           onPageChanged: (index) {
             if (index >= controller.projects.length - _prefetchDistance) {
