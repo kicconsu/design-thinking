@@ -44,7 +44,35 @@ jobs:
       - name: Análisis estático
         run: flutter analyze
 
-      # Toda la carpeta test/ (lógica y widgets): no hay lista de archivos que
-      # mantener al mover o renombrar pruebas.
-      - name: Unit y widget tests
-        run: flutter test
+      # test/ replica las capas de lib/; los dobles compartidos van en
+      # test/support/. Una carpeta de pruebas sin homóloga en lib/, o una
+      # prueba suelta en la raíz de un feature, es un archivo mal ubicado.
+      - name: La estructura de test/ replica lib/
+        run: |
+          status=0
+          for dir in $(find test -mindepth 1 -type d ! -path 'test/support*'); do
+            [ -d "lib/${dir#test/}" ] || { echo "::error::$dir no tiene homóloga en lib/"; status=1; }
+          done
+          for file in $(find test -maxdepth 3 -name '*_test.dart' | grep -E '^test/[^/]+_test.dart$|^test/features/[^/]+/[^/]+_test.dart$'); do
+            echo "::error::$file queda suelta; muévela a la capa que prueba"; status=1
+          done
+          exit $status
+
+      # Unitarias y de widget no se mezclan: los archivos *_widget_test.dart
+      # solo tienen testWidgets() y el resto solo test().
+      - name: Unitarias y de widget en archivos distintos
+        run: |
+          status=0
+          for file in $(find test -name '*_widget_test.dart'); do
+            grep -qE '(^|[^A-Za-z])test\(' "$file" && { echo "::error::$file mezcla test() con testWidgets()"; status=1; }
+          done
+          for file in $(find test -name '*_test.dart' ! -name '*_widget_test.dart'); do
+            grep -q 'testWidgets(' "$file" && { echo "::error::$file usa testWidgets(); renómbralo a *_widget_test.dart"; status=1; }
+          done
+          exit $status
+
+      - name: Unit tests
+        run: flutter test $(find test -name '*_test.dart' ! -name '*_widget_test.dart')
+
+      - name: Widget tests
+        run: flutter test $(find test -name '*_widget_test.dart')

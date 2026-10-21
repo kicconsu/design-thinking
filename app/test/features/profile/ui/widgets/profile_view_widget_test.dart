@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:imker/core/widgets/profile_avatar.dart';
 import 'package:imker/core/widgets/trust_indicators.dart';
 import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
@@ -50,17 +49,6 @@ const _full = UserProfile(
 );
 
 void main() {
-  group('ProfileAvatar.initialsOf', () {
-    test('toma la inicial de las dos primeras palabras', () {
-      expect(ProfileAvatar.initialsOf('Valentina Ríos Pérez'), 'VR');
-      expect(ProfileAvatar.initialsOf('  juan '), 'J');
-    });
-
-    test('sin nombre muestra un signo de interrogación', () {
-      expect(ProfileAvatar.initialsOf('   '), '?');
-    });
-  });
-
   group('ProfileView', () {
     testWidgets('presenta los campos del perfil', (tester) async {
       await tester.pumpWidget(
@@ -90,10 +78,7 @@ void main() {
       );
 
       expect(find.byType(TrustIndicators), findsNothing);
-      expect(
-        find.textContaining('Aparecen cuando colabores'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Aparecen cuando colabores'), findsOneWidget);
     });
 
     testWidgets('con historial muestra los indicadores', (tester) async {
@@ -101,7 +86,11 @@ void main() {
         _host(
           const ProfileView(
             name: 'Ana',
-            profile: UserProfile(hasTrustHistory: true, commitmentScore: 90, onTimeScore: 80),
+            profile: UserProfile(
+              hasTrustHistory: true,
+              commitmentScore: 90,
+              onTimeScore: 80,
+            ),
             isOwn: true,
           ),
         ),
