@@ -32,9 +32,6 @@ void main() {
 
   tearDown(Get.reset);
 
-  Map<String, dynamic> row() =>
-      data.projects.firstWhere((r) => r['_id'] == projectId);
-
   group('ProjectInfoController.closeProject', () {
     test(
       'cierra, actualiza la vista y las listas; repetir no hace nada',

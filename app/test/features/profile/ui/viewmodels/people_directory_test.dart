@@ -5,7 +5,6 @@ import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/profile_failure.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/viewmodels/people_directory.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 
 class _Profiles implements IProfileRepository {
   final asked = <String>[];
@@ -27,16 +26,6 @@ class _Profiles implements IProfileRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
-
-const _project = Project(
-  id: 'p1',
-  owner: 'owner-1',
-  title: 'Proyecto Solaria',
-  imageUrl: '',
-  description: '',
-  jobs: [],
-  skills: [],
-);
 
 void main() {
   late _Profiles profiles;

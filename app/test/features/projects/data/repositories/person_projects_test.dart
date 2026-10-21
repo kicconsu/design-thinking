@@ -3,14 +3,10 @@ import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
 
-import 'package:imker/features/auth/domain/models/authentication_user.dart';
-import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
-import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 
 /// Perfiles con nombre propio por usuario.
@@ -22,28 +18,6 @@ class _Source extends InMemoryProjectDataSource {
     'name': 'Nombre de $userId',
     'career': {'program': 'Ingeniería'},
   };
-}
-
-class _Auth implements IAuthRepository {
-  _Auth({required this.anonymous});
-
-  final bool anonymous;
-
-  @override
-  Future<bool> restoreSession() async => true;
-
-  @override
-  Future<AuthenticationUser?> getLoggedUser() async =>
-      AuthenticationUser(email: 'yo@x.co', name: 'Yo', password: '', id: 'yo');
-
-  @override
-  bool get isAnonymous => anonymous;
-
-  @override
-  Stream<void> get sessionExpired => const Stream.empty();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _Profiles implements IProfileRepository {
@@ -122,13 +96,4 @@ void main() {
       expect(await repo.getProjectsOfPerson(''), isEmpty);
     });
   });
-}
-
-class _FailingProjects implements IProjectRepository {
-  @override
-  Future<List<Project>> getProjectsOfPerson(String userId) async =>
-      throw const ProjectFailure('Sin conexión.');
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

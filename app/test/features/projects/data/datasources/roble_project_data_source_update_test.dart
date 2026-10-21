@@ -1,16 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
 import 'package:roble/roble.dart';
 
-import '../../../../support/dummy_data.dart';
-
 import 'package:imker/core/roble/roble_client.dart';
-import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/datasources/roble_project_data_source.dart';
-import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 
 /// Solo registra el `update` que recibe.
 class _RecordingDb extends RobleApiDataBase {
@@ -41,21 +35,6 @@ class _RecordingDb extends RobleApiDataBase {
 }
 
 void main() {
-  late DummyData data;
-  late ProjectRepository repo;
-  const id = DummyData.kircheId;
-
-  setUp(() {
-    Get.reset();
-    data = DummyData();
-    repo = ProjectRepository(InMemoryProjectDataSource(data.projects));
-    Get.put<IProjectRepository>(repo);
-  });
-
-  tearDown(Get.reset);
-
-  Map<String, dynamic> row() => data.projects.firstWhere((r) => r['_id'] == id);
-
   group('RobleProjectDataSource.updateProject', () {
     test('jobs y skills viajan como texto JSON; lo demás tal cual', () async {
       final db = _RecordingDb();
