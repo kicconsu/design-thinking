@@ -82,7 +82,7 @@ void main() {
 
       expect(find.byKey(const Key('profile.trust.loading')), findsOneWidget);
       expect(find.byType(TrustIndicators), findsNothing);
-      expect(find.textContaining('Aparecerán'), findsNothing);
+      expect(find.textContaining('Aparecen'), findsNothing);
     });
 
     testWidgets('si fallan, muestra el motivo y Reintentar, no ceros', (
@@ -135,10 +135,7 @@ void main() {
         _host(const ProfileView(name: 'Ana', profile: _base, isOwn: true)),
       );
 
-      expect(
-        find.textContaining('Aparecerán cuando colabores'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Aparecen cuando colabores'), findsOneWidget);
     });
   });
 
@@ -173,7 +170,8 @@ void main() {
 
       expect(find.byType(TrustIndicators), findsOneWidget);
       expect(find.text('72%'), findsOneWidget);
-      expect(find.text('Cumplimiento'), findsOneWidget);
+      // El medidor y su explicación.
+      expect(find.text('Cumplimiento'), findsNWidgets(2));
     });
 
     testWidgets('si fallan, ofrece reintentar y al lograrlo los muestra', (
@@ -204,7 +202,10 @@ void main() {
       await open(tester);
 
       expect(find.text('Todavía no hay indicadores'), findsOneWidget);
-      expect(find.textContaining('cumplimiento'), findsOneWidget);
+      expect(
+        find.text('Aparecen cuando colabores en un proyecto.'),
+        findsOneWidget,
+      );
       expect(find.textContaining('tasa de respuesta'), findsNothing);
     });
   });

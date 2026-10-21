@@ -18,9 +18,13 @@ class TrustIndicatorsPage extends StatelessWidget {
     this.loading = false,
     this.error,
     this.onRetry,
+    this.isOwn = true,
   });
 
   final UserProfile profile;
+
+  /// Es el perfil de quien mira; cambia la persona gramatical del texto.
+  final bool isOwn;
 
   /// Se están calculando y todavía no hay ninguno que mostrar.
   final bool loading;
@@ -79,6 +83,7 @@ class TrustIndicatorsPage extends StatelessWidget {
                       fulfillmentScore: profile.fulfillmentScore,
                       completedProjectsScore: profile.completedProjectsScore,
                       showTitle: false,
+                      showExplanations: true,
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,9 +102,7 @@ class TrustIndicatorsPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Se calculan a partir de la colaboración en proyectos: '
-                          'compromiso, entrega a tiempo, cumplimiento y '
-                          'proyectos completados. Aparecerán cuando haya historial.',
+                          'Aparecen cuando ${isOwn ? 'colabores' : 'colabora'} en un proyecto.',
                           style: tt.bodyMedium,
                         ),
                       ],

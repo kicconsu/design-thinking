@@ -16,6 +16,9 @@ class TrustIndicators extends StatelessWidget {
   /// Falso cuando quien lo usa ya pone su propio título (p. ej. una tarjeta).
   final bool showTitle;
 
+  /// Añade bajo los medidores una línea por indicador que dice qué mide.
+  final bool showExplanations;
+
   const TrustIndicators({
     super.key,
     required this.commitmentScore,
@@ -23,6 +26,7 @@ class TrustIndicators extends StatelessWidget {
     required this.fulfillmentScore,
     required this.completedProjectsScore,
     this.showTitle = true,
+    this.showExplanations = false,
   });
 
   @override
@@ -51,6 +55,11 @@ class TrustIndicators extends StatelessWidget {
             ),
           ],
         ),
+        if (showExplanations)
+          Text(
+            'Promedio de los indicadores con datos.',
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
         const SizedBox(height: 4),
         ClipRRect(
           child: LinearProgressIndicator(
@@ -84,7 +93,60 @@ class TrustIndicators extends StatelessWidget {
             ),
           ],
         ),
+        if (showExplanations) ...[
+          const SizedBox(height: 20),
+          _Explanation(
+            label: 'Cumplimiento',
+            text: 'De las tareas que tomó, cuántas terminó.',
+            tt: tt,
+            cs: cs,
+          ),
+          _Explanation(
+            label: 'Entrega a tiempo',
+            text: 'De las tareas con fecha límite, cuántas entregó a tiempo.',
+            tt: tt,
+            cs: cs,
+          ),
+          _Explanation(
+            label: 'Proyectos completados',
+            text:
+                'De los proyectos en que participó, cuántos llegaron al 100 %.',
+            tt: tt,
+            cs: cs,
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _Explanation extends StatelessWidget {
+  final String label;
+  final String text;
+  final TextTheme tt;
+  final ColorScheme cs;
+
+  const _Explanation({
+    required this.label,
+    required this.text,
+    required this.tt,
+    required this.cs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: tt.labelLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(text, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+        ],
+      ),
     );
   }
 }
@@ -129,6 +191,12 @@ class _ScoreGauge extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(label, textAlign: TextAlign.center, style: tt.bodySmall),
+          if (value == null)
+            Text(
+              'Sin datos aún',
+              textAlign: TextAlign.center,
+              style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
         ],
       ),
     );

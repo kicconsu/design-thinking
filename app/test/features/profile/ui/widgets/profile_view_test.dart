@@ -91,7 +91,7 @@ void main() {
 
       expect(find.byType(TrustIndicators), findsNothing);
       expect(
-        find.textContaining('Aparecerán cuando colabores'),
+        find.textContaining('Aparecen cuando colabores'),
         findsOneWidget,
       );
     });

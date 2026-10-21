@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/auth/ui/widgets/account_required_prompt.dart';
 import 'package:imker/features/profile/ui/pages/collaboration_history_page.dart';
+import 'package:imker/features/profile/ui/pages/trust_indicators_page.dart';
 import 'package:imker/features/profile/ui/widgets/profile_view.dart';
 
 import '../../domain/models/project_member.dart';
@@ -206,6 +207,14 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                   onOpenProject: (p) =>
                       Get.to(() => ProjectDetailPage(project: p)),
                   onOpenHistory: _openHistory(),
+                  onOpenIndicators: widget.showTrust
+                      ? () => Get.to(
+                          () => TrustIndicatorsPage(
+                            profile: profile,
+                            isOwn: false,
+                          ),
+                        )
+                      : null,
                 ),
                 if (_controller.canRemove) ...[
                   const SizedBox(height: 32),

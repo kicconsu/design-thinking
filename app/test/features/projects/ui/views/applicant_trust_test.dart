@@ -279,7 +279,7 @@ void main() {
       expect(find.text('Proyectos completados'), findsOneWidget);
     });
 
-    testWidgets('sin historial dice que aparecerán cuando colabore', (
+    testWidgets('sin historial explica cuándo aparecen', (
       tester,
     ) async {
       trust.metrics = TrustMetrics.none;
@@ -287,7 +287,7 @@ void main() {
 
       expect(find.text('Índice general de compromiso'), findsNothing);
       expect(
-        find.text('Aparecerán cuando colabore en proyectos.'),
+        find.text('Todavía no hay indicadores. Aparecen cuando colabora en un proyecto.'),
         findsOneWidget,
       );
     });
