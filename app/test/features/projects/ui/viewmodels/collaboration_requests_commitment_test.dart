@@ -78,26 +78,6 @@ class _Projects implements IProjectRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-Project _project(String id, {String status = 'open'}) => Project(
-  id: id,
-  title: 'Proyecto $id',
-  imageUrl: '',
-  description: 'd',
-  jobs: const [],
-  skills: const [],
-  status: status,
-);
-
-const _current = Project(
-  id: 'actual',
-  owner: 'jefe',
-  title: 'Proyecto actual',
-  imageUrl: '',
-  description: '',
-  jobs: [],
-  skills: [],
-);
-
 void main() {
   late _Trust trust;
   late _Projects projects;

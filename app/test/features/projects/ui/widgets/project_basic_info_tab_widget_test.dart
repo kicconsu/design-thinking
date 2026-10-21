@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:roble/roble.dart';
 
 import '../../../../support/dummy_data.dart';
 
@@ -11,34 +10,6 @@ import 'package:imker/features/projects/domain/repositories/i_project_repository
 import 'package:imker/features/projects/ui/pages/project_info_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/core/utils/app_keys.dart';
-
-/// Solo registra el `update` que recibe.
-class _RecordingDb extends RobleApiDataBase {
-  _RecordingDb()
-    : super(
-        config: RobleApiConfig.fromContract(
-          baseUrl: 'https://example.test',
-          contractId: 'test_ab12cd34ef',
-        ),
-        storage: RobleMemoryStorage(),
-      );
-
-  String? table;
-  dynamic id;
-  Map<String, dynamic>? data;
-
-  @override
-  Future<Map<String, dynamic>> update(
-    String tableName,
-    dynamic id,
-    Map<String, dynamic> data,
-  ) async {
-    table = tableName;
-    this.id = id;
-    this.data = data;
-    return {};
-  }
-}
 
 void main() {
   late DummyData data;

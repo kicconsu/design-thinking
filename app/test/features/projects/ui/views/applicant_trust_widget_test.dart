@@ -141,9 +141,6 @@ void main() {
       );
     }
 
-    Applicant by(CollaborationRequestsController c, String user) =>
-        c.applicants.firstWhere((a) => a.userId == user);
-
     testWidgets('la tarjeta muestra el compromiso, solo si hay', (
       tester,
     ) async {
