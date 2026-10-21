@@ -4,58 +4,12 @@ import 'package:get/get.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
-import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/pages/other_projects_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
-/// Solo lo que usa la pantalla de invitaciones; lo demás no se llama aquí.
-class _Repo implements IProjectRepository {
-  List<ProjectInvitation> pending = [];
-  final projects = <String, Project>{};
-  final accepted = <String>[];
-  final declined = <String>[];
-  int pendingReads = 0;
-  ProjectFailure? failure;
-
-  @override
-  Future<List<ProjectInvitation>> getPendingInvitations(String userId) async {
-    pendingReads++;
-    return pending;
-  }
-
-  @override
-  Future<List<String>> getMemberProjectIds(String userId) async => [];
-
-  @override
-  Future<Project?> getProjectById(String id) async => projects[id];
-
-  @override
-  Future<void> acceptInvitation(ProjectInvitation invitation) async {
-    if (failure != null) throw failure!;
-    accepted.add(invitation.id);
-  }
-
-  @override
-  Future<void> declineInvitation(ProjectInvitation invitation) async {
-    if (failure != null) throw failure!;
-    declined.add(invitation.id);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-Project _project(String id, {String status = 'open'}) => Project(
-  id: id,
-  owner: 'jefe',
-  title: 'Proyecto $id',
-  imageUrl: '',
-  description: 'Descripción de $id',
-  jobs: const [],
-  skills: const [],
-  status: status,
-);
+import '../../../../support/fake_project_repository.dart';
+import '../../../../support/builders.dart';
 
 ProjectInvitation _invitation(
   String id,
@@ -70,7 +24,7 @@ ProjectInvitation _invitation(
 );
 
 void main() {
-  late _Repo repo;
+  late FakeProjectRepository repo;
   late UserProjectsController projects;
   late InvitationsController invitations;
   final accepted = <Project>[];
@@ -98,7 +52,7 @@ void main() {
 
   setUp(() {
     Get.reset();
-    repo = _Repo();
+    repo = FakeProjectRepository();
     accepted.clear();
   });
 
@@ -169,11 +123,11 @@ void main() {
     testWidgets('el contador usa singular y plural', (tester) async {
       await pumpPage(tester);
 
-      projects.savedProjects.add(_project('a'));
+      projects.savedProjects.add(aProject(id: 'a', owner: 'jefe'));
       await tester.pumpAndSettle();
       expect(find.text('1 proyecto'), findsOneWidget);
 
-      projects.savedProjects.add(_project('b'));
+      projects.savedProjects.add(aProject(id: 'b', owner: 'jefe'));
       await tester.pumpAndSettle();
       expect(find.text('2 proyectos'), findsOneWidget);
     });
@@ -182,7 +136,7 @@ void main() {
   group('Guardados', () {
     testWidgets('lista lo guardado con «Aplicar»', (tester) async {
       await pumpPage(tester);
-      projects.savedProjects.add(_project('a'));
+      projects.savedProjects.add(aProject(id: 'a', owner: 'jefe'));
       await tester.pumpAndSettle();
 
       expect(find.text('Proyecto a'), findsOneWidget);
@@ -193,7 +147,9 @@ void main() {
       tester,
     ) async {
       await pumpPage(tester);
-      projects.savedProjects.add(_project('a', status: 'closed'));
+      projects.savedProjects.add(
+        aProject(id: 'a', owner: 'jefe', status: 'closed'),
+      );
       await tester.pumpAndSettle();
 
       final button = tester.widget<FilledButton>(
@@ -204,7 +160,7 @@ void main() {
 
     testWidgets('«Quitar de guardados» lo saca de la lista', (tester) async {
       await pumpPage(tester);
-      projects.savedProjects.add(_project('a'));
+      projects.savedProjects.add(aProject(id: 'a', owner: 'jefe'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byTooltip('Quitar de guardados'));
@@ -216,7 +172,7 @@ void main() {
 
     testWidgets('«Aplicar» pide confirmar la postulación', (tester) async {
       await pumpPage(tester);
-      projects.savedProjects.add(_project('a'));
+      projects.savedProjects.add(aProject(id: 'a', owner: 'jefe'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Aplicar'));
@@ -231,7 +187,7 @@ void main() {
       tester,
     ) async {
       await pumpPage(tester);
-      projects.savedProjects.add(_project('a'));
+      projects.savedProjects.add(aProject(id: 'a', owner: 'jefe'));
       projects.appliedProjectIds.add('a');
       await tester.pumpAndSettle();
 
@@ -247,7 +203,7 @@ void main() {
       tester,
     ) async {
       await pumpPage(tester);
-      projects.activeProjects.add(_project('a'));
+      projects.activeProjects.add(aProject(id: 'a', owner: 'jefe'));
       await tester.pumpAndSettle();
 
       await next(tester, 'Pendientes');
@@ -280,7 +236,7 @@ void main() {
       tester,
     ) async {
       repo.pending = [_invitation('i1', 'a')];
-      repo.projects['a'] = _project('a');
+      repo.projects['a'] = aProject(id: 'a', owner: 'jefe');
       await pumpPage(tester);
 
       await openInvitations(tester);
@@ -294,7 +250,7 @@ void main() {
       tester,
     ) async {
       repo.pending = [_invitation('i1', 'a')];
-      repo.projects['a'] = _project('a');
+      repo.projects['a'] = aProject(id: 'a', owner: 'jefe');
       await pumpPage(tester);
       await openInvitations(tester);
 
@@ -310,7 +266,7 @@ void main() {
       tester,
     ) async {
       repo.pending = [_invitation('i1', 'a')];
-      repo.projects['a'] = _project('a');
+      repo.projects['a'] = aProject(id: 'a', owner: 'jefe');
       await pumpPage(tester);
       await openInvitations(tester);
 
@@ -326,8 +282,10 @@ void main() {
       tester,
     ) async {
       repo.pending = [_invitation('i1', 'a')];
-      repo.projects['a'] = _project('a');
-      repo.failure = const ProjectFailure('El proyecto ya está cerrado.');
+      repo.projects['a'] = aProject(id: 'a', owner: 'jefe');
+      repo.invitationFailure = const ProjectFailure(
+        'El proyecto ya está cerrado.',
+      );
       await pumpPage(tester);
       await openInvitations(tester);
 
@@ -344,7 +302,7 @@ void main() {
 
     testWidgets('un proyecto cerrado no ofrece invitación', (tester) async {
       repo.pending = [_invitation('i1', 'a')];
-      repo.projects['a'] = _project('a', status: 'closed');
+      repo.projects['a'] = aProject(id: 'a', owner: 'jefe', status: 'closed');
       await pumpPage(tester);
 
       await openInvitations(tester);

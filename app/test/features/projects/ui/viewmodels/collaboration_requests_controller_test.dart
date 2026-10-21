@@ -1,49 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:roble/roble.dart';
 
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
+
 import '../../../../support/dummy_data.dart';
+import '../../../../support/scripted_project_data_source.dart';
+import '../../../../support/builders.dart';
 
-/// Falla las primeras [failures] veces que se actualiza una solicitud.
-class _FlakyDataSource extends InMemoryProjectDataSource {
-  _FlakyDataSource(this.failures);
-
-  int failures;
-
-  @override
-  Future<Map<String, dynamic>> updateJoinRequestStatus({
-    required String requestId,
-    required String status,
-    required String reviewedBy,
-    String? reviewNote,
-  }) async {
-    if (failures > 0) {
-      failures--;
-      throw const RobleApiHttpException(404, 'Not found');
-    }
-    return super.updateJoinRequestStatus(
-      requestId: requestId,
-      status: status,
-      reviewedBy: reviewedBy,
-      reviewNote: reviewNote,
-    );
-  }
-}
-
-const _project = Project(
-  id: 'p1',
-  owner: 'owner-1',
-  title: 'Proyecto',
-  imageUrl: '',
-  description: '',
-  jobs: [],
-  skills: [],
-);
+final _project = aProject(id: 'p1', owner: 'owner-1', title: 'Proyecto');
 
 void main() {
   late InMemoryProjectDataSource source;
@@ -116,7 +83,7 @@ void main() {
   test(
     'si el servidor falla, la solicitud sigue y se devuelve el error',
     () async {
-      await setUpWith(_FlakyDataSource(1));
+      await setUpWith(ScriptedProjectDataSource()..joinRequestFailures = 1);
       final controller = build();
       await controller.fetchForProject('p1');
 
@@ -132,7 +99,7 @@ void main() {
   );
 
   test('reintentar tras un fallo a medias no duplica al miembro', () async {
-    await setUpWith(_FlakyDataSource(1));
+    await setUpWith(ScriptedProjectDataSource()..joinRequestFailures = 1);
     final controller = build();
     await controller.fetchForProject('p1');
     final applicant = controller.applicants.first;

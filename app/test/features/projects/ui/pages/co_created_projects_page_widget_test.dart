@@ -3,21 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/pages/co_created_projects_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
-Project _project(String id) => Project(
-  id: id,
-  owner: 'yo',
-  title: 'Proyecto $id',
-  imageUrl: '',
-  description: '',
-  jobs: const [],
-  skills: const [],
-);
+import '../../../../support/builders.dart';
 
 void main() {
   late UserProjectsController projects;
@@ -70,7 +61,10 @@ void main() {
   testWidgets('con proyectos los lista y ofrece «Nuevo»', (tester) async {
     await pumpPage(tester);
 
-    projects.coCreatedProjects.addAll([_project('a'), _project('b')]);
+    projects.coCreatedProjects.addAll([
+      aProject(id: 'a', owner: 'yo'),
+      aProject(id: 'b', owner: 'yo'),
+    ]);
     await tester.pumpAndSettle();
 
     expect(find.text('Proyecto a'), findsOneWidget);
@@ -84,7 +78,7 @@ void main() {
   ) async {
     await pumpPage(tester);
 
-    projects.coCreatedProjects.add(_project('a'));
+    projects.coCreatedProjects.add(aProject(id: 'a', owner: 'yo'));
     await tester.pumpAndSettle();
 
     expect(find.text('0 solicitudes'), findsOneWidget);
@@ -92,7 +86,7 @@ void main() {
 
   testWidgets('«Nuevo» abre el formulario de creación', (tester) async {
     await pumpPage(tester);
-    projects.coCreatedProjects.add(_project('a'));
+    projects.coCreatedProjects.add(aProject(id: 'a', owner: 'yo'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Nuevo'));

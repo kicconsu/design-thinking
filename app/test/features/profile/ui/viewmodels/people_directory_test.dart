@@ -1,38 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/profile_failure.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/viewmodels/people_directory.dart';
 
-class _Profiles implements IProfileRepository {
-  final asked = <String>[];
-  ProfileFailure? failure;
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async {
-    asked.add(userId);
-    if (failure != null) throw failure!;
-    return UserProfile(
-      name: 'Nombre de $userId',
-      program: 'Derecho',
-      institution: 'Uninorte',
-      bio: 'Litigante en formación.',
-      skills: const ['Oratoria'],
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import '../../../../support/fake_profile_repository.dart';
 
 void main() {
-  late _Profiles profiles;
+  late FakeProfileRepository profiles;
 
   setUp(() {
     Get.reset();
-    profiles = _Profiles();
+    profiles = FakeProfileRepository(withName: true);
     Get.put<IProfileRepository>(profiles);
   });
 

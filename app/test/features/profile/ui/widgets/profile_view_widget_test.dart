@@ -2,44 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:imker/core/widgets/trust_indicators.dart';
-import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/ui/pages/settings_page.dart';
 import 'package:imker/features/profile/ui/widgets/profile_view.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 
-Project _project(String id, String title) => Project(
-  id: id,
-  title: title,
-  imageUrl: '',
-  description: '',
-  jobs: const [],
-  skills: const [],
-);
+import '../../../../support/fake_auth_repository.dart';
+import '../../../../support/builders.dart';
 
 Widget _host(Widget child) => GetMaterialApp(
   home: Scaffold(body: SingleChildScrollView(child: child)),
 );
-
-class _FakeAuth implements IAuthRepository {
-  bool loggedOut = false;
-
-  @override
-  Future<bool> logOut() async => loggedOut = true;
-
-  @override
-  Future<bool> restoreSession() async => false;
-
-  @override
-  Stream<void> get sessionExpired => const Stream.empty();
-
-  @override
-  bool get isAnonymous => false;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
 
 const _full = UserProfile(
   program: 'Ingeniería de Sistemas',
@@ -57,7 +30,7 @@ void main() {
             name: 'Valentina Ríos',
             profile: _full,
             isOwn: true,
-            projects: [_project('1', 'Proyecto Solaria')],
+            projects: [aProject(id: '1', title: 'Proyecto Solaria')],
           ),
         ),
       );
@@ -165,7 +138,9 @@ void main() {
     testWidgets('muestra dos proyectos y el total en el historial', (
       tester,
     ) async {
-      final three = [for (var i = 0; i < 3; i++) _project('$i', 'P$i')];
+      final three = [
+        for (var i = 0; i < 3; i++) aProject(id: '$i', title: 'P$i'),
+      ];
       await tester.pumpWidget(
         _host(
           ProfileView(
@@ -189,7 +164,7 @@ void main() {
     testWidgets('no muestra filas deshabilitadas con «Próximamente»', (
       tester,
     ) async {
-      Get.put(AuthenticationController(_FakeAuth()));
+      Get.put(AuthenticationController(FakeAuthRepository()));
       await tester.pumpWidget(const GetMaterialApp(home: SettingsPage()));
       await tester.pumpAndSettle();
 
@@ -201,7 +176,7 @@ void main() {
     testWidgets('cerrar sesión pide confirmación y no cierra si se cancela', (
       tester,
     ) async {
-      final repo = _FakeAuth();
+      final repo = FakeAuthRepository();
       Get.put(AuthenticationController(repo));
       await tester.pumpWidget(const GetMaterialApp(home: SettingsPage()));
       await tester.pumpAndSettle();
@@ -216,7 +191,7 @@ void main() {
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();
 
-      expect(repo.loggedOut, isFalse);
+      expect(repo.calls, isNot(contains('logOut')));
     });
   });
 }

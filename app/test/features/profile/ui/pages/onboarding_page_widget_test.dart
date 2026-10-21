@@ -1,61 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/profile_failure.dart';
-import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/pages/onboarding_page.dart';
 import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
 import 'package:imker/routes/app_routes.dart';
 
-class _FakeAuth implements IAuthRepository {
-  @override
-  Future<bool> restoreSession() async => false;
-
-  @override
-  Stream<void> get sessionExpired => const Stream.empty();
-
-  @override
-  bool get isAnonymous => false;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _FakeProfiles implements IProfileRepository {
-  final saved = <UserProfile>[];
-  ProfileFailure? failure;
-
-  @override
-  Future<UserProfile> getMyProfile() async => const UserProfile();
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async => const UserProfile();
-
-  @override
-  Future<void> ensureMyProfile({required String name}) async {}
-
-  @override
-  Future<UserProfile> updateMyProfile({
-    required String program,
-    required String institution,
-    required String bio,
-    required List<String> skills,
-  }) async {
-    if (failure != null) throw failure!;
-    final profile = UserProfile(
-      program: program,
-      institution: institution,
-      bio: bio,
-      skills: skills,
-    );
-    saved.add(profile);
-    return profile;
-  }
-}
+import '../../../../support/fake_profile_repository.dart';
+import '../../../../support/fake_auth_repository.dart';
 
 Widget _app({Object? arguments}) => GetMaterialApp(
   initialRoute: '/start',
@@ -81,11 +36,11 @@ Widget _app({Object? arguments}) => GetMaterialApp(
 );
 
 void main() {
-  late _FakeProfiles profiles;
+  late FakeProfileRepository profiles;
 
   setUp(() {
-    profiles = _FakeProfiles();
-    Get.put(AuthenticationController(_FakeAuth()));
+    profiles = FakeProfileRepository(other: const UserProfile());
+    Get.put(AuthenticationController(FakeAuthRepository()));
     Get.put(ProfileController(profiles));
   });
 

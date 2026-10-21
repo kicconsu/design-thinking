@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
-import 'package:imker/features/profile/domain/models/user_profile.dart';
+
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
@@ -16,15 +16,9 @@ import 'package:imker/features/tasks/data/datasources/in_memory_task_data_source
 import 'package:imker/features/tasks/data/repositories/task_repository.dart';
 import 'package:imker/features/tasks/domain/models/task_status.dart';
 import 'package:imker/features/tasks/domain/repositories/i_task_repository.dart';
+import 'package:imker/features/profile/domain/models/user_profile.dart';
 
-class _Profiles implements IProfileRepository {
-  @override
-  Future<UserProfile> getProfileOf(String userId) async =>
-      const UserProfile(program: 'Derecho', skills: ['Oratoria']);
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import '../../../../support/fake_profile_repository.dart';
 
 /// Dueño de los proyectos de la fuente en memoria.
 const _creator = 'demo-owner';
@@ -42,7 +36,11 @@ void main() {
     tasks = TaskRepository(InMemoryTaskDataSource());
     Get.put<IProjectRepository>(repo);
     Get.put<ITaskRepository>(tasks);
-    Get.put<IProfileRepository>(_Profiles());
+    Get.put<IProfileRepository>(
+      FakeProfileRepository(
+        other: const UserProfile(program: 'Derecho', skills: ['Oratoria']),
+      ),
+    );
     await repo.addProjectMember(
       projectId: _projectId,
       userId: _creator,

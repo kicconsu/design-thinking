@@ -5,32 +5,12 @@ import 'package:get/get.dart';
 
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+
 import '../../../../support/dummy_data.dart';
-
-Project _project(String id) => Project(
-  id: id,
-  title: 'Proyecto $id',
-  imageUrl: 'https://example.com/$id.png',
-  description: 'Descripción',
-  jobs: const [],
-  skills: const [],
-);
-
-/// Deja en espera la lectura de solicitudes hasta que la prueba lo decida.
-class _GatedSource extends InMemoryProjectDataSource {
-  Completer<void>? gate;
-
-  @override
-  Future<List<Map<String, dynamic>>> readJoinRequestsByUser(
-    String userId,
-  ) async {
-    await gate?.future;
-    return super.readJoinRequestsByUser(userId);
-  }
-}
+import '../../../../support/scripted_project_data_source.dart';
+import '../../../../support/builders.dart';
 
 void main() {
   late UserProjectsController controller;
@@ -38,7 +18,9 @@ void main() {
 
   setUp(() {
     Get.reset();
-    repository = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
+    repository = ProjectRepository(
+      InMemoryProjectDataSource(DummyData().projects),
+    );
     Get.put<IProjectRepository>(repository);
     controller = UserProjectsController();
   });
@@ -48,10 +30,10 @@ void main() {
   group('toggleSaveProject con postulación pendiente', () {
     test('no desguarda un proyecto aplicado', () async {
       await repository.saveProject(userId: 'demo-user', projectId: 'p1');
-      controller.savedProjects.add(_project('p1'));
+      controller.savedProjects.add(aProject(id: 'p1'));
       controller.appliedProjectIds.add('p1');
 
-      final stillSaved = await controller.toggleSaveProject(_project('p1'));
+      final stillSaved = await controller.toggleSaveProject(aProject(id: 'p1'));
 
       expect(stillSaved, isTrue);
       expect(controller.isSaved('p1'), isTrue);
@@ -62,7 +44,7 @@ void main() {
     test('no guarda un proyecto aplicado que faltaba en guardados', () async {
       controller.appliedProjectIds.add('p2');
 
-      final saved = await controller.toggleSaveProject(_project('p2'));
+      final saved = await controller.toggleSaveProject(aProject(id: 'p2'));
 
       expect(saved, isFalse);
       expect(controller.isSaved('p2'), isFalse);
@@ -75,11 +57,11 @@ void main() {
 
   group('toggleSaveProject sin postulación', () {
     test('alterna guardar y desguardar', () async {
-      final saved = await controller.toggleSaveProject(_project('p3'));
+      final saved = await controller.toggleSaveProject(aProject(id: 'p3'));
       expect(saved, isTrue);
       expect(controller.isSaved('p3'), isTrue);
 
-      final unsaved = await controller.toggleSaveProject(_project('p3'));
+      final unsaved = await controller.toggleSaveProject(aProject(id: 'p3'));
       expect(unsaved, isFalse);
       expect(controller.isSaved('p3'), isFalse);
       expect(
@@ -91,16 +73,16 @@ void main() {
 
   group('listas de Otros proyectos', () {
     test('un guardado que ya es activo no sale en Guardados', () {
-      controller.savedProjects.addAll([_project('a'), _project('b')]);
-      controller.activeProjects.add(_project('a'));
+      controller.savedProjects.addAll([aProject(id: 'a'), aProject(id: 'b')]);
+      controller.activeProjects.add(aProject(id: 'a'));
 
       expect(controller.unappliedSavedProjects.map((p) => p.id), ['b']);
     });
 
     test('pendiente y activo a la vez: gana Activos y no queda pendiente', () {
-      controller.savedProjects.add(_project('a'));
+      controller.savedProjects.add(aProject(id: 'a'));
       controller.appliedProjectIds.add('a');
-      controller.activeProjects.add(_project('a'));
+      controller.activeProjects.add(aProject(id: 'a'));
 
       expect(controller.pendingProjects, isEmpty);
       expect(controller.unappliedSavedProjects, isEmpty);
@@ -109,16 +91,16 @@ void main() {
     test('addActiveProject quita la postulación pendiente a ese proyecto', () {
       controller.appliedProjectIds.add('a');
 
-      controller.addActiveProject(_project('a'));
+      controller.addActiveProject(aProject(id: 'a'));
 
       expect(controller.appliedProjectIds, isNot(contains('a')));
       expect(controller.activeProjects.map((p) => p.id), ['a']);
     });
 
     test('clear vacía todo lo de la sesión', () {
-      controller.coCreatedProjects.add(_project('mio'));
-      controller.savedProjects.add(_project('g'));
-      controller.activeProjects.add(_project('a'));
+      controller.coCreatedProjects.add(aProject(id: 'mio'));
+      controller.savedProjects.add(aProject(id: 'g'));
+      controller.activeProjects.add(aProject(id: 'a'));
       controller.appliedProjectIds.add('p');
       controller.userCreatedProjectIds.add('mio');
       controller.selectedMainTab.value = 1;
@@ -137,14 +119,14 @@ void main() {
   });
 
   group('cargas que cruzan un cambio de sesión', () {
-    late _GatedSource source;
+    late ScriptedProjectDataSource source;
     late String projectId;
     var user = 'A';
 
     setUp(() async {
       Get.reset();
       user = 'A';
-      source = _GatedSource();
+      source = ScriptedProjectDataSource();
       repository = ProjectRepository(source);
       Get.put<IProjectRepository>(repository);
       controller = UserProjectsController(currentUserId: () => user);
@@ -180,12 +162,12 @@ void main() {
     test(
       'si la sesión cambia mientras carga, se descarta el resultado',
       () async {
-        source.gate = Completer<void>();
+        source.joinRequestsGate = Completer<void>();
         final loading = controller.fetchUserApplications();
 
         user = 'B';
         controller.clear();
-        source.gate!.complete();
+        source.joinRequestsGate!.complete();
         await loading;
 
         expect(controller.activeProjects, isEmpty);

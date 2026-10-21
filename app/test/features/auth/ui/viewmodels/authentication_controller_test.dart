@@ -2,45 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
 import '../../../../support/fake_auth_repository.dart';
+import '../../../../support/fake_profile_repository.dart';
+import '../../../../support/builders.dart';
 
-/// Solo registra `ensureMyProfile`; lo demás no se usa aquí.
-class _Profiles implements IProfileRepository {
-  final ensured = <String>[];
-  bool failing = false;
-
-  @override
-  Future<void> ensureMyProfile({required String name}) async {
-    if (failing) throw StateError('sin red');
-    ensured.add(name);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-const _project = Project(
-  id: 'p1',
-  owner: 'ana',
-  title: 'Proyecto',
-  imageUrl: '',
-  description: '',
-  jobs: [],
-  skills: [],
-);
+final _project = aProject(id: 'p1', owner: 'ana', title: 'Proyecto');
 
 void main() {
   late FakeAuthRepository repo;
-  late _Profiles profiles;
+  late FakeProfileRepository profiles;
 
   setUp(() {
     Get.reset();
     Get.testMode = true;
     repo = FakeAuthRepository();
-    profiles = _Profiles();
+    profiles = FakeProfileRepository();
     Get.put<IProfileRepository>(profiles);
   });
 
@@ -151,7 +129,7 @@ void main() {
     });
 
     test('que falle crear el perfil no impide entrar', () async {
-      profiles.failing = true;
+      profiles.ensureFails = true;
       final controller = await start();
 
       final ok = await controller.login('ana@uninorte.edu.co', 'secreta1');

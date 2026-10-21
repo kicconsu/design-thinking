@@ -3,42 +3,23 @@ import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
 
-import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
-import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 
-/// Perfiles con nombre propio por usuario.
-class _Source extends InMemoryProjectDataSource {
-  _Source(super.data);
-
-  @override
-  Future<Map<String, dynamic>?> readUserProfile(String userId) async => {
-    'name': 'Nombre de $userId',
-    'career': {'program': 'Ingeniería'},
-  };
-}
-
-class _Profiles implements IProfileRepository {
-  @override
-  Future<UserProfile> getProfileOf(String userId) async =>
-      const UserProfile(program: 'Derecho', skills: ['Oratoria']);
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import '../../../../support/fake_profile_repository.dart';
+import '../../../../support/scripted_project_data_source.dart';
 
 void main() {
-  late _Source source;
+  late ScriptedProjectDataSource source;
   late ProjectRepository repo;
 
   setUp(() {
     Get.reset();
-    source = _Source(DummyData().projects);
+    source = ScriptedProjectDataSource(DummyData().projects);
     repo = ProjectRepository(source);
     Get.put<IProjectRepository>(repo);
-    Get.put<IProfileRepository>(_Profiles());
+    Get.put<IProfileRepository>(FakeProfileRepository());
   });
 
   tearDown(Get.reset);

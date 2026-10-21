@@ -4,15 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:imker/features/profile/ui/pages/collaboration_history_page.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 
-Project _project(String title, {String status = 'open'}) => Project(
-  id: title,
-  title: title,
-  imageUrl: '',
-  description: 'd',
-  jobs: const [],
-  skills: const [],
-  status: status,
-);
+import '../../../../support/builders.dart';
 
 void main() {
   Future<void> pump(
@@ -42,12 +34,12 @@ void main() {
     await pump(
       tester,
       created: [
-        _project('Mio abierto'),
-        _project('Mio cerrado', status: 'closed'),
+        aProject(id: 'Mio abierto', title: 'Mio abierto'),
+        aProject(id: 'Mio cerrado', title: 'Mio cerrado', status: 'closed'),
       ],
       collaborating: [
-        _project('Ajeno abierto'),
-        _project('Ajeno cerrado', status: 'closed'),
+        aProject(id: 'Ajeno abierto', title: 'Ajeno abierto'),
+        aProject(id: 'Ajeno cerrado', title: 'Ajeno cerrado', status: 'closed'),
       ],
     );
 
@@ -80,7 +72,10 @@ void main() {
   testWidgets('sin cerrados, «anteriores» muestra su texto vacío', (
     tester,
   ) async {
-    await pump(tester, created: [_project('Mio')]);
+    await pump(
+      tester,
+      created: [aProject(id: 'Mio', title: 'Mio')],
+    );
 
     expect(
       find.text('Aquí aparecerán los proyectos que ya cerraron.'),
@@ -94,8 +89,8 @@ void main() {
   ) async {
     await pump(
       tester,
-      created: [_project('Mio', status: 'closed')],
-      collaborating: [_project('Ajeno', status: 'closed')],
+      created: [aProject(id: 'Mio', title: 'Mio', status: 'closed')],
+      collaborating: [aProject(id: 'Ajeno', title: 'Ajeno', status: 'closed')],
     );
 
     expect(find.text('No colabora en ningún proyecto ahora.'), findsOneWidget);
@@ -110,8 +105,8 @@ void main() {
     await pump(
       tester,
       collaborating: [
-        _project('Vivo'),
-        _project('Viejo', status: 'closed'),
+        aProject(id: 'Vivo', title: 'Vivo'),
+        aProject(id: 'Viejo', title: 'Viejo', status: 'closed'),
       ],
       onlyPrevious: true,
     );

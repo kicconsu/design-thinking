@@ -4,25 +4,10 @@ import 'package:get/get.dart';
 import 'package:imker/features/discover/domain/models/project_filter.dart';
 import 'package:imker/features/discover/ui/pages/discover_page.dart';
 import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
 import '../../../../support/fake_discover_repository.dart';
-
-Project project(
-  String id, {
-  List<String> jobs = const [],
-  List<String> skills = const [],
-  String status = 'open',
-}) => Project(
-  id: id,
-  title: 'Proyecto $id',
-  imageUrl: '',
-  description: '',
-  jobs: jobs,
-  skills: skills,
-  status: status,
-);
+import '../../../../support/builders.dart';
 
 void main() {
   late FakeDiscoverRepository repo;
@@ -32,9 +17,14 @@ void main() {
     Get.reset();
     Get.put(UserProjectsController());
     repo = FakeDiscoverRepository([
-      project('a', jobs: ['Software'], skills: ['Dart']),
-      project('b', jobs: ['Software'], skills: ['Python'], status: 'closed'),
-      project('c', jobs: ['Diseño'], skills: ['Figma']),
+      aProject(id: 'a', jobs: ['Software'], skills: ['Dart']),
+      aProject(
+        id: 'b',
+        jobs: ['Software'],
+        skills: ['Python'],
+        status: 'closed',
+      ),
+      aProject(id: 'c', jobs: ['Diseño'], skills: ['Figma']),
     ]);
   });
 
@@ -196,7 +186,7 @@ void main() {
     tester,
   ) async {
     repo.projects = [
-      project('b', jobs: ['Software'], status: 'closed'),
+      aProject(id: 'b', jobs: ['Software'], status: 'closed'),
     ];
     await show(tester);
     await openSheet(tester);
@@ -215,7 +205,7 @@ void main() {
     tester,
   ) async {
     repo.projects = [
-      for (var i = 0; i < 14; i++) project('p$i', jobs: ['Carrera $i']),
+      for (var i = 0; i < 14; i++) aProject(id: 'p$i', jobs: ['Carrera $i']),
     ];
     start();
     await show(tester);
@@ -258,8 +248,8 @@ void main() {
     tester,
   ) async {
     repo.projects = [
-      project(
-        'a',
+      aProject(
+        id: 'a',
         jobs: ['Software'],
         skills: [for (var i = 0; i < 12; i++) 'Habilidad $i'],
       ),

@@ -1,18 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imker/core/utils/app_keys.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 
-const _project = Project(
-  id: 'p1',
-  owner: 'jefe',
-  title: 'Huerta comunitaria',
-  imageUrl: '',
-  description: '',
-  jobs: [],
-  skills: [],
-);
+import '../../../../support/builders.dart';
+
+final _project = aProject(id: 'p1', owner: 'jefe', title: 'Huerta comunitaria');
 
 void main() {
   var confirmed = 0;
