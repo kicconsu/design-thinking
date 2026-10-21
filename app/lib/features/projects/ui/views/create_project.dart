@@ -12,9 +12,6 @@ class CreateProjectPage extends StatefulWidget {
 }
 
 class _CreateProjectPageState extends State<CreateProjectPage> {
-  /// Pestaña seleccionada: 0 = "Info. básica", 1 = "Miembros".
-  int _selectedTab = 0;
-
   /// Estado de envío del formulario al backend Roble.
   bool _isSubmitting = false;
 
@@ -116,16 +113,13 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         appBar: _buildAppBar(cs, tt),
         body: Column(
           children: [
-            _buildTabs(cs, tt),
             // El formulario completo es desplazable para que la descripción
             // y los demás campos no queden cortados en pantallas pequeñas
             // o cuando aparece el teclado.
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: _selectedTab == 0
-                    ? _buildInfoBasicaForm(cs, tt)
-                    : _buildMiembrosPlaceholder(cs, tt),
+                child: _buildInfoBasicaForm(cs, tt),
               ),
             ),
           ],
@@ -155,55 +149,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     );
   }
 
-  /// Barra de pestañas "Info. básica" / "Miembros" que controla
-  /// [_selectedTab].
-  Widget _buildTabs(ColorScheme cs, TextTheme tt) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: cs.outline.withValues(alpha: 0.3)),
-        ),
-      ),
-      child: Row(children: [_buildTabItem('Info. básica', 0, cs, tt)]),
-    );
-  }
-
-  /// Un ítem individual de la barra de pestañas.
-  ///
-  /// [label] es el texto mostrado, [index] identifica la pestaña
-  /// (comparado contra [_selectedTab] para saber si está activa).
-  Widget _buildTabItem(String label, int index, ColorScheme cs, TextTheme tt) {
-    final bool selected = _selectedTab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedTab = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            // Subrayado que solo se muestra en la pestaña activa.
-            border: Border(
-              bottom: BorderSide(
-                color: selected ? cs.primary : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: tt.titleMedium?.copyWith(
-                color: selected ? cs.onSurface : cs.onSurfaceVariant,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Formulario completo de la pestaña "Info. básica": nombre, descripción,
+  /// Formulario de creación: nombre, descripción,
   /// carreras relacionadas, conocimientos requeridos, invitar miembros y
   /// el botón final "Crear proyecto".
   Widget _buildInfoBasicaForm(ColorScheme cs, TextTheme tt) {
@@ -416,22 +362,6 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         setState(() => _isSubmitting = false);
       }
     }
-  }
-
-  /// Contenido temporal de la pestaña "Miembros".
-  ///
-  /// Placeholder a reemplazar por la gestión real de miembros del
-  /// proyecto (lista de invitados, roles, estado de la invitación, etc).
-  Widget _buildMiembrosPlaceholder(ColorScheme cs, TextTheme tt) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
-      child: Center(
-        child: Text(
-          'Aquí irá la gestión de miembros del proyecto.',
-          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-        ),
-      ),
-    );
   }
 
   /// Contenedor con fondo, bordes redondeados y borde sutil, usado como
