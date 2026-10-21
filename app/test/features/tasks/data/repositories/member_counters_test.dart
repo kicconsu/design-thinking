@@ -146,14 +146,9 @@ void main() {
       await repo.updateTaskStatus(task: a, status: TaskStatus.done);
 
       expect(row('m1')['tasks_finished'], 1);
-    });
 
-    test('es idempotente: repetir no suma de más', () async {
-      member('m1', 'ana');
-      final a = await repo.createTask(projectId: projectId, title: 'a');
-      final t = await repo.reserveTask(task: a, userId: 'ana');
-      await repo.updateTaskStatus(task: t, status: TaskStatus.done);
-      await repo.updateTaskStatus(task: t, status: TaskStatus.done);
+      // Repetir «terminada» no suma de más.
+      await repo.updateTaskStatus(task: a, status: TaskStatus.done);
       expect(row('m1')['tasks_finished'], 1);
     });
 

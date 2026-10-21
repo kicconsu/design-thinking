@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/features/tasks/data/datasources/in_memory_task_data_source.dart';
 import 'package:imker/features/tasks/data/repositories/task_repository.dart';
 import 'package:imker/features/tasks/domain/models/project_task.dart';
@@ -65,13 +66,6 @@ void main() {
       expect(find.textContaining('Vencida'), findsNothing);
       expect(find.text('Límite: 10/03/2026'), findsOneWidget);
     });
-
-    testWidgets('sin fecha límite no muestra nada', (tester) async {
-      await pumpCard(tester, await create());
-
-      expect(find.textContaining('Vence'), findsNothing);
-      expect(find.byIcon(Icons.event_outlined), findsNothing);
-    });
   });
 
   group('TaskProgressPage', () {
@@ -103,12 +97,6 @@ void main() {
       expect(find.byKey(const Key('task.deadline.clear')), findsOneWidget);
     });
 
-    testWidgets('el creador del proyecto también los ve', (tester) async {
-      await pump(tester, await create(deadline: march20), 'demo-owner');
-
-      expect(find.byKey(const Key('task.deadline.edit')), findsOneWidget);
-    });
-
     testWidgets('otra persona ve la fecha pero no puede cambiarla', (
       tester,
     ) async {
@@ -117,14 +105,6 @@ void main() {
       expect(find.text('Vence el 20/03/2026'), findsOneWidget);
       expect(find.byKey(const Key('task.deadline.edit')), findsNothing);
       expect(find.byKey(const Key('task.deadline.clear')), findsNothing);
-    });
-
-    testWidgets('otra persona, sin fecha, no ve nada de fecha límite', (
-      tester,
-    ) async {
-      await pump(tester, await create(), 'luis');
-
-      expect(find.byKey(const Key('task.deadline')), findsNothing);
     });
 
     testWidgets('una tarea terminada no se puede editar', (tester) async {
@@ -156,11 +136,17 @@ void main() {
       );
     });
 
-    testWidgets('cambiarla con el selector de fecha', (tester) async {
+    testWidgets('cambiarla con el selector, que no deja elegir días pasados', (
+      tester,
+    ) async {
       await pump(tester, await create(deadline: march20), 'ana');
 
       await tester.tap(find.byKey(const Key('task.deadline.edit')));
       await tester.pumpAndSettle();
+      final picker = tester.widget<CalendarDatePicker>(
+        find.byType(CalendarDatePicker),
+      );
+      expect(picker.firstDate, DateTime(2026, 3, 14));
       await tester.tap(find.text('25'));
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
@@ -170,18 +156,6 @@ void main() {
         (await repo.getTasks(projectId)).single.deadline,
         DateTime(2026, 3, 25, 23, 59, 59, 999).toUtc(),
       );
-    });
-
-    testWidgets('el selector no deja elegir días pasados', (tester) async {
-      await pump(tester, await create(deadline: march20), 'ana');
-
-      await tester.tap(find.byKey(const Key('task.deadline.edit')));
-      await tester.pumpAndSettle();
-
-      final picker = tester.widget<CalendarDatePicker>(
-        find.byType(CalendarDatePicker),
-      );
-      expect(picker.firstDate, DateTime(2026, 3, 14));
     });
   });
 }

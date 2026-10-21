@@ -65,7 +65,7 @@ void main() {
     expect(updated.deadline, march20);
   });
 
-  test('quita la fecha límite (a null)', () async {
+  test('quita la fecha límite (a null) y lo avisa', () async {
     final task = await create(deadline: march20);
 
     final updated = await repo.updateTaskDeadline(
@@ -76,6 +76,10 @@ void main() {
 
     expect(updated.deadline, isNull);
     expect((await repo.getTasks(projectId)).single.deadline, isNull);
+    expect(
+      (await repo.getComments(task)).single.body,
+      'Fecha límite quitada (era 20/03/2026).',
+    );
   });
 
   test('deja un comentario automático con el cambio', () async {
@@ -89,17 +93,6 @@ void main() {
     expect(
       comments.single.body,
       'Fecha límite cambiada: 20/03/2026 → 25/03/2026.',
-    );
-  });
-
-  test('quitarla también lo avisa', () async {
-    final task = await create(deadline: march20);
-
-    await repo.updateTaskDeadline(task: task, deadline: null, userId: 'ana');
-
-    expect(
-      (await repo.getComments(task)).single.body,
-      'Fecha límite quitada (era 20/03/2026).',
     );
   });
 

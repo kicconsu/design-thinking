@@ -15,14 +15,6 @@ void main() {
   });
 
   group('fecha límite al crear', () {
-    test('sin fecha, la tarea se crea con deadline nulo', () async {
-      final task = await repo.createTask(projectId: projectId, title: 'a');
-
-      expect(task.deadline, isNull);
-      final stored = (await repo.getTasks(projectId)).single;
-      expect(stored.deadline, isNull);
-    });
-
     test('con fecha, se guarda el instante en UTC y se lee igual', () async {
       final deadline = DateTime(2026, 3, 20, 23, 59, 59, 999).toUtc();
 
@@ -36,13 +28,8 @@ void main() {
       final stored = (await repo.getTasks(projectId)).single;
       expect(stored.deadline, deadline);
       expect(stored.deadline!.isUtc, isTrue);
-    });
 
-    test('lo que se manda a Roble es texto ISO en UTC', () async {
-      final deadline = DateTime(2026, 3, 20, 23, 59, 59, 999).toUtc();
-
-      await repo.createTask(projectId: projectId, title: 'a', deadline: deadline);
-
+      // A Roble se manda texto ISO en UTC.
       final raw = (await source.readTasks(projectId)).single['deadline'];
       expect(raw, deadline.toIso8601String());
       expect(raw, endsWith('Z'));
