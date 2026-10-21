@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  tests:
+    name: Pruebas principales
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - run: flutter pub get
+
+      # Ninguna prueba puede hablar con Roble: solo se admite un cliente que
+      # envuelva una base falsa (RobleClient.withDatabase). Construir el
+      # cliente real o RobleApiDataBase dentro de test/ rompe el CI.
+      - name: Las pruebas no usan Roble real
+        working-directory: .
+        run: |
+          if grep -rnE "RobleApiDataBase\(|RobleClient\(" app/test; then
+            echo "::error::Una prueba construye un cliente real de Roble. Usa un fake en app/test/support."
+            exit 1
+          fi
+
+      # Proyectos guardados / pendientes / activos
+      # Solicitudes de colaboración e invitaciones
+      # Gabinete de tareas
+      - name: Pruebas unitarias y de widget
+        run: >
+          flutter test
+          test/features/projects/ui/viewmodels/user_projects_controller_test.dart
+          test/features/projects/data/repositories/project_repository_test.dart
+          test/features/projects/data/repositories/membership_rules_test.dart
+          test/features/projects/ui/viewmodels/collaboration_requests_controller_test.dart
+          test/features/projects/ui/viewmodels/invitations_controller_test.dart
+          test/features/projects/data/repositories/project_invitation_test.dart
+          test/features/projects/ui/views/applicant_profile_test.dart
+          test/features/tasks/data/repositories/task_repository_test.dart
+          test/features/tasks/ui/pages/task_board_test.dart
+          test/features/tasks/ui/pages/task_progress_test.dart
