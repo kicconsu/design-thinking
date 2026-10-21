@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:roble/roble.dart';
 
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/core/roble/roble_client.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/datasources/roble_project_data_source.dart';
@@ -16,6 +17,7 @@ import 'package:imker/features/projects/ui/pages/project_info_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_basic_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Solo registra el `update` que recibe.
 class _RecordingDb extends RobleApiDataBase {
@@ -157,10 +159,7 @@ void main() {
     setUp(() => info = ProjectInfoController(DummyData.kircheProject));
 
     test('solo el creador guarda', () async {
-      final guest = ProjectBasicInfoController(
-        info,
-        isOwner: () => false,
-      );
+      final guest = ProjectBasicInfoController(info, isOwner: () => false);
       guest.title.text = 'Hackeado';
 
       expect(await guest.save(), contains('creador'));
@@ -253,7 +252,7 @@ void main() {
       await openBasicTab(tester);
 
       expect(find.text('Guardar Cambios'), findsNothing);
-      expect(find.text('Añadir'), findsNothing);
+      expect(find.byKey(AppKeys.checklistAdd), findsNothing);
       expect(
         find.text(
           'Solo el creador del proyecto puede editar esta información.',

@@ -7,6 +7,8 @@ import '../pages/person_profile_page.dart';
 import '../viewmodels/collaboration_requests_controller.dart';
 import 'request_decision_result_page.dart';
 
+import 'package:imker/core/utils/app_keys.dart';
+
 /// Detalle de una solicitud de colaboración: el perfil de quien la hizo (la
 /// misma ficha que se abre desde cualquier otro sitio) con los datos de la
 /// solicitud encima y las acciones de aceptar o rechazar al pie.
@@ -68,6 +70,7 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
             children: [
               Expanded(
                 child: OutlinedButton(
+                  key: AppKeys.requestReject,
                   onPressed: _isSubmitting ? null : () => _decide(false),
                   style: OutlinedButton.styleFrom(
                     shape: const RoundedRectangleBorder(
@@ -84,6 +87,7 @@ class _ApplicantDetailPageState extends State<ApplicantDetailPage> {
               Expanded(
                 flex: 2,
                 child: FilledButton(
+                  key: AppKeys.requestAccept,
                   onPressed: _isSubmitting ? null : () => _decide(true),
                   style: FilledButton.styleFrom(
                     shape: const RoundedRectangleBorder(

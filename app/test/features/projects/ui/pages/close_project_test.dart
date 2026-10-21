@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
@@ -12,6 +13,7 @@ import 'package:imker/features/projects/ui/pages/project_info_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/project_info_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 void main() {
   late DummyData data;
@@ -271,7 +273,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('¡Quiero colaborar!'), findsNothing);
+      expect(find.byKey(AppKeys.applyToProject), findsNothing);
       expect(find.textContaining('Proyecto cerrado'), findsOneWidget);
     });
   });

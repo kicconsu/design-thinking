@@ -8,6 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 import '../../support/fake_project_data_source.dart';
 import '../../support/integration_harness.dart';
@@ -40,15 +41,15 @@ void main() {
       expect(find.text(Seed.projectTitle), findsOneWidget);
 
       // «Leer más» abre el detalle.
-      await tapText(tester, 'Leer más');
+      await tapKey(tester, AppKeys.readMore(Seed.projectId));
       await pumpUntilFound(tester, find.text('Descripción'));
-      await scrollTo(tester, find.text('¡Quiero colaborar!'));
+      await scrollTo(tester, find.byKey(AppKeys.applyToProject));
 
       // «¡Quiero colaborar!» pide confirmación.
-      await tapText(tester, '¡Quiero colaborar!');
+      await tapKey(tester, AppKeys.applyToProject);
       await pumpUntilFound(tester, find.text('¿Postularte al proyecto?'));
 
-      await tapText(tester, 'Confirmar');
+      await tapKey(tester, AppKeys.confirmApplication);
 
       // Pantalla de confirmación.
       await pumpUntilFound(tester, find.text('¡Listo!'));
@@ -67,7 +68,7 @@ void main() {
       expect(env.projects.saved.map((r) => r['project_id']), [Seed.projectId]);
 
       // Al volver, el detalle ya no ofrece postular.
-      await tapText(tester, 'Volver');
+      await tapKey(tester, AppKeys.operationDoneButton);
       await pumpUntilFound(
         tester,
         find.text('Postulación pendiente de respuesta'),

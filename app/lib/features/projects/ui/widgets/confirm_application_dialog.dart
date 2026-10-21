@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/discover/ui/pages/collaboration_done_page.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Muestra un diálogo de confirmación con estilo Imker antes de enviar la postulación.
 Future<void> showConfirmApplicationDialog({
@@ -57,6 +58,7 @@ Future<void> showConfirmApplicationDialog({
             child: const Text('Cancelar'),
           ),
           FilledButton.icon(
+            key: AppKeys.confirmApplication,
             style: FilledButton.styleFrom(
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.zero,
@@ -70,7 +72,8 @@ Future<void> showConfirmApplicationDialog({
               if (onConfirmed != null) {
                 onConfirmed();
               } else {
-                final applied = await Get.find<UserProjectsController>().applyToProject(project);
+                final applied = await Get.find<UserProjectsController>()
+                    .applyToProject(project);
                 if (applied) {
                   Get.to(() => CollaborationDonePage(project: project));
                 }

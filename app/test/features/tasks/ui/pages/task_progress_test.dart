@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/features/tasks/data/datasources/in_memory_task_data_source.dart';
 import 'package:imker/features/tasks/data/repositories/task_repository.dart';
 import 'package:imker/features/tasks/domain/models/project_task.dart';
@@ -11,6 +12,7 @@ import 'package:imker/features/tasks/domain/models/task_status.dart';
 import 'package:imker/features/tasks/domain/repositories/i_task_repository.dart';
 import 'package:imker/features/tasks/ui/pages/task_progress_page.dart';
 import 'package:imker/features/tasks/ui/viewmodels/task_progress_controller.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 void main() {
   late InMemoryTaskDataSource source;
@@ -250,15 +252,15 @@ void main() {
       await pump(tester, task, 'ana');
 
       await tester.enterText(find.byType(TextField).at(1), 'Implementar GET');
-      await tester.ensureVisible(find.text('Añadir'));
+      await tester.ensureVisible(find.byKey(AppKeys.checklistAdd));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Añadir'));
+      await tester.tap(find.byKey(AppKeys.checklistAdd));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(CheckboxListTile));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(CheckboxListTile));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Guardar'));
+      await tester.tap(find.byKey(AppKeys.saveProgress));
       await tester.pumpAndSettle();
 
       final stored = (await repo.getTasks(projectId)).single;
@@ -279,8 +281,8 @@ void main() {
       final task = await reserved('ana');
       await pump(tester, task, 'luis');
 
-      expect(find.text('Guardar'), findsNothing);
-      expect(find.text('Añadir'), findsNothing);
+      expect(find.byKey(AppKeys.saveProgress), findsNothing);
+      expect(find.byKey(AppKeys.checklistAdd), findsNothing);
       expect(
         find.text('Solo quien reservó la tarea puede editarla.'),
         findsOneWidget,

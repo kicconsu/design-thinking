@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Pantalla genérica reutilizable para confirmar la finalización exitosa
 /// de cualquier operación en la aplicación.
@@ -61,11 +62,7 @@ class OperationDonePage extends StatelessWidget {
         const SizedBox(height: 32),
         circle,
         const SizedBox(height: 32),
-        Text(
-          text!,
-          textAlign: TextAlign.center,
-          style: tt.bodyLarge,
-        ),
+        Text(text!, textAlign: TextAlign.center, style: tt.bodyLarge),
       ]);
     } else if (hasTitle && !hasText) {
       // Si solo tiene título: círculo en el centro y título centrado debajo.
@@ -83,11 +80,7 @@ class OperationDonePage extends StatelessWidget {
       contentWidgets.addAll([
         circle,
         const SizedBox(height: 32),
-        Text(
-          text!,
-          textAlign: TextAlign.center,
-          style: tt.bodyLarge,
-        ),
+        Text(text!, textAlign: TextAlign.center, style: tt.bodyLarge),
       ]);
     } else {
       contentWidgets.add(circle);
@@ -95,7 +88,8 @@ class OperationDonePage extends StatelessWidget {
 
     PreferredSizeWidget? resolvedAppBar;
     if (showAppBar) {
-      resolvedAppBar = appBar ??
+      resolvedAppBar =
+          appBar ??
           AppBar(
             backgroundColor: cs.tertiaryContainer,
             title: Text(appBarTitle ?? 'Imker'),
@@ -131,13 +125,12 @@ class OperationDonePage extends StatelessWidget {
   Widget _buildDefaultButton(BuildContext context) {
     final buttonStyle = FilledButton.styleFrom(
       minimumSize: const Size.fromHeight(48),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     );
 
     if (buttonIcon != null) {
       return FilledButton.icon(
+        key: AppKeys.operationDoneButton,
         style: buttonStyle,
         onPressed: onButtonPressed,
         icon: Icon(buttonIcon),
@@ -146,6 +139,7 @@ class OperationDonePage extends StatelessWidget {
     }
 
     return FilledButton(
+      key: AppKeys.operationDoneButton,
       style: buttonStyle,
       onPressed: onButtonPressed,
       child: Text(buttonText!),

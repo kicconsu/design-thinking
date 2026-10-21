@@ -10,6 +10,7 @@ import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.d
 import 'package:imker/features/projects/ui/widgets/closed_project_banner.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Pantalla de detalle de proyecto: permite ver la descripción completa,
 /// integrantes, habilidades requeridas y postularse al proyecto.
@@ -123,6 +124,7 @@ class ProjectDetailPage extends StatelessWidget {
               // Cerrado: ya no recibe solicitudes, no hay a qué postular.
               if (!projectItem.isOpen) return const ClosedProjectBanner();
               return FilledButton.icon(
+                key: AppKeys.applyToProject,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                   shape: const RoundedRectangleBorder(

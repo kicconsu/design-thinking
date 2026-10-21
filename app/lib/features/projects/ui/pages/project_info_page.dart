@@ -17,6 +17,7 @@ import 'package:imker/features/projects/ui/widgets/project_basic_info_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 import 'package:imker/features/projects/ui/widgets/project_progress_tab.dart';
 import 'package:imker/features/tasks/ui/pages/task_board_page.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Información de un proyecto del que el usuario es parte (lo creó o colabora
 /// en él): pestañas Progreso, Info. básica y Miembros.
@@ -181,6 +182,7 @@ class _ProjectInfoPageState extends State<ProjectInfoPage> {
               if (_tab == 0) ...[
                 const SizedBox(height: 16),
                 FilledButton(
+                  key: AppKeys.viewTasks,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(46),
                     shape: const RoundedRectangleBorder(

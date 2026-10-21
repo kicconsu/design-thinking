@@ -6,6 +6,8 @@ import '../../domain/models/project_task.dart';
 import '../../domain/models/task_deadline.dart';
 import '../../domain/models/task_status.dart';
 
+import 'package:imker/core/utils/app_keys.dart';
+
 /// Tarjeta de una tarea en el gabinete. Las pendientes traen el botón
 /// «Reservar tarea»; las demás, quién las tiene.
 class TaskCard extends StatelessWidget {
@@ -83,6 +85,7 @@ class TaskCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Center(
                   child: FilledButton(
+                    key: AppKeys.reserveTask(task.id),
                     style: FilledButton.styleFrom(
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.zero,

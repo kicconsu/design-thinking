@@ -7,6 +7,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 import '../../support/fake_project_data_source.dart';
 import '../../support/integration_harness.dart';
@@ -43,7 +44,7 @@ void main() {
       await tapText(tester, Seed.bruno.name);
       await pumpUntilFound(tester, find.text('Rechazar'));
 
-      await tapText(tester, 'Rechazar');
+      await tapKey(tester, AppKeys.requestReject);
       await pumpUntilFound(tester, find.text('Solicitud rechazada'));
 
       // La solicitud quedó rechazada por Laura y Bruno no es miembro.
@@ -53,7 +54,7 @@ void main() {
       expect(env.projects.activeMemberIds(Seed.projectId), {Seed.laura.id});
 
       // Al volver, la solicitud ya no está en la lista.
-      await tapText(tester, 'Ver más solicitudes');
+      await tapKey(tester, AppKeys.requestMore);
       await pumpUntilFound(
         tester,
         find.text('No hay solicitudes pendientes por revisar.'),

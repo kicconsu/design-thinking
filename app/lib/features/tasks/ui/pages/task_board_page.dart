@@ -14,6 +14,8 @@ import 'task_progress_page.dart';
 import '../widgets/new_task_dialog.dart';
 import '../widgets/task_card.dart';
 
+import 'package:imker/core/utils/app_keys.dart';
+
 /// Gabinete de tareas de un proyecto: pendientes, en progreso y terminadas.
 class TaskBoardPage extends StatefulWidget {
   const TaskBoardPage({super.key, required this.project, this.currentUserId});
@@ -60,9 +62,10 @@ class _TaskBoardPageState extends State<TaskBoardPage> {
       Get.snackbar(title, message, snackPosition: SnackPosition.BOTTOM);
 
   Future<void> _createTask() async {
-    final result = await Get.dialog<
-      ({String title, String description, DateTime? deadlineDay})
-    >(const NewTaskDialog());
+    final result =
+        await Get.dialog<
+          ({String title, String description, DateTime? deadlineDay})
+        >(const NewTaskDialog());
     if (result == null) return;
     final error = await _controller.createTask(
       title: result.title,
@@ -152,6 +155,7 @@ class _TaskBoardPageState extends State<TaskBoardPage> {
                       ),
                       const SizedBox(height: 12),
                       SegmentedTabSwitch(
+                        keyPrefix: AppKeys.taskBoardTabs,
                         tabs: const ['Pendientes', 'En Progreso', 'Terminadas'],
                         selectedIndex: _tab,
                         onTabSelected: (i) => setState(() => _tab = i),
@@ -161,6 +165,7 @@ class _TaskBoardPageState extends State<TaskBoardPage> {
                       Expanded(child: _list()),
                       const SizedBox(height: 8),
                       FilledButton(
+                        key: AppKeys.createTask,
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(46),
                           shape: const RoundedRectangleBorder(

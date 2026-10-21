@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Pantallas "Accepted" / "Rejected" del flujo de Figma: confirma la
 /// decisión tomada sobre una solicitud de colaboración.
@@ -31,7 +32,9 @@ class RequestDecisionResultPage extends StatelessWidget {
                 radius: 64,
                 backgroundColor: cs.tertiaryContainer,
                 child: Icon(
-                  accepted ? Icons.emoji_people_outlined : Icons.sentiment_neutral,
+                  accepted
+                      ? Icons.emoji_people_outlined
+                      : Icons.sentiment_neutral,
                   size: 64,
                   color: cs.onTertiaryContainer,
                 ),
@@ -44,6 +47,7 @@ class RequestDecisionResultPage extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               FilledButton(
+                key: AppKeys.requestMore,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                   shape: const RoundedRectangleBorder(

@@ -29,6 +29,7 @@ import 'package:imker/features/tasks/domain/repositories/i_task_repository.dart'
 import 'package:imker/features/trust/domain/repositories/i_trust_repository.dart';
 import 'package:imker/routes/app_pages.dart';
 import 'package:imker/routes/app_routes.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 import 'fake_authentication_source.dart';
 import 'fake_profile_data_source.dart';
@@ -422,6 +423,20 @@ Future<void> _pace(WidgetTester tester) async {
   if (_stepMs > 0) await tester.pump(const Duration(milliseconds: _stepMs));
 }
 
+/// Atajo de [tapOn] para un control con [key]: no depende del texto que se ve.
+Future<void> tapKey(WidgetTester tester, Key key) =>
+    tapOn(tester, find.byKey(key));
+
+/// Reserva la única tarea que se puede reservar en pantalla. Cada botón lleva
+/// la clave `task.reserve.<id>`, así que se busca por ese prefijo.
+Future<void> tapReserveTask(WidgetTester tester) => tapOn(
+  tester,
+  find.byWidgetPredicate((widget) {
+    final key = widget.key;
+    return key is ValueKey && key.value.toString().startsWith('task.reserve.');
+  }),
+);
+
 /// Atajo de [tapOn] para un texto exacto.
 Future<void> tapText(WidgetTester tester, String text) =>
     tapOn(tester, find.text(text));
@@ -442,12 +457,11 @@ Future<void> goBack(WidgetTester tester) async {
 Future<void> logIn(WidgetTester tester, IntegrationEnv env) async {
   await pumpUntilFound(tester, find.text('Inicia sesión para continuar'));
 
-  final fields = find.byType(TextFormField);
-  await tester.enterText(fields.at(0), env.auth.email);
-  await tester.enterText(fields.at(1), env.auth.password);
+  await tester.enterText(find.byKey(AppKeys.loginEmail), env.auth.email);
+  await tester.enterText(find.byKey(AppKeys.loginPassword), env.auth.password);
   await _pump(tester);
 
-  await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
+  await tester.tap(find.byKey(AppKeys.loginSubmit));
   await _pump(tester);
 
   await pumpUntilFound(tester, find.text('DESCUBRIR'));
@@ -456,7 +470,7 @@ Future<void> logIn(WidgetTester tester, IntegrationEnv env) async {
 /// En el inicio, abre la pestaña «Proyectos» y espera a que cargue «Mis
 /// proyectos» con [count] proyectos.
 Future<void> openMyProjects(WidgetTester tester, {int count = 1}) async {
-  await tapText(tester, 'PROYECTOS');
+  await tapKey(tester, AppKeys.navTab('projects'));
   await pumpUntilFound(tester, find.text('Mis proyectos ($count)'));
 }
 
@@ -473,6 +487,6 @@ Future<void> openProjectInfo(WidgetTester tester, String title) async {
 
 /// Desde la información del proyecto, abre el gabinete de tareas.
 Future<void> openTaskBoard(WidgetTester tester) async {
-  await tapText(tester, 'Ver Tareas');
+  await tapKey(tester, AppKeys.viewTasks);
   await pumpUntilFound(tester, find.text('Gabinete de tareas'));
 }
