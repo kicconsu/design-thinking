@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:imker/core/widgets/profile_avatar.dart';
 
 import '../../domain/models/task_comment.dart';
+import 'package:imker/core/utils/clock.dart';
 
 /// Comentarios de una tarea: caja para escribir y la lista, del más nuevo al
 /// más viejo.
@@ -17,6 +18,7 @@ class TaskCommentsView extends StatefulWidget {
     required this.onSend,
     this.error,
     this.onRetry,
+    this.clock = systemClock,
   });
 
   final List<TaskComment> comments;
@@ -31,6 +33,7 @@ class TaskCommentsView extends StatefulWidget {
   final Future<String?> Function(String body) onSend;
   final String? error;
   final VoidCallback? onRetry;
+  final Clock clock;
 
   @override
   State<TaskCommentsView> createState() => _TaskCommentsViewState();
@@ -143,22 +146,31 @@ class _TaskCommentsViewState extends State<TaskCommentsView> {
       ),
       Divider(color: cs.outline),
       for (final comment in widget.comments)
-        _CommentTile(comment: comment, author: widget.authorOf(comment)),
+        _CommentTile(
+          comment: comment,
+          author: widget.authorOf(comment),
+          clock: widget.clock,
+        ),
     ];
   }
 }
 
 class _CommentTile extends StatelessWidget {
-  const _CommentTile({required this.comment, required this.author});
+  const _CommentTile({
+    required this.comment,
+    required this.author,
+    required this.clock,
+  });
 
   final TaskComment comment;
   final String author;
+  final Clock clock;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final when = _timeAgo(comment.createdAt);
+    final when = _timeAgo(comment.createdAt, clock);
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -205,9 +217,9 @@ class _CommentTile extends StatelessWidget {
   }
 }
 
-String? _timeAgo(DateTime? date) {
+String? _timeAgo(DateTime? date, Clock clock) {
   if (date == null) return null;
-  final diff = DateTime.now().difference(date);
+  final diff = clock().difference(date);
   if (diff.inMinutes < 1) return 'ahora';
   if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
   if (diff.inHours < 24) return 'hace ${diff.inHours} h';

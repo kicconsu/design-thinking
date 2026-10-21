@@ -1,13 +1,19 @@
 import 'i_project_data_source.dart';
+import 'package:imker/core/utils/clock.dart';
 
 /// Backend falso: sirve las mismas filas que devolvería Roble desde memoria.
 /// Útil para desarrollo sin red y para pruebas unitarias del repositorio.
 class InMemoryProjectDataSource implements IProjectDataSource {
   /// Sin [projects] arranca vacío: en modo mock no se siembran datos de demo.
-  InMemoryProjectDataSource([List<Map<String, dynamic>>? projects])
-    : _projects = projects ?? [];
+  InMemoryProjectDataSource([
+    List<Map<String, dynamic>>? projects,
+    this.clock = systemClock,
+  ]) : _projects = projects ?? [];
 
   final List<Map<String, dynamic>> _projects;
+
+  /// Hora de las marcas de tiempo; se fija en pruebas.
+  final Clock clock;
 
   /// Quién "tiene la sesión" en pruebas y en modo sin backend.
   @override
@@ -68,8 +74,8 @@ class InMemoryProjectDataSource implements IProjectDataSource {
       '_id': newId,
       '_owner': joinRequestData['user_id'] ?? 'demo-user',
       'user_id': joinRequestData['user_id'] ?? 'demo-user',
-      'createdAt': DateTime.now().toIso8601String(),
-      'updatedAt': DateTime.now().toIso8601String(),
+      'createdAt': clock().toIso8601String(),
+      'updatedAt': clock().toIso8601String(),
       ...joinRequestData,
     };
     _joinRequests.add(row);
@@ -105,7 +111,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     if (idx != -1) {
       _joinRequests[idx]['status'] = {'state': status};
       _joinRequests[idx]['reviewed_by'] = reviewedBy;
-      _joinRequests[idx]['updatedAt'] = DateTime.now().toIso8601String();
+      _joinRequests[idx]['updatedAt'] = clock().toIso8601String();
       if (reviewNote != null) _joinRequests[idx]['reviewNote'] = reviewNote;
       return _joinRequests[idx];
     }
@@ -147,7 +153,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
       'user_id': userId,
       'role': role ?? {'name': 'collaborator'},
       'status': 'active',
-      'joinedAt': DateTime.now().toUtc().toIso8601String(),
+      'joinedAt': clock().toUtc().toIso8601String(),
     };
     _projectMembers.add(row);
     return row;
@@ -169,7 +175,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
           r['user_id'] == userId &&
           (r['status'] ?? 'active') == 'active') {
         r['status'] = status;
-        r['leftAt'] = DateTime.now().toUtc().toIso8601String();
+        r['leftAt'] = clock().toUtc().toIso8601String();
         ended++;
       }
     }
@@ -209,7 +215,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
       '_owner': userId,
       'user_id': userId,
       'project_id': projectId,
-      'createdAt': DateTime.now().toIso8601String(),
+      'createdAt': clock().toIso8601String(),
     };
     _saved.add(row);
     return row;
@@ -278,7 +284,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   }) async {
     final row = _invitations.firstWhere((r) => r['_id'] == invitationId);
     row['status'] = status;
-    row['respondedAt'] = DateTime.now().toUtc().toIso8601String();
+    row['respondedAt'] = clock().toUtc().toIso8601String();
     return row;
   }
 
