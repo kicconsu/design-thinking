@@ -4,19 +4,10 @@ import 'package:get/get.dart';
 import 'package:imker/features/discover/domain/models/project_filter.dart';
 import 'package:imker/features/discover/ui/pages/discover_page.dart';
 import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
 import '../../../../support/fake_discover_repository.dart';
-
-Project project(String id, {List<String> jobs = const ['Software']}) => Project(
-  id: id,
-  title: 'Proyecto $id',
-  imageUrl: '',
-  description: 'Descripción $id',
-  jobs: jobs,
-  skills: const [],
-);
+import '../../../../support/builders.dart';
 
 void main() {
   late FakeDiscoverRepository repo;
@@ -27,7 +18,7 @@ void main() {
     Get.put(UserProjectsController());
     repo = FakeDiscoverRepository([
       for (var i = 0; i < 8; i++)
-        project('p$i', jobs: [i.isEven ? 'Software' : 'Diseño']),
+        aProject(id: 'p$i', jobs: [i.isEven ? 'Software' : 'Diseño']),
     ]);
     controller = Get.put(DiscoverController(repo, pageSize: 4));
   });

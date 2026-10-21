@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
+
+import '../../../../support/builders.dart';
 
 void main() {
   group('ProjectTile', () {
     Widget tile(int memberCount) => MaterialApp(
       home: Scaffold(
         body: ProjectTile(
-          project: Project(
+          project: aProject(
             id: 'p',
             owner: 'o',
             title: 'Proyecto',
-            imageUrl: '',
-            description: '',
-            jobs: const [],
-            skills: const [],
             memberCount: memberCount,
           ),
           onTap: () {},

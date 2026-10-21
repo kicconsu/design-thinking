@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/profile_failure.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/viewmodels/people_directory.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/applicant.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
@@ -18,44 +16,21 @@ import 'package:imker/features/projects/ui/widgets/inviter_row.dart';
 import 'package:imker/core/utils/app_keys.dart';
 
 import '../../../../support/dummy_data.dart';
+import '../../../../support/fake_profile_repository.dart';
+import '../../../../support/builders.dart';
 
-class _Profiles implements IProfileRepository {
-  final asked = <String>[];
-  ProfileFailure? failure;
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async {
-    asked.add(userId);
-    if (failure != null) throw failure!;
-    return UserProfile(
-      name: 'Nombre de $userId',
-      program: 'Derecho',
-      institution: 'Uninorte',
-      bio: 'Litigante en formación.',
-      skills: const ['Oratoria'],
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-const _project = Project(
+final _project = aProject(
   id: 'p1',
   owner: 'owner-1',
   title: 'Proyecto Solaria',
-  imageUrl: '',
-  description: '',
-  jobs: [],
-  skills: [],
 );
 
 void main() {
-  late _Profiles profiles;
+  late FakeProfileRepository profiles;
 
   setUp(() {
     Get.reset();
-    profiles = _Profiles();
+    profiles = FakeProfileRepository(withName: true);
     Get.put<IProfileRepository>(profiles);
   });
 

@@ -3,34 +3,20 @@ import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
 
-import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project_member.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 
-/// Perfiles distintos por usuario, y uno que falla.
-class _Source extends InMemoryProjectDataSource {
-  _Source(super.data);
-
-  @override
-  Future<Map<String, dynamic>?> readUserProfile(String userId) async {
-    if (userId == 'roto') throw StateError('sin permiso');
-    if (userId == 'sin-perfil') return null;
-    return {
-      'name': 'Nombre de $userId',
-      'career': {'program': 'Ingeniería', 'institution': 'Uninorte'},
-    };
-  }
-}
+import '../../../../support/scripted_project_data_source.dart';
 
 void main() {
-  late _Source source;
+  late ScriptedProjectDataSource source;
   late ProjectRepository repo;
   const projectId = DummyData.kircheId;
 
   setUp(() {
     Get.reset();
-    source = _Source(DummyData().projects);
+    source = ScriptedProjectDataSource(DummyData().projects);
     repo = ProjectRepository(source);
     Get.put<IProjectRepository>(repo);
   });

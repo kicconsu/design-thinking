@@ -4,33 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import 'package:imker/features/profile/domain/models/user_profile.dart';
-import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
 import 'package:imker/features/trust/domain/models/trust_metrics.dart';
 import 'package:imker/features/trust/domain/repositories/i_trust_repository.dart';
 import 'package:imker/features/trust/domain/trust_failure.dart';
 
 import '../../../../support/fake_trust_repository.dart';
-
-class _Profiles implements IProfileRepository {
-  @override
-  Future<UserProfile> getMyProfile() async =>
-      const UserProfile(program: 'Medicina');
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async => const UserProfile();
-
-  @override
-  Future<void> ensureMyProfile({required String name}) async {}
-
-  @override
-  Future<UserProfile> updateMyProfile({
-    required String program,
-    required String institution,
-    required String bio,
-    required List<String> skills,
-  }) async => const UserProfile();
-}
+import '../../../../support/fake_profile_repository.dart';
 
 void main() {
   late FakeTrustRepository trust;
@@ -40,7 +20,10 @@ void main() {
     Get.reset();
     trust = FakeTrustRepository();
     controller = ProfileController(
-      _Profiles(),
+      FakeProfileRepository(
+        me: const UserProfile(program: 'Medicina'),
+        other: const UserProfile(),
+      ),
       trust: trust,
       currentUserId: () => 'yo',
     );
@@ -143,7 +126,10 @@ void main() {
     test('un error inesperado también se informa', () async {
       final broken = _Throwing();
       final c = ProfileController(
-        _Profiles(),
+        FakeProfileRepository(
+          me: const UserProfile(program: 'Medicina'),
+          other: const UserProfile(),
+        ),
         trust: broken,
         currentUserId: () => 'yo',
       );
@@ -158,7 +144,10 @@ void main() {
   group('sesión', () {
     test('sin sesión no consulta nada', () async {
       final c = ProfileController(
-        _Profiles(),
+        FakeProfileRepository(
+          me: const UserProfile(program: 'Medicina'),
+          other: const UserProfile(),
+        ),
         trust: trust,
         currentUserId: () => '',
       );
@@ -170,7 +159,13 @@ void main() {
     });
 
     test('sin repositorio de confianza no hace nada', () async {
-      final c = ProfileController(_Profiles(), currentUserId: () => 'yo');
+      final c = ProfileController(
+        FakeProfileRepository(
+          me: const UserProfile(program: 'Medicina'),
+          other: const UserProfile(),
+        ),
+        currentUserId: () => 'yo',
+      );
 
       await c.loadTrust();
 
@@ -180,7 +175,13 @@ void main() {
 
     test('usa el repositorio registrado si no se le pasa uno', () async {
       Get.put<ITrustRepository>(trust);
-      final c = ProfileController(_Profiles(), currentUserId: () => 'yo');
+      final c = ProfileController(
+        FakeProfileRepository(
+          me: const UserProfile(program: 'Medicina'),
+          other: const UserProfile(),
+        ),
+        currentUserId: () => 'yo',
+      );
 
       await c.loadTrust();
 

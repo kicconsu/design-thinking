@@ -1,29 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/auth/ui/pages/register_page.dart';
 import 'package:imker/features/auth/ui/pages/upgrade_account_page.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 
-class _FakeAuth implements IAuthRepository {
-  @override
-  Future<bool> restoreSession() async => false;
-
-  @override
-  Stream<void> get sessionExpired => const Stream.empty();
-
-  @override
-  bool get isAnonymous => false;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import '../../../../support/fake_auth_repository.dart';
 
 /// Pantalla baja y bajo el teclado: lo que queda libre no alcanza para los tres
 /// campos y el botón, y no debe haber desbordamiento.
 void main() {
-  setUp(() => Get.put(AuthenticationController(_FakeAuth())));
+  setUp(() => Get.put(AuthenticationController(FakeAuthRepository())));
   tearDown(Get.reset);
 
   for (final entry in {

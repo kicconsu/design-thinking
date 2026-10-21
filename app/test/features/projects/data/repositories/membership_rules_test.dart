@@ -2,15 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/models/project_relation.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+
+import '../../../../support/builders.dart';
 
 /// Devuelve membresías sin la columna `status`, como las filas anteriores a
 /// que existiera.
@@ -275,14 +277,7 @@ void main() {
 
   group('relationOf', () {
     late UserProjectsController controller;
-    const project = Project(
-      id: 'p',
-      title: 'P',
-      imageUrl: '',
-      description: '',
-      jobs: [],
-      skills: [],
-    );
+    final project = aProject(id: 'p', title: 'P');
 
     setUp(() {
       Get.reset();
@@ -307,7 +302,9 @@ void main() {
     test('guardado, postulado e invitado: invited gana', () async {
       final invitations = Get.put(
         InvitationsController(
-          repository: ProjectRepository(InMemoryProjectDataSource(DummyData().projects)),
+          repository: ProjectRepository(
+            InMemoryProjectDataSource(DummyData().projects),
+          ),
           currentUserId: () => 'u1',
         ),
       );

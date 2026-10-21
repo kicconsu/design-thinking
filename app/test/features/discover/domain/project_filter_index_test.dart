@@ -4,37 +4,31 @@ import 'package:imker/features/discover/domain/models/project_filter.dart';
 import 'package:imker/features/discover/domain/project_filter_index.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 
-Project project(
-  String id, {
-  List<String> jobs = const [],
-  List<String> skills = const [],
-  String status = 'open',
-}) => Project(
-  id: id,
-  title: id,
-  imageUrl: '',
-  description: '',
-  jobs: jobs,
-  skills: skills,
-  status: status,
-);
+import '../../../support/builders.dart';
 
 List<String> ids(List<Project> projects) => projects.map((p) => p.id).toList();
 
 void main() {
-  final software = project(
-    'a',
+  final software = aProject(
+    id: 'a',
+    title: 'a',
     jobs: ['Ing. Software', 'Diseño'],
     skills: ['Dart', 'Flutter'],
   );
-  final softwareClosed = project(
-    'b',
+  final softwareClosed = aProject(
+    id: 'b',
+    title: 'b',
     jobs: ['ing software'],
     skills: ['Python'],
     status: 'closed',
   );
-  final design = project('c', jobs: ['Diseño'], skills: ['Figma', 'dart']);
-  final noTags = project('d');
+  final design = aProject(
+    id: 'c',
+    title: 'c',
+    jobs: ['Diseño'],
+    skills: ['Figma', 'dart'],
+  );
+  final noTags = aProject(id: 'd', title: 'd');
   final all = [software, softwareClosed, design, noTags];
   final index = ProjectFilterIndex(all);
 
@@ -93,9 +87,9 @@ void main() {
       'la etiqueta es la variante más frecuente; en empate, la alfabética',
       () {
         final idx = ProjectFilterIndex([
-          project('1', jobs: ['Ing. Software']),
-          project('2', jobs: ['ing software']),
-          project('3', jobs: ['ing software']),
+          aProject(id: '1', title: '1', jobs: ['Ing. Software']),
+          aProject(id: '2', title: '2', jobs: ['ing software']),
+          aProject(id: '3', title: '3', jobs: ['ing software']),
         ]);
         expect(
           idx.careerOptions(ProjectFilter.none).single.label,
@@ -103,8 +97,8 @@ void main() {
         );
 
         final tie = ProjectFilterIndex([
-          project('1', jobs: ['Ing. Software']),
-          project('2', jobs: ['ing software']),
+          aProject(id: '1', title: '1', jobs: ['Ing. Software']),
+          aProject(id: '2', title: '2', jobs: ['ing software']),
         ]);
         expect(
           tie.careerOptions(ProjectFilter.none).single.label,
@@ -115,7 +109,7 @@ void main() {
 
     test('una variante repetida dentro de un proyecto cuenta una vez', () {
       final idx = ProjectFilterIndex([
-        project('1', jobs: ['Diseño', 'diseno', 'DISEÑO']),
+        aProject(id: '1', title: '1', jobs: ['Diseño', 'diseno', 'DISEÑO']),
       ]);
       expect(idx.careerOptions(ProjectFilter.none).single.count, 1);
     });
@@ -197,8 +191,9 @@ void main() {
   test('1 000 proyectos con 10 carreras y 15 habilidades filtran en menos de 50 ms', () {
     final many = [
       for (var i = 0; i < 1000; i++)
-        project(
-          'p$i',
+        aProject(
+          id: 'p$i',
+          title: 'p$i',
           jobs: [for (var j = 0; j < 10; j++) 'Carrera ${(i + j) % 40}'],
           skills: [
             for (var j = 0; j < 15; j++) 'Habilidad ${(i * 3 + j) % 60}',

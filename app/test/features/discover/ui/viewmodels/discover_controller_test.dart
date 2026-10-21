@@ -3,25 +3,10 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imker/features/discover/domain/models/project_filter.dart';
 import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 
 import '../../../../support/fake_discover_repository.dart';
-
-Project project(
-  String id, {
-  List<String> jobs = const [],
-  List<String> skills = const [],
-  String status = 'open',
-}) => Project(
-  id: id,
-  title: id,
-  imageUrl: '',
-  description: '',
-  jobs: jobs,
-  skills: skills,
-  status: status,
-);
+import '../../../../support/builders.dart';
 
 List<String> ids(DiscoverController c) => c.projects.map((p) => p.id).toList();
 
@@ -31,10 +16,21 @@ void main() {
 
   setUp(() {
     repo = FakeDiscoverRepository([
-      project('a', jobs: ['Software'], skills: ['Dart']),
-      project('b', jobs: ['Software'], skills: ['Python'], status: 'closed'),
-      project('c', jobs: ['Diseño'], skills: ['Figma']),
-      project('d', jobs: ['Diseño', 'Software'], skills: ['Dart']),
+      aProject(id: 'a', title: 'a', jobs: ['Software'], skills: ['Dart']),
+      aProject(
+        id: 'b',
+        title: 'b',
+        jobs: ['Software'],
+        skills: ['Python'],
+        status: 'closed',
+      ),
+      aProject(id: 'c', title: 'c', jobs: ['Diseño'], skills: ['Figma']),
+      aProject(
+        id: 'd',
+        title: 'd',
+        jobs: ['Diseño', 'Software'],
+        skills: ['Dart'],
+      ),
     ]);
     controller = DiscoverController(repo, pageSize: 2);
   });
@@ -101,7 +97,7 @@ void main() {
 
     test('no duplica proyectos si la lista se movió en el servidor', () async {
       await controller.loadProjects();
-      repo.projects = [project('z'), ...repo.projects];
+      repo.projects = [aProject(id: 'z', title: 'z'), ...repo.projects];
 
       await controller.loadMore();
 

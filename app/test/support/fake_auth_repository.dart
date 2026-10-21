@@ -8,8 +8,15 @@ import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 /// Cada resultado se fija por campo; si un campo `*Error` está puesto, la
 /// operación lanza en lugar de responder. Anota cada llamada en [calls].
 class FakeAuthRepository implements IAuthRepository {
+  FakeAuthRepository({this.restoreResult = false, this.anonymous = false});
+
   bool loginResult = true;
-  bool restoreResult = false;
+
+  /// Si al arrancar hay una sesión guardada.
+  bool restoreResult;
+
+  /// Si la sesión activa es de invitado.
+  bool anonymous;
   bool signUpResult = true;
   bool guestResult = true;
   bool upgradeResult = true;
@@ -37,14 +44,13 @@ class FakeAuthRepository implements IAuthRepository {
   /// mientras la operación sigue en curso.
   Completer<void>? loginGate;
 
-  bool _anonymous = false;
   final _expired = StreamController<void>.broadcast();
 
   /// Simula que la sesión se cae sin que nadie la cierre.
   void expireSession() => _expired.add(null);
 
   @override
-  bool get isAnonymous => _anonymous;
+  bool get isAnonymous => anonymous;
 
   @override
   Stream<void> get sessionExpired => _expired.stream;
@@ -55,7 +61,7 @@ class FakeAuthRepository implements IAuthRepository {
     lastLogin = user;
     await loginGate?.future;
     if (loginError != null) throw loginError!;
-    _anonymous = false;
+    anonymous = false;
     return loginResult;
   }
 
@@ -88,7 +94,7 @@ class FakeAuthRepository implements IAuthRepository {
   Future<bool> signInAnonymously() async {
     calls.add('signInAnonymously');
     if (guestError != null) throw guestError!;
-    _anonymous = guestResult;
+    anonymous = guestResult;
     return guestResult;
   }
 
@@ -100,7 +106,7 @@ class FakeAuthRepository implements IAuthRepository {
   ) async {
     calls.add('upgradeAccount');
     if (upgradeError != null) throw upgradeError!;
-    _anonymous = !upgradeResult;
+    anonymous = !upgradeResult;
     return upgradeResult;
   }
 }

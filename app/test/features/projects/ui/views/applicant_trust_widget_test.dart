@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
@@ -21,96 +19,33 @@ import 'package:imker/features/trust/domain/models/trust_metrics.dart';
 import 'package:imker/features/trust/domain/repositories/i_trust_repository.dart';
 import 'package:imker/features/trust/domain/trust_failure.dart';
 
-class _Profiles implements IProfileRepository {
-  @override
-  Future<UserProfile> getProfileOf(String userId) async => const UserProfile(
-    program: 'Derecho',
-    institution: 'Uninorte',
-    bio: 'Litigante en formación.',
-    skills: ['Oratoria'],
-  );
+import '../../../../support/fake_profile_repository.dart';
+import '../../../../support/fake_trust_repository.dart';
+import '../../../../support/fake_project_repository.dart';
+import '../../../../support/builders.dart';
 
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _Trust implements ITrustRepository {
-  TrustMetrics metrics = const TrustMetrics(
-    commitment: 62,
-    onTime: 80,
-    fulfillment: 88,
-    completedProjects: 50,
-    hasHistory: true,
-  );
-  Map<String, int> scores = {};
-  TrustFailure? failure;
-  final metricsAsked = <String>[];
-  final scoresAsked = <List<String>>[];
-
-  @override
-  Future<TrustMetrics> getTrustMetricsOf(String userId) async {
-    metricsAsked.add(userId);
-    if (failure != null) throw failure!;
-    return metrics;
-  }
-
-  @override
-  Future<Map<String, int>> getCommitmentScores(Iterable<String> userIds) async {
-    scoresAsked.add(userIds.toList());
-    if (failure != null) throw failure!;
-    return scores;
-  }
-}
-
-/// Solo lo que la ficha le pide al repositorio de proyectos.
-class _Projects implements IProjectRepository {
-  List<Project> participated = [];
-  bool participatedFails = false;
-  final participatedAsked = <String>[];
-
-  @override
-  Future<List<Project>> getProjectsOfPerson(String userId) async => [];
-
-  @override
-  Future<List<Project>> getProjectsParticipatedBy(String userId) async {
-    participatedAsked.add(userId);
-    if (participatedFails) throw const ProjectFailure('no');
-    return participated;
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-Project _project(String id, {String status = 'open'}) => Project(
-  id: id,
-  title: 'Proyecto $id',
-  imageUrl: '',
-  description: 'd',
-  jobs: const [],
-  skills: const [],
-  status: status,
-);
-
-const _current = Project(
+final _current = aProject(
   id: 'actual',
   owner: 'jefe',
   title: 'Proyecto actual',
-  imageUrl: '',
-  description: '',
-  jobs: [],
-  skills: [],
 );
 
 void main() {
-  late _Trust trust;
-  late _Projects projects;
+  late FakeTrustRepository trust;
+  late FakeProjectRepository projects;
 
   setUp(() {
     Get.reset();
-    trust = _Trust();
-    projects = _Projects();
-    Get.put<IProfileRepository>(_Profiles());
+    trust = FakeTrustRepository()
+      ..metrics = const TrustMetrics(
+        commitment: 62,
+        onTime: 80,
+        fulfillment: 88,
+        completedProjects: 50,
+        hasHistory: true,
+      );
+    projects = FakeProjectRepository();
+    Get.put<IProfileRepository>(FakeProfileRepository());
     Get.put<ITrustRepository>(trust);
     Get.put<IProjectRepository>(projects);
   });
@@ -151,15 +86,7 @@ void main() {
       await tester.pumpWidget(
         GetMaterialApp(
           home: CollaborationRequestsPage(
-            project: const Project(
-              id: 'p1',
-              owner: 'jefe',
-              title: 'Proyecto',
-              imageUrl: '',
-              description: '',
-              jobs: [],
-              skills: [],
-            ),
+            project: aProject(id: 'p1', owner: 'jefe', title: 'Proyecto'),
           ),
         ),
       );
@@ -186,7 +113,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(
-        const GetMaterialApp(
+        GetMaterialApp(
           home: ApplicantDetailPage(
             project: _current,
             applicant: Applicant(
@@ -245,10 +172,10 @@ void main() {
       tester,
     ) async {
       projects.participated = [
-        _project('abierto'),
-        _project('cerrado', status: 'closed'),
+        aProject(id: 'abierto'),
+        aProject(id: 'cerrado', status: 'closed'),
         // El proyecto al que aplica no es «anterior» aunque conste cerrado.
-        _project('actual', status: 'closed'),
+        aProject(id: 'actual', status: 'closed'),
       ];
       await openApplicant(tester);
       expect(projects.participatedAsked, ['ana-id']);
@@ -267,7 +194,7 @@ void main() {
     testWidgets('sin poder leer sus proyectos no ofrece el historial', (
       tester,
     ) async {
-      projects.participatedFails = true;
+      projects.participatedFailure = const ProjectFailure('no');
       await openApplicant(tester);
 
       expect(find.text('Historial de colaboración'), findsNothing);
@@ -280,7 +207,7 @@ void main() {
       tester.view.physicalSize = const Size(800, 3200);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      projects.participated = [_project('cerrado', status: 'closed')];
+      projects.participated = [aProject(id: 'cerrado', status: 'closed')];
 
       await tester.pumpWidget(
         const GetMaterialApp(

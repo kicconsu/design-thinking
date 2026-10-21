@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:roble/roble.dart';
 
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
@@ -12,42 +12,7 @@ import 'package:imker/features/projects/domain/repositories/i_project_repository
 import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
-/// Falla las primeras [failures] veces que se responde una invitación.
-class _FlakySource extends InMemoryProjectDataSource {
-  _FlakySource(this.failures) : super(DummyData().projects);
-
-  int failures;
-
-  @override
-  Future<Map<String, dynamic>> updateInvitationStatus({
-    required String invitationId,
-    required String status,
-  }) async {
-    if (failures > 0) {
-      failures--;
-      throw const RobleApiHttpException(404, 'Not found');
-    }
-    return super.updateInvitationStatus(
-      invitationId: invitationId,
-      status: status,
-    );
-  }
-}
-
-/// Deja en espera la lectura de invitaciones hasta que la prueba lo decida.
-class _GatedSource extends InMemoryProjectDataSource {
-  _GatedSource() : super(DummyData().projects);
-
-  Completer<void>? gate;
-
-  @override
-  Future<List<Map<String, dynamic>>> readInvitationsForUser(
-    String userId,
-  ) async {
-    await gate?.future;
-    return super.readInvitationsForUser(userId);
-  }
-}
+import '../../../../support/scripted_project_data_source.dart';
 
 void main() {
   late InMemoryProjectDataSource source;
@@ -147,7 +112,9 @@ void main() {
   test(
     'si el servidor falla la invitación sigue y reintentar no duplica',
     () async {
-      await setUpWith(_FlakySource(1));
+      await setUpWith(
+        ScriptedProjectDataSource(DummyData().projects)..invitationFailures = 1,
+      );
       final controller = build();
       await controller.fetch();
       final invitation = controller.invitations.single;
@@ -290,14 +257,14 @@ void main() {
   );
 
   test('clear descarta una carga que sigue en vuelo', () async {
-    final slow = _GatedSource();
+    final slow = ScriptedProjectDataSource(DummyData().projects);
     await setUpWith(slow);
     final controller = build();
-    slow.gate = Completer<void>();
+    slow.invitationsGate = Completer<void>();
 
     final loading = controller.fetch();
     controller.clear();
-    slow.gate!.complete();
+    slow.invitationsGate!.complete();
     await loading;
 
     expect(controller.invitations, isEmpty);

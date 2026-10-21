@@ -3,52 +3,19 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/profile_failure.dart';
-import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
 
-class _FakeRepository implements IProfileRepository {
-  /// Si no es null, `getMyProfile` espera a que se complete (carga lenta).
-  Completer<UserProfile>? gate;
-  UserProfile profile = const UserProfile(program: 'Medicina');
-  ProfileFailure? failure;
-
-  @override
-  Future<UserProfile> getMyProfile() async {
-    final g = gate;
-    if (g != null) return g.future;
-    if (failure != null) throw failure!;
-    return profile;
-  }
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async => const UserProfile();
-
-  @override
-  Future<void> ensureMyProfile({required String name}) async {}
-
-  @override
-  Future<UserProfile> updateMyProfile({
-    required String program,
-    required String institution,
-    required String bio,
-    required List<String> skills,
-  }) async {
-    if (failure != null) throw failure!;
-    return profile = UserProfile(
-      program: program,
-      institution: institution,
-      bio: bio,
-      skills: skills,
-    );
-  }
-}
+import '../../../../support/fake_profile_repository.dart';
 
 void main() {
-  late _FakeRepository repo;
+  late FakeProfileRepository repo;
   late ProfileController controller;
 
   setUp(() {
-    repo = _FakeRepository();
+    repo = FakeProfileRepository(
+      me: const UserProfile(program: 'Medicina'),
+      other: const UserProfile(),
+    );
     controller = ProfileController(repo);
   });
 
@@ -83,7 +50,9 @@ void main() {
   });
 
   test('updateProfile devuelve false y deja el error si falla', () async {
-    repo.failure = const ProfileFailure('No tienes permiso para editar este perfil.');
+    repo.failure = const ProfileFailure(
+      'No tienes permiso para editar este perfil.',
+    );
 
     final ok = await controller.updateProfile(
       program: '',
@@ -114,7 +83,7 @@ void main() {
     // Cierra sesión A y entra B, que carga rápido.
     controller.clear();
     repo.gate = null;
-    repo.profile = const UserProfile(program: 'Perfil de B');
+    repo.me = const UserProfile(program: 'Perfil de B');
     await controller.loadProfile();
 
     // Llega la respuesta tardía de A.

@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 
 import 'package:imker/core/widgets/trust_indicators.dart';
 import 'package:imker/features/auth/domain/models/authentication_user.dart';
-import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
@@ -21,48 +20,8 @@ import 'package:imker/features/trust/domain/trust_failure.dart';
 
 import '../../../../support/fake_trust_repository.dart';
 import '../../../../support/dummy_data.dart';
-
-class _Auth implements IAuthRepository {
-  @override
-  Future<bool> restoreSession() async => true;
-
-  @override
-  Future<AuthenticationUser?> getLoggedUser() async => AuthenticationUser(
-    id: 'yo',
-    email: 'yo@correo.com',
-    name: 'Valentina Ríos',
-    password: '',
-  );
-
-  @override
-  bool get isAnonymous => false;
-
-  @override
-  Stream<void> get sessionExpired => const Stream.empty();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _Profiles implements IProfileRepository {
-  @override
-  Future<UserProfile> getMyProfile() async =>
-      const UserProfile(program: 'Ingeniería de Sistemas', skills: ['Python']);
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async => const UserProfile();
-
-  @override
-  Future<void> ensureMyProfile({required String name}) async {}
-
-  @override
-  Future<UserProfile> updateMyProfile({
-    required String program,
-    required String institution,
-    required String bio,
-    required List<String> skills,
-  }) async => const UserProfile();
-}
+import '../../../../support/fake_profile_repository.dart';
+import '../../../../support/fake_auth_repository.dart';
 
 void main() {
   late FakeTrustRepository trust;
@@ -70,8 +29,18 @@ void main() {
   setUp(() {
     Get.reset();
     trust = FakeTrustRepository();
-    Get.put<IProfileRepository>(_Profiles());
-    Get.put<IProjectRepository>(ProjectRepository(InMemoryProjectDataSource(DummyData().projects)));
+    Get.put<IProfileRepository>(
+      FakeProfileRepository(
+        me: const UserProfile(
+          program: 'Ingeniería de Sistemas',
+          skills: ['Python'],
+        ),
+        other: const UserProfile(),
+      ),
+    );
+    Get.put<IProjectRepository>(
+      ProjectRepository(InMemoryProjectDataSource(DummyData().projects)),
+    );
     Get.put(UserProjectsController(currentUserId: () => 'yo'));
     Get.put(
       ProfileController(
@@ -93,7 +62,17 @@ void main() {
 
   Future<void> openProfile(WidgetTester tester) async {
     tallScreen(tester);
-    Get.put(AuthenticationController(_Auth()));
+    Get.put(
+      AuthenticationController(
+        FakeAuthRepository(restoreResult: true)
+          ..user = AuthenticationUser(
+            id: 'yo',
+            email: 'yo@correo.com',
+            name: 'Valentina Ríos',
+            password: '',
+          ),
+      ),
+    );
     await tester.pumpWidget(
       const GetMaterialApp(home: Scaffold(body: ProfilePage())),
     );
@@ -112,7 +91,17 @@ void main() {
   testWidgets('mientras calcula muestra la carga, sin números', (tester) async {
     tallScreen(tester);
     trust.gate = Completer<void>();
-    Get.put(AuthenticationController(_Auth()));
+    Get.put(
+      AuthenticationController(
+        FakeAuthRepository(restoreResult: true)
+          ..user = AuthenticationUser(
+            id: 'yo',
+            email: 'yo@correo.com',
+            name: 'Valentina Ríos',
+            password: '',
+          ),
+      ),
+    );
     await tester.pumpWidget(
       const GetMaterialApp(home: Scaffold(body: ProfilePage())),
     );

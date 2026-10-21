@@ -10,34 +10,16 @@ import 'package:imker/features/projects/domain/models/project_member.dart';
 import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/widgets/project_members_tab.dart';
 
-class _FakeProfiles implements IProfileRepository {
-  ProfileFailure? failure;
-  final asked = <String>[];
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async {
-    asked.add(userId);
-    if (failure != null) throw failure!;
-    return const UserProfile(
-      program: 'Derecho',
-      institution: 'Uninorte',
-      bio: 'Litigante en formación.',
-      skills: ['Oratoria'],
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import '../../../../support/fake_profile_repository.dart';
 
 const _ana = ProjectMember(userId: 'ana-id', name: 'Ana Pérez');
 
 void main() {
-  late _FakeProfiles profiles;
+  late FakeProfileRepository profiles;
 
   setUp(() {
     Get.reset();
-    profiles = _FakeProfiles();
+    profiles = FakeProfileRepository();
     Get.put<IProfileRepository>(profiles);
   });
 

@@ -4,14 +4,9 @@ import 'package:get/get.dart';
 
 import '../../../../support/dummy_data.dart';
 
-import 'package:imker/features/auth/domain/models/authentication_user.dart';
-import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
-import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
-import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/models/project_member.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
@@ -19,58 +14,21 @@ import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
-/// Perfiles con nombre propio por usuario.
-class _Source extends InMemoryProjectDataSource {
-  _Source(super.data);
-
-  @override
-  Future<Map<String, dynamic>?> readUserProfile(String userId) async => {
-    'name': 'Nombre de $userId',
-    'career': {'program': 'Ingeniería'},
-  };
-}
-
-class _Auth implements IAuthRepository {
-  _Auth({required this.anonymous});
-
-  final bool anonymous;
-
-  @override
-  Future<bool> restoreSession() async => true;
-
-  @override
-  Future<AuthenticationUser?> getLoggedUser() async =>
-      AuthenticationUser(email: 'yo@x.co', name: 'Yo', password: '', id: 'yo');
-
-  @override
-  bool get isAnonymous => anonymous;
-
-  @override
-  Stream<void> get sessionExpired => const Stream.empty();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _Profiles implements IProfileRepository {
-  @override
-  Future<UserProfile> getProfileOf(String userId) async =>
-      const UserProfile(program: 'Derecho', skills: ['Oratoria']);
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import '../../../../support/fake_profile_repository.dart';
+import '../../../../support/fake_auth_repository.dart';
+import '../../../../support/fake_project_repository.dart';
+import '../../../../support/scripted_project_data_source.dart';
 
 void main() {
-  late _Source source;
+  late ScriptedProjectDataSource source;
   late ProjectRepository repo;
 
   setUp(() {
     Get.reset();
-    source = _Source(DummyData().projects);
+    source = ScriptedProjectDataSource(DummyData().projects);
     repo = ProjectRepository(source);
     Get.put<IProjectRepository>(repo);
-    Get.put<IProfileRepository>(_Profiles());
+    Get.put<IProfileRepository>(FakeProfileRepository());
   });
 
   tearDown(Get.reset);
@@ -148,7 +106,10 @@ void main() {
       tester,
     ) async {
       Get.delete<IProjectRepository>(force: true);
-      Get.put<IProjectRepository>(_FailingProjects());
+      Get.put<IProjectRepository>(
+        FakeProjectRepository()
+          ..ofPersonFailure = const ProjectFailure('Sin conexión.'),
+      );
 
       await open(tester);
 
@@ -166,7 +127,11 @@ void main() {
       tester.view.physicalSize = const Size(1080, 3000);
       tester.view.devicePixelRatio = 2.5;
       addTearDown(tester.view.reset);
-      Get.put(AuthenticationController(_Auth(anonymous: anonymous)));
+      Get.put(
+        AuthenticationController(
+          FakeAuthRepository(restoreResult: true, anonymous: anonymous),
+        ),
+      );
       Get.put(UserProjectsController());
       await repo.addProjectMember(
         projectId: DummyData.kircheId,
@@ -229,13 +194,4 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
-}
-
-class _FailingProjects implements IProjectRepository {
-  @override
-  Future<List<Project>> getProjectsOfPerson(String userId) async =>
-      throw const ProjectFailure('Sin conexión.');
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

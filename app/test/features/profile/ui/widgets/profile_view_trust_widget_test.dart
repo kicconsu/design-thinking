@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 
 import 'package:imker/core/widgets/trust_indicators.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
-import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/profile/ui/pages/trust_indicators_page.dart';
 import 'package:imker/features/profile/ui/viewmodels/profile_controller.dart';
 import 'package:imker/features/profile/ui/widgets/profile_view.dart';
@@ -12,6 +11,7 @@ import 'package:imker/features/trust/domain/models/trust_metrics.dart';
 import 'package:imker/features/trust/domain/trust_failure.dart';
 
 import '../../../../support/fake_trust_repository.dart';
+import '../../../../support/fake_profile_repository.dart';
 
 const _base = UserProfile(
   program: 'Ingeniería de Sistemas',
@@ -31,25 +31,6 @@ const _withTrust = UserProfile(
 Widget _host(Widget child) => GetMaterialApp(
   home: Scaffold(body: SingleChildScrollView(child: child)),
 );
-
-class _Profiles implements IProfileRepository {
-  @override
-  Future<UserProfile> getMyProfile() async => _base;
-
-  @override
-  Future<UserProfile> getProfileOf(String userId) async => _base;
-
-  @override
-  Future<void> ensureMyProfile({required String name}) async {}
-
-  @override
-  Future<UserProfile> updateMyProfile({
-    required String program,
-    required String institution,
-    required String bio,
-    required List<String> skills,
-  }) async => _base;
-}
 
 void main() {
   group('ProfileView · indicadores de confianza', () {
@@ -147,7 +128,7 @@ void main() {
       Get.reset();
       trust = FakeTrustRepository();
       controller = ProfileController(
-        _Profiles(),
+        FakeProfileRepository(me: _base, other: _base),
         trust: trust,
         currentUserId: () => 'yo',
       );

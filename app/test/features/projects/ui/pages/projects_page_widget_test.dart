@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
-import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/pages/projects_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
@@ -12,16 +11,7 @@ import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dar
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
 import '../../../../support/fake_auth_repository.dart';
-
-Project _project(String id) => Project(
-  id: id,
-  owner: 'yo',
-  title: 'Proyecto $id',
-  imageUrl: '',
-  description: '',
-  jobs: const [],
-  skills: const [],
-);
+import '../../../../support/builders.dart';
 
 void main() {
   late FakeAuthRepository repo;
@@ -71,7 +61,10 @@ void main() {
   ) async {
     await pumpPage(tester);
 
-    projects.coCreatedProjects.addAll([_project('a'), _project('b')]);
+    projects.coCreatedProjects.addAll([
+      aProject(id: 'a', owner: 'yo'),
+      aProject(id: 'b', owner: 'yo'),
+    ]);
     await tester.pumpAndSettle();
 
     expect(find.text('Mis proyectos (2)'), findsOneWidget);
@@ -82,9 +75,12 @@ void main() {
   ) async {
     await pumpPage(tester);
 
-    projects.savedProjects.addAll([_project('s'), _project('p')]);
+    projects.savedProjects.addAll([
+      aProject(id: 's', owner: 'yo'),
+      aProject(id: 'p', owner: 'yo'),
+    ]);
     projects.appliedProjectIds.add('p');
-    projects.activeProjects.add(_project('a'));
+    projects.activeProjects.add(aProject(id: 'a', owner: 'yo'));
     await tester.pumpAndSettle();
 
     expect(find.text('Otros proyectos (3)'), findsOneWidget);
