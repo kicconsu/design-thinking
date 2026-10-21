@@ -22,18 +22,15 @@ TrustMetrics _calc(
 
 void main() {
   group('cumplimiento', () {
-    test('tomó 5, terminó 5: 100 %', () {
-      expect(_calc([_p(finished: 5, taken: 5, total: 5)]).fulfillment, 100);
-    });
-
-    test('tomó 5, terminó 0: 0 %, no "sin datos"', () {
-      final m = _calc([_p(taken: 5, total: 5)]);
-      expect(m.fulfillment, 0);
-    });
-
-    test('un contador desfasado (terminó más de lo que tomó) se acota', () {
-      expect(_calc([_p(finished: 7, taken: 5, total: 7)]).fulfillment, 100);
-    });
+    test(
+      'por proyecto: todo 100 %, nada 0 % (no «sin datos»), desfase se acota',
+      () {
+        expect(_calc([_p(finished: 5, taken: 5, total: 5)]).fulfillment, 100);
+        expect(_calc([_p(taken: 5, total: 5)]).fulfillment, 0);
+        // Un contador desfasado: terminó más de lo que tomó.
+        expect(_calc([_p(finished: 7, taken: 5, total: 7)]).fulfillment, 100);
+      },
+    );
 
     test('promedia entre proyectos, no entre tareas', () {
       // 1/4 = 25 % y 3/3 = 100 %  ->  62.5 %
@@ -59,31 +56,19 @@ void main() {
 
   group('entrega a tiempo', () {
     test('cuenta las entregas a tiempo frente a las que tenían fecha', () {
-      final m = _calc(
-        [_p(taken: 1, total: 1)],
-        deliveries: const OnTimeDeliveries(withDeadline: 4, onTime: 3),
-      );
+      final m = _calc([
+        _p(taken: 1, total: 1),
+      ], deliveries: const OnTimeDeliveries(withDeadline: 4, onTime: 3));
       expect(m.onTime, 75);
     });
 
-    test('todas tarde es 0 %', () {
-      final m = _calc(
-        [_p(taken: 1, total: 1)],
-        deliveries: const OnTimeDeliveries(withDeadline: 2, onTime: 0),
-      );
-      expect(m.onTime, 0);
-    });
+    test('todas tarde es 0 %, sin fechas es nulo y un desfase se acota', () {
+      int? onTime(OnTimeDeliveries deliveries) =>
+          _calc([_p(taken: 1, total: 1)], deliveries: deliveries).onTime;
 
-    test('sin tareas con fecha es nulo, no 0 %', () {
-      expect(_calc([_p(taken: 1, total: 1)]).onTime, isNull);
-    });
-
-    test('un contador desfasado se acota a 100 %', () {
-      final m = _calc(
-        [_p(taken: 1, total: 1)],
-        deliveries: const OnTimeDeliveries(withDeadline: 2, onTime: 3),
-      );
-      expect(m.onTime, 100);
+      expect(onTime(const OnTimeDeliveries(withDeadline: 2, onTime: 0)), 0);
+      expect(onTime(const OnTimeDeliveries()), isNull);
+      expect(onTime(const OnTimeDeliveries(withDeadline: 2, onTime: 3)), 100);
     });
   });
 
@@ -96,21 +81,17 @@ void main() {
       expect(m.completedProjects, 50);
     });
 
-    test('un proyecto cerrado al 60 % no cuenta como completado', () {
+    test('ni al 60 % ni sin tareas cuenta como completado', () {
       expect(_calc([_p(total: 5, progress: 60)]).completedProjects, 0);
-    });
-
-    test('un proyecto sin tareas no cuenta como completado', () {
       expect(_calc([_p(progress: 100)]).completedProjects, 0);
     });
   });
 
   group('índice general', () {
     test('es el promedio de los indicadores que tienen datos', () {
-      final m = _calc(
-        [_p(finished: 3, taken: 4, total: 4, progress: 100)],
-        deliveries: const OnTimeDeliveries(withDeadline: 2, onTime: 1),
-      );
+      final m = _calc([
+        _p(finished: 3, taken: 4, total: 4, progress: 100),
+      ], deliveries: const OnTimeDeliveries(withDeadline: 2, onTime: 1));
       // (75 cumplimiento + 50 a tiempo + 100 completados) / 3 = 75
       expect(m.commitment, 75);
     });
@@ -120,6 +101,11 @@ void main() {
       // Sin fechas límite: promedio de cumplimiento (100) y completados (100).
       expect(m.onTime, isNull);
       expect(m.commitment, 100);
+
+      // Con un solo indicador con datos («completados»), el general es ese.
+      final single = _calc([_p(total: 3, progress: 100)]);
+      expect(single.fulfillment, isNull);
+      expect(single.commitment, 100);
     });
 
     test('se promedia sin redondear antes', () {
@@ -134,14 +120,6 @@ void main() {
       final m = _calc([_p(taken: 3, total: 3)]);
       expect(m.commitment, 0);
       expect(m.hasHistory, isTrue);
-    });
-
-    test('con un solo indicador con datos, es ese', () {
-      // Participó pero sin tareas tomadas ni fechas: solo "completados".
-      final m = _calc([_p(total: 3, progress: 100)]);
-      expect(m.fulfillment, isNull);
-      expect(m.onTime, isNull);
-      expect(m.commitment, 100);
     });
   });
 

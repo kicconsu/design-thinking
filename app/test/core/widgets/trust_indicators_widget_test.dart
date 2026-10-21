@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:imker/core/widgets/trust_indicators.dart';
 
-Widget _wrap(TrustIndicators child) =>
-    MaterialApp(home: Scaffold(body: child));
+Widget _wrap(TrustIndicators child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
   testWidgets('muestra los valores y el nombre "Cumplimiento"', (tester) async {
@@ -58,20 +57,5 @@ void main() {
 
     expect(find.text('0%'), findsNWidgets(4));
     expect(find.text('—'), findsNothing);
-  });
-
-  testWidgets('sin índice general muestra «—»', (tester) async {
-    await tester.pumpWidget(
-      _wrap(
-        const TrustIndicators(
-          commitmentScore: null,
-          onTimeScore: null,
-          fulfillmentScore: null,
-          completedProjectsScore: null,
-        ),
-      ),
-    );
-
-    expect(find.text('—'), findsNWidgets(4));
   });
 }

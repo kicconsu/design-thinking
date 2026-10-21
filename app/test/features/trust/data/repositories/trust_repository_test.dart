@@ -105,19 +105,12 @@ void main() {
       ]);
 
       expect((await repo.getTrustMetricsOf('ana')).fulfillment, 50);
-    });
 
-    test('sin historial son indicadores vacíos', () async {
-      final m = await repo.getTrustMetricsOf('ana');
-      expect(m.hasHistory, isFalse);
-      expect(m.commitment, isNull);
-      expect(m.onTime, isNull);
-    });
-
-    test('un id vacío no consulta nada', () async {
-      await repo.getTrustMetricsOf('');
-      expect(source.participationReads, 0);
-      expect(source.deliveryReads, 0);
+      // Quien no tiene historial recibe indicadores vacíos.
+      final none = await repo.getTrustMetricsOf('eva');
+      expect(none.hasHistory, isFalse);
+      expect(none.commitment, isNull);
+      expect(none.onTime, isNull);
     });
   });
 
@@ -188,6 +181,7 @@ void main() {
     });
 
     test('sin ids no consulta', () async {
+      await repo.getTrustMetricsOf('');
       expect(await repo.getCommitmentScores(['', '']), isEmpty);
       expect(source.participationReads, 0);
       expect(source.deliveryReads, 0);
