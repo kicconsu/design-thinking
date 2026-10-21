@@ -41,24 +41,10 @@ jobs:
             exit 1
           fi
 
-      # Proyectos guardados / pendientes / activos
-      # Solicitudes de colaboración e invitaciones
-      # Gabinete de tareas
-      - name: Unit tests
-        run: >
-          flutter test
-          test/features/projects/ui/viewmodels/user_projects_controller_test.dart
-          test/features/projects/data/repositories/project_repository_test.dart
-          test/features/projects/data/repositories/membership_rules_test.dart
-          test/features/projects/ui/viewmodels/collaboration_requests_controller_test.dart
-          test/features/projects/ui/viewmodels/invitations_controller_test.dart
-          test/features/projects/data/repositories/project_invitation_test.dart
-          test/features/tasks/data/repositories/task_repository_test.dart
+      - name: Análisis estático
+        run: flutter analyze
 
-      # Archivos con testWidgets(); también traen sus pruebas de lógica.
-      - name: Widget tests
-        run: >
-          flutter test
-          test/features/projects/ui/views/applicant_profile_test.dart
-          test/features/tasks/ui/pages/task_board_test.dart
-          test/features/tasks/ui/pages/task_progress_test.dart
+      # Toda la carpeta test/ (lógica y widgets): no hay lista de archivos que
+      # mantener al mover o renombrar pruebas.
+      - name: Unit y widget tests
+        run: flutter test
