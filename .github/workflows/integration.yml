@@ -1,0 +1,44 @@
+name: Pruebas de integración
+
+# Después de cada push (y en cada pull request) un contenedor de GitHub corre
+# los seis flujos principales de la app en Chrome, sin interfaz.
+# Ninguna prueba habla con Roble: los datos salen de los dobles de
+# app/integration_test/support.
+on:
+  push:
+  pull_request:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # La app de Flutter vive en la carpeta app/ del repositorio.
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.2
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # La imagen trae Chrome y un chromedriver de la misma versión.
+      - name: Start chromedriver
+        run: |
+          "$CHROMEWEBDRIVER/chromedriver" --port=4444 &
+          sleep 2
+
+      - name: Integration tests
+        run: |
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/app_test.dart \
+            -d web-server --browser-name=chrome --headless
