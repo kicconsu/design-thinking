@@ -37,6 +37,7 @@ import 'fake_roble_client.dart';
 import 'fake_task_data_source.dart';
 import 'fake_trust_repository.dart';
 import 'integration_seed.dart';
+import 'tap_overlay.dart';
 
 /// Todo lo que una prueba de integración puede sembrar y consultar.
 ///
@@ -227,6 +228,7 @@ Widget createHomeScreen() {
     title: 'Imker',
     theme: theme.light(),
     debugShowCheckedModeBanner: false,
+    builder: (context, child) => TapOverlay.wrap(child),
     initialRoute: AppRoutes.splash,
     getPages: AppPages.routes,
   );
@@ -409,6 +411,15 @@ Future<void> tapOn(WidgetTester tester, Finder finder) async {
   await _pump(tester, const Duration(milliseconds: 200));
   await tester.tap(finder);
   await _pump(tester);
+  await _pace(tester);
+}
+
+/// Pausa entre pasos para poder seguir la prueba a simple vista en un
+/// teléfono: `--dart-define=STEP_MS=600`. Sin él no espera (CI y local).
+const _stepMs = int.fromEnvironment('STEP_MS');
+
+Future<void> _pace(WidgetTester tester) async {
+  if (_stepMs > 0) await tester.pump(const Duration(milliseconds: _stepMs));
 }
 
 /// Atajo de [tapOn] para un texto exacto.
@@ -421,6 +432,7 @@ Future<void> goBack(WidgetTester tester) async {
   // flecha de la página visible.
   await tester.tap(find.byType(BackButton).first);
   await pumpFor(tester);
+  await _pace(tester);
 }
 
 // ─── Pasos que comparten varios flujos ──────────────────────────────────────

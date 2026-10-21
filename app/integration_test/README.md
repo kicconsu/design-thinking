@@ -42,7 +42,26 @@ mismo cableado de GetX con dobles:
 Al terminar un flujo, cada prueba consulta los dobles para comprobar qué quedó
 guardado (solicitud aceptada, tarea terminada, progreso del proyecto…).
 
-## Correr en local
+## Correr en un teléfono o emulador (verla en pantalla)
+
+Es la ruta móvil de las diapositivas: con un dispositivo Android conectado (o un
+emulador abierto), desde `app/`:
+
+```bash
+flutter test integration_test/app_test.dart -d <id-del-dispositivo> \
+  --dart-define=SHOW_TAPS=true --dart-define=STEP_MS=600
+```
+
+- `SHOW_TAPS=true` dibuja un anillo rojo donde la prueba toca. Los toques de la
+  prueba no los pinta el sistema operativo (la opción «Mostrar toques» de
+  Android solo ve dedos reales), así que la app los dibuja.
+- `STEP_MS=600` espera 600 ms tras cada toque para poder seguirla a simple vista.
+- Sin esos dos parámetros corre a toda velocidad, sin anillos (así corre el CI).
+
+La prueba instala una versión de la app con el mismo identificador que la
+normal: al terminar, vuelve a instalar la tuya con `flutter run`.
+
+## Correr en web (como el CI)
 
 1. Instalar el ChromeDriver de la misma versión que Chrome y dejarlo
    escuchando:
