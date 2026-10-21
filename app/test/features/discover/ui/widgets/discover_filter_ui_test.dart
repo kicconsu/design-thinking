@@ -44,10 +44,15 @@ void main() {
   /// filtro antes de mostrar la pantalla lo crean ellas mismas con [start].
   void start() => controller = Get.put(DiscoverController(repo, pageSize: 10));
 
-  Future<void> show(WidgetTester tester, {double textScale = 1}) async {
+  Future<void> show(
+    WidgetTester tester, {
+    double textScale = 1,
+    Size size = const Size(1080, 2400),
+    double pixelRatio = 2.5,
+  }) async {
     if (!Get.isRegistered<DiscoverController>()) start();
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 2.5;
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = pixelRatio;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       GetMaterialApp(
@@ -102,18 +107,15 @@ void main() {
   ) async {
     await show(tester);
     await openSheet(tester);
-    expect(find.text('Ver 3 proyectos'), findsOneWidget);
 
     await pick(tester, 'career', 'Diseño');
-    expect(find.text('Ver 1 proyecto'), findsOneWidget);
 
-    await tester.tap(find.text('Ver 1 proyecto'));
+    await tester.tap(find.text('Aplicar'));
     await tester.pumpAndSettle();
 
     expect(controller.filter.value.career, 'diseno');
     expect(find.text('Filtros (1)'), findsOneWidget);
-    expect(find.widgetWithText(InputChip, 'Diseño'), findsOneWidget);
-    expect(find.text('1 proyecto'), findsOneWidget);
+    expect(find.byTooltip('Quitar filtro Diseño'), findsOneWidget);
     expect(find.text('Proyecto c'), findsOneWidget);
   });
 
@@ -154,7 +156,6 @@ void main() {
     await tester.tap(find.text('Limpiar'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Ver 3 proyectos'), findsOneWidget);
     expect(controller.filter.value.career, 'diseno'); // aún no se aplicó
   });
 
@@ -166,11 +167,11 @@ void main() {
 
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ver 2 proyectos'));
+    await tester.tap(find.text('Aplicar'));
     await tester.pumpAndSettle();
 
     expect(find.text('Filtros (1)'), findsOneWidget);
-    expect(find.widgetWithText(InputChip, 'Solo abiertos'), findsOneWidget);
+    expect(find.byTooltip('Quitar filtro Solo abiertos'), findsOneWidget);
   });
 
   testWidgets('la ✕ de un chip quita ese filtro sin abrir la hoja', (
@@ -183,6 +184,7 @@ void main() {
     await show(tester);
     expect(find.text('Filtros (2)'), findsOneWidget);
 
+    await tester.ensureVisible(find.byTooltip('Quitar filtro Dart'));
     await tester.tap(find.byTooltip('Quitar filtro Dart'));
     await tester.pumpAndSettle();
 
@@ -252,10 +254,60 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('con la barra y tres etiquetas la tarjeta no se desborda', (
+    tester,
+  ) async {
+    repo.projects = [
+      project(
+        'a',
+        jobs: ['Software'],
+        skills: [for (var i = 0; i < 12; i++) 'Habilidad $i'],
+      ),
+    ];
+    start();
+    await controller.applyFilter(
+      const ProjectFilter(
+        career: 'software',
+        skill: 'habilidad 1',
+        onlyOpen: true,
+      ),
+    );
+
+    // Un teléfono pequeño y uno con fuente grande.
+    for (final (size, ratio, scale) in [
+      (const Size(720, 1280), 2.0, 1.0),
+      (const Size(1080, 2000), 3.0, 1.3),
+    ]) {
+      await show(tester, size: size, pixelRatio: ratio, textScale: scale);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('la hoja deja libre la barra de navegación del teléfono', (
+    tester,
+  ) async {
+    await show(tester);
+    // 120 px físicos (48 dp) de barra de gestos/botones abajo.
+    tester.view.padding = const FakeViewPadding(bottom: 120);
+    tester.view.viewPadding = const FakeViewPadding(bottom: 120);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+    await tester.pumpAndSettle();
+
+    await openSheet(tester);
+
+    final screen =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final button = tester.getBottomLeft(
+      find.widgetWithText(FilledButton, 'Aplicar'),
+    );
+    expect(button.dy, lessThanOrEqualTo(screen - 48));
+  });
+
   testWidgets('los controles tienen al menos 48 dp de alto', (tester) async {
     await show(tester);
 
-    final button = tester.getSize(find.byType(OutlinedButton));
+    final button = tester.getSize(find.widgetWithText(FilledButton, 'Filtros'));
     expect(button.height, greaterThanOrEqualTo(48));
   });
 }

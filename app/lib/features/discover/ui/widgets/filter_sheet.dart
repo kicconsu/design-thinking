@@ -4,6 +4,7 @@ import 'package:imker/features/discover/domain/models/filter_option.dart';
 import 'package:imker/features/discover/domain/models/project_filter.dart';
 import 'package:imker/features/discover/domain/models/project_page.dart';
 import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
+import 'package:imker/features/discover/ui/widgets/filter_style.dart';
 import 'package:imker/features/discover/ui/widgets/option_picker.dart';
 
 /// Etiqueta con la que se muestra [key], o la clave si ya no se ofrece.
@@ -24,6 +25,8 @@ Future<void> showDiscoverFilterSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+    shape: squareSheetShape(Theme.of(context).colorScheme),
     builder: (_) => _FilterSheet(controller: controller),
   );
 }
@@ -118,13 +121,22 @@ class _FilterSheetState extends State<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
     final count = _count;
     final noResults = count == 0;
 
+    // El teclado sube la hoja; sin él, la barra de gestos o de botones del
+    // sistema no debe tapar el botón.
+    final media = MediaQuery.of(context);
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + (media.viewInsets.bottom > 0 ? 0 : media.viewPadding.bottom),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -176,13 +188,16 @@ class _FilterSheetState extends State<_FilterSheet> {
               ),
             FilledButton(
               onPressed: noResults || _failed ? null : _apply,
-              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+              style: squareButtonStyle(cs).copyWith(
+                minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+              ),
               child: Text(
-                count == null
-                    ? (_failed ? 'Sin conexión' : 'Calculando…')
+                _failed
+                    ? 'Sin conexión'
                     : noResults
                     ? 'Sin resultados'
-                    : 'Ver ${_projects(count)}',
+                    : 'Aplicar',
+                style: tt.headlineSmall,
               ),
             ),
           ],
@@ -191,11 +206,6 @@ class _FilterSheetState extends State<_FilterSheet> {
     );
   }
 }
-
-/// «1 proyecto» / «12 proyectos».
-String _projects(int n) => n == 1 ? '1 proyecto' : '$n proyectos';
-
-String projectsLabel(int n) => _projects(n);
 
 class _SelectorField extends StatelessWidget {
   const _SelectorField({
@@ -222,6 +232,7 @@ class _SelectorField extends StatelessWidget {
           child: InputDecorator(
             decoration: InputDecoration(
               labelText: label,
+              border: squareInputBorder,
               suffixIcon: const Icon(Icons.arrow_drop_down),
             ),
             child: Text(value, maxLines: 2, overflow: TextOverflow.ellipsis),

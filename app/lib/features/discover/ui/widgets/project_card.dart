@@ -316,12 +316,25 @@ class _SkillsAndDescription extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  ...skills.map(
-                    (s) => Text(
-                      '· $s',
-                      style: tt.bodySmall?.copyWith(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  // Si no caben todas (pantalla baja, barra de filtros), se
+                  // recortan en lugar de desbordar la tarjeta.
+                  Expanded(
+                    child: ClipRect(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final s in skills)
+                              Text(
+                                '· $s',
+                                style: tt.bodySmall?.copyWith(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],

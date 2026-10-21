@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:imker/core/utils/normalize_label.dart';
 import 'package:imker/features/discover/domain/models/filter_option.dart';
+import 'package:imker/features/discover/ui/widgets/filter_style.dart';
 
 /// Opción elegida en el selector. Envuelve la clave para distinguir «Todas»
 /// (`key == null`) de cerrar el selector sin elegir (resultado nulo).
@@ -58,8 +59,13 @@ class _OptionPickerState extends State<_OptionPicker> {
         .toList();
     final searchable = widget.options.length > optionPickerSearchThreshold;
 
+    final media = MediaQuery.of(context);
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(
+        bottom: media.viewInsets.bottom > 0
+            ? media.viewInsets.bottom
+            : media.viewPadding.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -74,6 +80,7 @@ class _OptionPickerState extends State<_OptionPicker> {
               child: TextField(
                 autofocus: true,
                 decoration: const InputDecoration(
+                  border: squareInputBorder,
                   prefixIcon: Icon(Icons.search),
                   labelText: 'Buscar',
                 ),

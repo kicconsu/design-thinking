@@ -3,10 +3,11 @@ import 'package:get/get.dart';
 
 import 'package:imker/features/discover/ui/viewmodels/discover_controller.dart';
 import 'package:imker/features/discover/ui/widgets/filter_sheet.dart';
+import 'package:imker/features/discover/ui/widgets/filter_style.dart';
 
-/// Barra fina sobre el feed: botón «Filtros», un chip por filtro activo que se
-/// quita con la ✕ (en una segunda línea que solo existe con filtros activos) y,
-/// con filtros activos, cuántos proyectos hay.
+/// Barra de una sola línea sobre el feed: el botón «Filtros» y, a su lado, una
+/// etiqueta por filtro activo que se quita con la ✕. Sin filtros activos solo
+/// queda el botón, para quitarle al feed la menor altura posible.
 class DiscoverFilterBar extends StatelessWidget {
   const DiscoverFilterBar({super.key, required this.controller});
 
@@ -14,22 +15,23 @@ class DiscoverFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Obx(() {
       final filter = controller.filter.value;
-      final active = filter.activeCount;
-      final chips = <Widget>[
+      final tags = <Widget>[
         if (filter.career != null)
-          _FilterChip(
+          _FilterTag(
             label: optionLabel(controller.careerOptions, filter.career!),
             onRemoved: () => controller.setCareer(null),
           ),
         if (filter.skill != null)
-          _FilterChip(
+          _FilterTag(
             label: optionLabel(controller.skillOptions, filter.skill!),
             onRemoved: () => controller.setSkill(null),
           ),
         if (filter.onlyOpen)
-          _FilterChip(
+          _FilterTag(
             label: 'Solo abiertos',
             onRemoved: () => controller.setOnlyOpen(false),
           ),
@@ -39,37 +41,35 @@ class DiscoverFilterBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
             child: Row(
               children: [
-                OutlinedButton.icon(
+                FilledButton.icon(
                   onPressed: () => showDiscoverFilterSheet(context, controller),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(48, 48),
+                  style: squareButtonStyle(cs).copyWith(
+                    minimumSize: const WidgetStatePropertyAll(Size(48, 44)),
                   ),
                   icon: const Icon(Icons.tune),
-                  label: Text(active == 0 ? 'Filtros' : 'Filtros ($active)'),
+                  label: Text(
+                    filter.isEmpty
+                        ? 'Filtros'
+                        : 'Filtros (${filter.activeCount})',
+                    style: Theme.of(context).textTheme.labelLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
                 ),
-                if (active > 0) ...[
-                  const SizedBox(width: 12),
+                if (tags.isNotEmpty) ...[
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      projectsLabel(controller.total.value),
-                      textAlign: TextAlign.end,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelLarge,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(children: tags),
                     ),
                   ),
                 ],
               ],
             ),
           ),
-          if (chips.isNotEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(children: chips),
-            ),
           SizedBox(
             height: 3,
             child: controller.isLoading.value
@@ -82,25 +82,52 @@ class DiscoverFilterBar extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.onRemoved});
+/// Etiqueta rectangular con borde, como el resto de la interfaz.
+class _FilterTag extends StatelessWidget {
+  const _FilterTag({required this.label, required this.onRemoved});
 
   final String label;
   final VoidCallback onRemoved;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.only(right: 6),
-      child: Center(
-        child: InputChip(
-          label: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 160),
-            child: Text(label, overflow: TextOverflow.ellipsis),
+      child: Semantics(
+        button: true,
+        label: 'Quitar filtro $label',
+        excludeSemantics: true,
+        child: Tooltip(
+          message: 'Quitar filtro $label',
+          child: InkWell(
+            onTap: onRemoved,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 44, maxWidth: 180),
+              padding: const EdgeInsets.only(left: 10, right: 6),
+              decoration: BoxDecoration(
+                color: cs.tertiaryContainer,
+                border: Border.all(color: cs.onTertiaryContainer),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelLarge
+                          ?.copyWith(color: cs.onTertiaryContainer),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(Icons.close, size: 18, color: cs.onTertiaryContainer),
+                ],
+              ),
+            ),
           ),
-          tooltip: label,
-          onDeleted: onRemoved,
-          deleteButtonTooltipMessage: 'Quitar filtro $label',
         ),
       ),
     );
