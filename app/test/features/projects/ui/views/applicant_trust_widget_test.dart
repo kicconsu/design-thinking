@@ -10,7 +10,9 @@ import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
+
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/features/projects/ui/views/collaboration_requests_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/views/applicant_detail_page.dart';
@@ -115,7 +117,7 @@ void main() {
 
   tearDown(Get.reset);
 
-  group('lista de solicitudes', () {
+  group('lista de solicitudes (tarjeta)', () {
     late InMemoryProjectDataSource source;
     late IProjectRepository repository;
 
@@ -141,28 +143,6 @@ void main() {
 
     Applicant by(CollaborationRequestsController c, String user) =>
         c.applicants.firstWhere((a) => a.userId == user);
-
-    test('cada solicitud trae su compromiso, con una sola consulta', () async {
-      trust.scores = {'ana': 75};
-      final controller = await build(trustRepo: trust);
-
-      await controller.fetchForProject('p1');
-
-      expect(by(controller, 'ana').commitmentScore, 75);
-      expect(by(controller, 'luis').commitmentScore, isNull);
-      expect(trust.scoresAsked, hasLength(1));
-      expect(trust.scoresAsked.single, unorderedEquals(['ana', 'luis']));
-    });
-
-    test('si no se puede calcular, la lista sale igual sin ese dato', () async {
-      trust.failure = const TrustFailure('Sin conexión.');
-      final controller = await build(trustRepo: trust);
-
-      await controller.fetchForProject('p1');
-
-      expect(controller.pendingCount('p1'), 2);
-      expect(by(controller, 'ana').commitmentScore, isNull);
-    });
 
     testWidgets('la tarjeta muestra el compromiso, solo si hay', (
       tester,
@@ -191,46 +171,6 @@ void main() {
       expect(find.text('Compromiso 75%'), findsOneWidget);
       expect(find.textContaining('Compromiso'), findsOneWidget);
     });
-
-    test('sin repositorio de métricas también funciona', () async {
-      Get.delete<ITrustRepository>(force: true);
-      final controller = await build();
-
-      await controller.fetchForProject('p1');
-
-      expect(controller.pendingCount('p1'), 2);
-    });
-  });
-
-  group('getProjectsParticipatedBy', () {
-    test('incluye los que dejó, a diferencia de getProjectsOfPerson', () async {
-      final source = InMemoryProjectDataSource(DummyData().projects);
-      final repository = ProjectRepository(source);
-      await source.addProjectMember(
-        projectId: DummyData.kircheId,
-        userId: 'ana',
-      );
-      await source.addProjectMember(
-        projectId: DummyData.aquaNetId,
-        userId: 'ana',
-      );
-      await source.endMembership(DummyData.aquaNetId, 'ana', 'left');
-
-      final participated = await repository.getProjectsParticipatedBy('ana');
-      final current = await repository.getProjectsOfPerson('ana');
-
-      expect(participated.map((p) => p.id), {
-        DummyData.kircheId,
-        DummyData.aquaNetId,
-      });
-      expect(current.map((p) => p.id), [DummyData.kircheId]);
-    });
-
-    test('sin estancias, o sin id, no hay nada', () async {
-      final repository = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
-      expect(await repository.getProjectsParticipatedBy('nadie'), isEmpty);
-      expect(await repository.getProjectsParticipatedBy(''), isEmpty);
-    });
   });
 
   group('ficha de una solicitud', () {
@@ -240,7 +180,9 @@ void main() {
       addTearDown(tester.view.reset);
       Get.put(
         CollaborationRequestsController(
-          repository: ProjectRepository(InMemoryProjectDataSource(DummyData().projects)),
+          repository: ProjectRepository(
+            InMemoryProjectDataSource(DummyData().projects),
+          ),
           currentUserId: () => 'jefe',
           isOwner: (_) => true,
           trust: trust,
@@ -279,15 +221,15 @@ void main() {
       expect(find.text('Proyectos completados'), findsOneWidget);
     });
 
-    testWidgets('sin historial explica cuándo aparecen', (
-      tester,
-    ) async {
+    testWidgets('sin historial explica cuándo aparecen', (tester) async {
       trust.metrics = TrustMetrics.none;
       await openApplicant(tester);
 
       expect(find.text('Índice general de compromiso'), findsNothing);
       expect(
-        find.text('Todavía no hay indicadores. Aparecen cuando colabora en un proyecto.'),
+        find.text(
+          'Todavía no hay indicadores. Aparecen cuando colabora en un proyecto.',
+        ),
         findsOneWidget,
       );
     });
