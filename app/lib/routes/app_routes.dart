@@ -17,7 +17,4 @@ abstract class AppRoutes {
 
   /// Recibe [String] projectId como argumento.
   static const projectDetail = '/project';
-
-  /// Recibe [String] projectId como argumento.
-  static const applyToProject = '/project/apply';
 }
