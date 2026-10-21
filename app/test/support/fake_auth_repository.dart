@@ -33,6 +33,10 @@ class FakeAuthRepository implements IAuthRepository {
   AuthenticationUser? lastLogin;
   AuthenticationUser? lastSignUp;
 
+  /// Si se pone, `login` espera a que se complete: permite ver la pantalla
+  /// mientras la operación sigue en curso.
+  Completer<void>? loginGate;
+
   bool _anonymous = false;
   final _expired = StreamController<void>.broadcast();
 
@@ -49,6 +53,7 @@ class FakeAuthRepository implements IAuthRepository {
   Future<bool> login(AuthenticationUser user) async {
     calls.add('login');
     lastLogin = user;
+    await loginGate?.future;
     if (loginError != null) throw loginError!;
     _anonymous = false;
     return loginResult;
