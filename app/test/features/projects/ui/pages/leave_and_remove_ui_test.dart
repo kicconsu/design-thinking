@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/profile/domain/models/user_profile.dart';
 import 'package:imker/features/profile/domain/repositories/i_profile_repository.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
@@ -37,7 +37,7 @@ void main() {
 
   setUp(() async {
     Get.reset();
-    source = InMemoryProjectDataSource(DummyData());
+    source = InMemoryProjectDataSource(DummyData().projects);
     repo = ProjectRepository(source);
     tasks = TaskRepository(InMemoryTaskDataSource());
     Get.put<IProjectRepository>(repo);

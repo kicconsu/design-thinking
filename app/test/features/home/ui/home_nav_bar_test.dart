@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../support/dummy_data.dart';
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
@@ -44,7 +44,7 @@ void main() {
     Get.reset();
     Get.put(HomeViewModel());
     Get.put<IProjectRepository>(
-      ProjectRepository(InMemoryProjectDataSource(DummyData())),
+      ProjectRepository(InMemoryProjectDataSource(DummyData().projects)),
     );
     Get.put(UserProjectsController());
     final tasks = TaskRepository(InMemoryTaskDataSource());

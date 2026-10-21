@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
@@ -15,7 +15,7 @@ import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.d
 /// Devuelve membresías sin la columna `status`, como las filas anteriores a
 /// que existiera.
 class _LegacyMembersSource extends InMemoryProjectDataSource {
-  _LegacyMembersSource(this.projectId) : super(DummyData());
+  _LegacyMembersSource(this.projectId) : super(DummyData().projects);
 
   final String projectId;
 
@@ -60,7 +60,7 @@ void main() {
         },
       ]);
 
-  setUp(() => setUpWith(InMemoryProjectDataSource(DummyData())));
+  setUp(() => setUpWith(InMemoryProjectDataSource(DummyData().projects)));
   tearDown(Get.reset);
 
   group('postular', () {
@@ -307,11 +307,11 @@ void main() {
     test('guardado, postulado e invitado: invited gana', () async {
       final invitations = Get.put(
         InvitationsController(
-          repository: ProjectRepository(InMemoryProjectDataSource(DummyData())),
+          repository: ProjectRepository(InMemoryProjectDataSource(DummyData().projects)),
           currentUserId: () => 'u1',
         ),
       );
-      final inMemory = InMemoryProjectDataSource(DummyData());
+      final inMemory = InMemoryProjectDataSource(DummyData().projects);
       await inMemory.createInvitations([
         {
           'project_id': 'p',

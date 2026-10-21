@@ -3,18 +3,13 @@ import 'package:imker/features/auth/domain/models/authentication_user.dart';
 
 /// Datasource de autenticación en memoria para desarrollo sin credenciales Roble.
 ///
-/// Guarda cuentas en una lista en memoria (se resetean al cerrar la app).
+/// Guarda cuentas en una lista en memoria (se resetean al cerrar la app) y
+/// arranca sin ninguna: quien prueba se registra.
 /// Permite probar login/signup/invitado sin necesitar el backend real.
 ///
 /// Activado en [auth_dependencies.dart] cuando [RobleClient] no está registrado.
 class DummyAuthSource implements IAuthenticationSource {
-  static const _demoEmail = 'demo@imker.co';
-  static const _demoPassword = 'ThePassword1!';
-  static const _demoName = 'Demo User';
-
-  final _accounts = <String, _Account>{
-    _demoEmail: _Account(email: _demoEmail, password: _demoPassword, name: _demoName),
-  };
+  final _accounts = <String, _Account>{};
 
   _Account? _session;
   bool _isAnonymous = false;

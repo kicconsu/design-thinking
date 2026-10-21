@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/data/datasources/i_project_data_source.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
@@ -290,7 +290,7 @@ void main() {
     test(
       'obtiene y mapea proyectos correctamente desde el datasource',
       () async {
-        final repo = ProjectRepository(InMemoryProjectDataSource());
+        final repo = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
         final projects = await repo.getProjects();
 
         expect(projects, isNotEmpty);
@@ -358,7 +358,7 @@ void main() {
     );
 
     test('obtiene un proyecto por ID', () async {
-      final repo = ProjectRepository(InMemoryProjectDataSource());
+      final repo = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
       final project = await repo.getProjectById('2');
 
       expect(project, isNotNull);
@@ -367,7 +367,7 @@ void main() {
     });
 
     test('devuelve null si el ID no existe', () async {
-      final repo = ProjectRepository(InMemoryProjectDataSource());
+      final repo = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
       final project = await repo.getProjectById('9999');
 
       expect(project, isNull);
@@ -413,7 +413,7 @@ void main() {
     test(
       'crea un proyecto con los arrays planos en la raíz de la fila',
       () async {
-        final source = InMemoryProjectDataSource(DummyData());
+        final source = InMemoryProjectDataSource(DummyData().projects);
         final repo = ProjectRepository(source);
 
         final project = await repo.createProject(
@@ -435,7 +435,7 @@ void main() {
     );
 
     test('crea una solicitud de colaboración (project_join_request)', () async {
-      final source = InMemoryProjectDataSource(DummyData());
+      final source = InMemoryProjectDataSource(DummyData().projects);
       final repo = ProjectRepository(source);
 
       final request = await repo.createJoinRequest(
@@ -451,7 +451,7 @@ void main() {
     test(
       'obtiene las solicitudes de un proyecto (getJoinRequestsForProject)',
       () async {
-        final source = InMemoryProjectDataSource(DummyData());
+        final source = InMemoryProjectDataSource(DummyData().projects);
         final repo = ProjectRepository(source);
 
         await repo.createJoinRequest(
@@ -470,7 +470,7 @@ void main() {
     test(
       'actualiza el estado de una solicitud (updateJoinRequestStatus)',
       () async {
-        final source = InMemoryProjectDataSource(DummyData());
+        final source = InMemoryProjectDataSource(DummyData().projects);
         final repo = ProjectRepository(source);
 
         final created = await repo.createJoinRequest(
@@ -492,7 +492,7 @@ void main() {
     );
 
     test('guarda y quita proyectos en project_saved', () async {
-      final source = InMemoryProjectDataSource(DummyData());
+      final source = InMemoryProjectDataSource(DummyData().projects);
       final repo = ProjectRepository(source);
 
       expect(await repo.getSavedProjectIds('user-1'), isEmpty);
@@ -507,7 +507,7 @@ void main() {
     });
 
     test('los guardados de un usuario no se filtran a otro', () async {
-      final repo = ProjectRepository(InMemoryProjectDataSource(DummyData()));
+      final repo = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
 
       await repo.saveProject(userId: 'user-1', projectId: '1');
       await repo.saveProject(userId: 'user-2', projectId: '2');

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
@@ -18,7 +18,7 @@ void main() {
     Get.reset();
     data = DummyData();
     Get.put<IProjectRepository>(
-      ProjectRepository(InMemoryProjectDataSource(data)),
+      ProjectRepository(InMemoryProjectDataSource(data.projects)),
     );
   });
 

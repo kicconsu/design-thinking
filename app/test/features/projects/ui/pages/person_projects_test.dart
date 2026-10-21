@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/auth/domain/models/authentication_user.dart';
 import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
@@ -66,7 +66,7 @@ void main() {
 
   setUp(() {
     Get.reset();
-    source = _Source(DummyData());
+    source = _Source(DummyData().projects);
     repo = ProjectRepository(source);
     Get.put<IProjectRepository>(repo);
     Get.put<IProfileRepository>(_Profiles());

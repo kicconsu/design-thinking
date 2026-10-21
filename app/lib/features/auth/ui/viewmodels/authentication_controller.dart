@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import 'package:imker/core/roble/roble_config.dart';
 import 'package:imker/core/utils/error_message.dart';
 import 'package:imker/features/auth/domain/models/authentication_user.dart';
 import 'package:imker/features/auth/domain/repositories/i_auth_repository.dart';
@@ -159,7 +159,11 @@ class AuthenticationController extends GetxController with UiLoggy {
 
   /// Acceso rápido para desarrollo: sólo si se pidió `--dart-define=DEV_LOGIN=true`.
   Future<bool> quickDevLogin() async {
-    return login(DummyData.devEmail, DummyData.devPassword);
+    if (RobleConfig.devEmail.isEmpty || RobleConfig.devPassword.isEmpty) {
+      error.value = 'Faltan DEV_EMAIL y DEV_PASSWORD en --dart-define.';
+      return false;
+    }
+    return login(RobleConfig.devEmail, RobleConfig.devPassword);
   }
 
   Future<bool> signUp(String email, String password, {String name = ''}) async {

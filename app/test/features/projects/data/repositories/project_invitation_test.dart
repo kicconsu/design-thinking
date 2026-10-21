@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
@@ -7,7 +7,7 @@ import 'package:imker/features/projects/domain/project_failure.dart';
 /// Datasource doble: decide qué correos "tienen cuenta" y si el servidor
 /// acepta las invitaciones, para poder probar la creación todo-o-nada.
 class _InviteTestSource extends InMemoryProjectDataSource {
-  _InviteTestSource() : super(DummyData());
+  _InviteTestSource() : super(DummyData().projects);
 
   final Set<String> knownEmails = {'ana@correo.com'};
   bool failInvitations = false;

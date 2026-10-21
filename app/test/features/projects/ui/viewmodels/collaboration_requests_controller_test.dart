@@ -7,6 +7,7 @@ import 'package:imker/features/projects/data/repositories/project_repository.dar
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
+import '../../../../support/dummy_data.dart';
 
 /// Falla las primeras [failures] veces que se actualiza una solicitud.
 class _FlakyDataSource extends InMemoryProjectDataSource {
@@ -72,7 +73,7 @@ void main() {
   test(
     'aceptar registra al miembro, marca la solicitud y la saca de la lista',
     () async {
-      await setUpWith(InMemoryProjectDataSource());
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
       final controller = build();
       await controller.fetchForProject('p1');
       expect(controller.pendingCount('p1'), 1);
@@ -94,7 +95,7 @@ void main() {
   );
 
   test('rechazar no agrega miembros', () async {
-    await setUpWith(InMemoryProjectDataSource());
+    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
     final controller = build();
     await controller.fetchForProject('p1');
 
@@ -149,7 +150,7 @@ void main() {
   });
 
   test('quien no es dueño no puede decidir', () async {
-    await setUpWith(InMemoryProjectDataSource());
+    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
     final controller = build();
     await controller.fetchForProject('p1');
     isOwner = false;
