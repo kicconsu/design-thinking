@@ -16,6 +16,8 @@ import '../../domain/models/task_status.dart';
 import '../viewmodels/task_progress_controller.dart';
 import '../widgets/task_comments_view.dart';
 
+import 'package:imker/core/utils/app_keys.dart';
+
 /// Progreso de una tarea: descripción y checklist (editables por quien la
 /// reservó) y comentarios.
 class TaskProgressPage extends StatefulWidget {
@@ -187,6 +189,7 @@ class _TaskProgressPageState extends State<TaskProgressPage> {
                         const SizedBox(height: 8),
                         Obx(
                           () => FilledButton(
+                            key: AppKeys.saveProgress,
                             style: FilledButton.styleFrom(
                               minimumSize: const Size.fromHeight(46),
                               shape: const RoundedRectangleBorder(

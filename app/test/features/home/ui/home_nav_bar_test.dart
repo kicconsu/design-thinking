@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import '../../../support/dummy_data.dart';
+
 import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
@@ -16,6 +17,7 @@ import 'package:imker/features/tasks/domain/repositories/i_task_repository.dart'
 import 'package:imker/features/tasks/ui/pages/task_board_page.dart';
 import 'package:imker/features/tasks/ui/pages/task_progress_page.dart';
 import 'package:imker/routes/app_routes.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Un Home de mentira: la ruta real `/home` con un botón que apila [next].
 class _FakeHome extends StatelessWidget {
@@ -95,7 +97,7 @@ void main() {
       expect(find.text('PERFIL'), findsOneWidget);
 
       // Tocar Perfil cierra la página y deja Home en esa pestaña.
-      await tester.tap(find.text('PERFIL'));
+      await tester.tap(find.byKey(AppKeys.navTab('profile')));
       await tester.pumpAndSettle();
 
       expect(find.text('home tab 2'), findsOneWidget);

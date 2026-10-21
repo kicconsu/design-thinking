@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 import '../../support/integration_harness.dart';
 import '../../support/integration_seed.dart';
@@ -49,7 +50,7 @@ void main() {
       expect(find.text('No hay tareas pendientes.'), findsOneWidget);
 
       // Crear la tarea desde el diálogo.
-      await tapText(tester, 'Crear tarea');
+      await tapKey(tester, AppKeys.createTask);
       await pumpUntilFound(tester, find.byKey(const Key('task.new.title')));
       await tester.enterText(
         find.byKey(const Key('task.new.title')),
@@ -60,7 +61,7 @@ void main() {
         'Pantallas principales de la app',
       );
       await tester.pump();
-      await tapOn(tester, find.widgetWithText(FilledButton, 'Crear'));
+      await tapKey(tester, AppKeys.newTaskSubmit);
 
       // Aparece en «Pendientes» y quedó guardada sin responsable.
       await pumpUntilFound(tester, find.text(taskTitle));
@@ -71,7 +72,7 @@ void main() {
       expect(env.tasks.totalTasksByProject[Seed.projectId], 1);
 
       // Reservarla: pasa a «En progreso» y es de Laura.
-      await tapText(tester, 'Reservar tarea');
+      await tapReserveTask(tester);
       await pumpUntil(
         tester,
         () =>
@@ -85,7 +86,7 @@ void main() {
         1,
       );
 
-      await tapText(tester, 'En Progreso');
+      await tapKey(tester, AppKeys.taskBoardTab(1));
       await pumpUntilFound(tester, find.text('Reservada por Tú'));
       await tapText(tester, taskTitle);
       await pumpUntilFound(tester, find.text('Progreso de tarea'));
@@ -99,11 +100,11 @@ void main() {
         // «Añadir», y evita depender del teclado del navegador.
         tester.widget<TextField>(newSubtask).controller!.text = title;
         await tester.pump();
-        await tapText(tester, 'Añadir');
+        await tapKey(tester, AppKeys.checklistAdd);
         await pumpUntilFound(tester, find.text(title));
       }
 
-      await tapText(tester, 'Guardar');
+      await tapKey(tester, AppKeys.saveProgress);
       await pumpUntil(
         tester,
         () =>

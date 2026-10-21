@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 import '../../support/integration_harness.dart';
 import '../../support/integration_seed.dart';
@@ -56,7 +57,7 @@ void main() {
       expect(env.tasks.taskRow(taskId)!['assignee_id'], isNull);
 
       // Reservarla.
-      await tapText(tester, 'Reservar tarea');
+      await tapReserveTask(tester);
       await pumpUntil(
         tester,
         () => env.tasks.taskRow(taskId)!['assignee_id'] == Seed.laura.id,
@@ -70,7 +71,7 @@ void main() {
       );
 
       // Aparece en «En progreso», reservada por ella.
-      await tapText(tester, 'En Progreso');
+      await tapKey(tester, AppKeys.taskBoardTab(1));
       await pumpUntilFound(tester, find.text('Reservada por Tú'));
       await tapText(tester, taskTitle);
       await pumpUntilFound(tester, find.text('Progreso de tarea'));
@@ -80,7 +81,7 @@ void main() {
         tester,
         find.widgetWithText(CheckboxListTile, 'Definir wireframes'),
       );
-      await tapText(tester, 'Guardar');
+      await tapKey(tester, AppKeys.saveProgress);
       await pumpUntil(
         tester,
         () => (env.tasks.taskRow(taskId)!['checklist'] as List).any(

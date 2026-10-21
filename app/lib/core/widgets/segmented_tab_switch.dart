@@ -17,6 +17,9 @@ class SegmentedTabSwitch extends StatelessWidget {
   final EdgeInsetsGeometry itemPadding;
   final bool isScrollable;
 
+  /// Si se da, cada pestaña lleva la clave `"$keyPrefix.<índice>"`.
+  final String? keyPrefix;
+
   const SegmentedTabSwitch({
     super.key,
     required this.tabs,
@@ -32,6 +35,7 @@ class SegmentedTabSwitch extends StatelessWidget {
     this.padding = const EdgeInsets.all(4),
     this.itemPadding = const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
     this.isScrollable = false,
+    this.keyPrefix,
   }) : assert(tabs.length >= 2, 'SegmentedTabSwitch requiere al menos 2 tabs');
 
   @override
@@ -49,6 +53,7 @@ class SegmentedTabSwitch extends StatelessWidget {
     for (int i = 0; i < tabs.length; i++) {
       final isSelected = i == selectedIndex;
       final tabPill = _TabPill(
+        key: keyPrefix == null ? null : ValueKey('$keyPrefix.$i'),
         label: tabs[i],
         isSelected: isSelected,
         onTap: () => onTabSelected(i),
@@ -99,6 +104,7 @@ class _TabPill extends StatelessWidget {
   final TextTheme tt;
 
   const _TabPill({
+    super.key,
     required this.label,
     required this.isSelected,
     required this.onTap,

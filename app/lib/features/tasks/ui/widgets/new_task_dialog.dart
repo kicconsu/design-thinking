@@ -5,6 +5,8 @@ import 'package:imker/core/utils/clock.dart';
 
 import '../../domain/models/task_deadline.dart';
 
+import 'package:imker/core/utils/app_keys.dart';
+
 /// Diálogo para crear una tarea. Se cierra con
 /// `({title, description, deadlineDay})` o con `null` si se cancela.
 ///
@@ -120,7 +122,11 @@ class _NewTaskDialogState extends State<NewTaskDialog> {
       ),
       actions: [
         TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
-        FilledButton(onPressed: _submit, child: const Text('Crear')),
+        FilledButton(
+          key: AppKeys.newTaskSubmit,
+          onPressed: _submit,
+          child: const Text('Crear'),
+        ),
       ],
     );
   }

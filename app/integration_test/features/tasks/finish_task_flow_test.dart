@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 import '../../support/integration_harness.dart';
 import '../../support/integration_seed.dart';
@@ -57,7 +58,7 @@ void main() {
       await openTaskBoard(tester);
 
       // Está «En progreso» y es suya.
-      await tapText(tester, 'En Progreso');
+      await tapKey(tester, AppKeys.taskBoardTab(1));
       await pumpUntilFound(tester, find.text('Reservada por Tú'));
       await tapText(tester, taskTitle);
       await pumpUntilFound(tester, find.text('Progreso de tarea'));
@@ -67,7 +68,7 @@ void main() {
         tester,
         find.widgetWithText(CheckboxListTile, 'Revisar y entregar'),
       );
-      await tapText(tester, 'Guardar');
+      await tapKey(tester, AppKeys.saveProgress);
       await pumpUntil(
         tester,
         () => env.tasks.taskRow(taskId)!['status'] == 'done',
@@ -89,7 +90,7 @@ void main() {
 
       // En el gabinete la tarea aparece en «Terminadas».
       await goBack(tester);
-      await tapText(tester, 'Terminadas');
+      await tapKey(tester, AppKeys.taskBoardTab(2));
       await pumpUntilFound(tester, find.text(taskTitle));
       expect(find.text('Todavía no hay tareas terminadas.'), findsNothing);
 

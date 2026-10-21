@@ -15,6 +15,8 @@ import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/views/applicant_detail_page.dart';
 import 'package:imker/features/projects/ui/widgets/inviter_row.dart';
+import 'package:imker/core/utils/app_keys.dart';
+
 import '../../../../support/dummy_data.dart';
 
 class _Profiles implements IProfileRepository {
@@ -201,7 +203,7 @@ void main() {
     testWidgets('aceptar registra a la persona como miembro', (tester) async {
       await open(tester);
 
-      await tester.tap(find.text('Aceptar solicitud'));
+      await tester.tap(find.byKey(AppKeys.requestAccept));
       await tester.pumpAndSettle();
 
       expect(await repo.getMemberProjectIds('ana'), ['p1']);
@@ -210,7 +212,7 @@ void main() {
     testWidgets('rechazar no la registra', (tester) async {
       await open(tester);
 
-      await tester.tap(find.text('Rechazar'));
+      await tester.tap(find.byKey(AppKeys.requestReject));
       await tester.pumpAndSettle();
 
       expect(await repo.getMemberProjectIds('ana'), isEmpty);

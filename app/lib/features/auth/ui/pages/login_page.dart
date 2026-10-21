@@ -6,6 +6,7 @@ import 'package:loggy/loggy.dart';
 import 'package:imker/core/roble/roble_config.dart';
 import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/routes/app_routes.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Página de login. Toda la navegación usa rutas GetX nombradas.
 class LoginPage extends StatefulWidget {
@@ -103,6 +104,7 @@ class _LoginPageState extends State<LoginPage> with UiLoggy {
                         ),
                         const SizedBox(height: 32),
                         TextFormField(
+                          key: AppKeys.loginEmail,
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
                           decoration: const InputDecoration(
@@ -114,6 +116,7 @@ class _LoginPageState extends State<LoginPage> with UiLoggy {
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
+                          key: AppKeys.loginPassword,
                           controller: _passCtrl,
                           obscureText: true,
                           decoration: const InputDecoration(
@@ -129,6 +132,7 @@ class _LoginPageState extends State<LoginPage> with UiLoggy {
                           () => _auth.isLoading
                               ? const Center(child: CircularProgressIndicator())
                               : FilledButton(
+                                  key: AppKeys.loginSubmit,
                                   onPressed: _login,
                                   child: const Text('Entrar'),
                                 ),

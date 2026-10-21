@@ -7,6 +7,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 import '../../support/fake_project_data_source.dart';
 import '../../support/integration_harness.dart';
@@ -47,7 +48,7 @@ void main() {
       await pumpUntilFound(tester, find.text('Aceptar solicitud'));
       expect(find.text('Rechazar'), findsOneWidget);
 
-      await tapText(tester, 'Aceptar solicitud');
+      await tapKey(tester, AppKeys.requestAccept);
       await pumpUntilFound(tester, find.text('Solicitud aceptada'));
 
       // La solicitud quedó aceptada por Laura y Bruno es miembro.
@@ -60,7 +61,7 @@ void main() {
       );
 
       // Al volver, la solicitud ya no está en la lista.
-      await tapText(tester, 'Ver más solicitudes');
+      await tapKey(tester, AppKeys.requestMore);
       await pumpUntilFound(
         tester,
         find.text('No hay solicitudes pendientes por revisar.'),

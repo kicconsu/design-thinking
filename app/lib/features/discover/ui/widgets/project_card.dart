@@ -6,6 +6,7 @@ import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.d
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 class ProjectCard extends StatelessWidget {
   final Project project;
@@ -386,6 +387,7 @@ class _ActionButtons extends StatelessWidget {
         children: [
           Expanded(
             child: FilledButton.icon(
+              key: AppKeys.readMore(project.id),
               onPressed: () {
                 Get.to(() => ProjectDetailPage(project: project));
               },

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 /// Un ítem de [ChecklistEditor]: texto más si está marcado.
 class ChecklistEntry {
@@ -101,6 +102,7 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
               ),
               const SizedBox(width: 8),
               FilledButton(
+                key: AppKeys.checklistAdd,
                 style: FilledButton.styleFrom(
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,

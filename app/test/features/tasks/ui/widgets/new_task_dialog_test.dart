@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:imker/features/tasks/ui/widgets/new_task_dialog.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 typedef _Result = ({String title, String description, DateTime? deadlineDay});
 
@@ -44,7 +45,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('task.new.title')), 'Login');
     if (pickDate != null) await pickDate();
-    await tester.tap(find.text('Crear'));
+    await tester.tap(find.byKey(AppKeys.newTaskSubmit));
     await tester.pumpAndSettle();
     return result;
   }
@@ -112,7 +113,7 @@ void main() {
 
   testWidgets('el nombre sigue siendo obligatorio', (tester) async {
     await open(tester);
-    await tester.tap(find.text('Crear'));
+    await tester.tap(find.byKey(AppKeys.newTaskSubmit));
     await tester.pumpAndSettle();
 
     expect(find.text('Escribe un nombre'), findsOneWidget);
