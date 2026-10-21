@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/tasks/data/datasources/in_memory_task_data_source.dart';
 import 'package:imker/features/tasks/data/repositories/task_repository.dart';

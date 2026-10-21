@@ -10,7 +10,7 @@ import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/ui/views/collaboration_requests_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/views/applicant_detail_page.dart';
@@ -122,7 +122,7 @@ void main() {
     Future<CollaborationRequestsController> build({
       ITrustRepository? trustRepo,
     }) async {
-      source = InMemoryProjectDataSource();
+      source = InMemoryProjectDataSource(DummyData().projects);
       repository = ProjectRepository(source);
       for (final user in ['ana', 'luis']) {
         await repository.createJoinRequest(
@@ -204,7 +204,7 @@ void main() {
 
   group('getProjectsParticipatedBy', () {
     test('incluye los que dejó, a diferencia de getProjectsOfPerson', () async {
-      final source = InMemoryProjectDataSource();
+      final source = InMemoryProjectDataSource(DummyData().projects);
       final repository = ProjectRepository(source);
       await source.addProjectMember(
         projectId: DummyData.kircheId,
@@ -227,7 +227,7 @@ void main() {
     });
 
     test('sin estancias, o sin id, no hay nada', () async {
-      final repository = ProjectRepository(InMemoryProjectDataSource());
+      final repository = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
       expect(await repository.getProjectsParticipatedBy('nadie'), isEmpty);
       expect(await repository.getProjectsParticipatedBy(''), isEmpty);
     });
@@ -240,7 +240,7 @@ void main() {
       addTearDown(tester.view.reset);
       Get.put(
         CollaborationRequestsController(
-          repository: ProjectRepository(InMemoryProjectDataSource()),
+          repository: ProjectRepository(InMemoryProjectDataSource(DummyData().projects)),
           currentUserId: () => 'jefe',
           isOwner: (_) => true,
           trust: trust,

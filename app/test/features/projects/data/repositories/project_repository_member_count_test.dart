@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
@@ -10,7 +10,7 @@ void main() {
     late ProjectRepository repo;
 
     setUp(() {
-      source = InMemoryProjectDataSource(DummyData());
+      source = InMemoryProjectDataSource(DummyData().projects);
       repo = ProjectRepository(source);
     });
 

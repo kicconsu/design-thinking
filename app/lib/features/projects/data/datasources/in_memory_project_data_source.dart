@@ -1,14 +1,13 @@
-import 'package:imker/core/data/dummy_data.dart';
-
 import 'i_project_data_source.dart';
 
 /// Backend falso: sirve las mismas filas que devolvería Roble desde memoria.
 /// Útil para desarrollo sin red y para pruebas unitarias del repositorio.
 class InMemoryProjectDataSource implements IProjectDataSource {
-  InMemoryProjectDataSource([DummyData? data])
-    : _data = data ?? DummyData.instance;
+  /// Sin [projects] arranca vacío: en modo mock no se siembran datos de demo.
+  InMemoryProjectDataSource([List<Map<String, dynamic>>? projects])
+    : _projects = projects ?? [];
 
-  final DummyData _data;
+  final List<Map<String, dynamic>> _projects;
 
   /// Quién "tiene la sesión" en pruebas y en modo sin backend.
   @override
@@ -24,16 +23,16 @@ class InMemoryProjectDataSource implements IProjectDataSource {
   String _nextId() => '${DateTime.now().microsecondsSinceEpoch}-${_seq++}';
 
   @override
-  Future<List<Map<String, dynamic>>> readProjects() async => _data.projects;
+  Future<List<Map<String, dynamic>>> readProjects() async => _projects;
 
   @override
   Future<List<Map<String, dynamic>>> readProjectsByOwner(
     String ownerId,
-  ) async => _data.projects.where((r) => r['_owner'] == ownerId).toList();
+  ) async => _projects.where((r) => r['_owner'] == ownerId).toList();
 
   @override
   Future<Map<String, dynamic>?> readProjectById(String id) async =>
-      _data.projects.where((r) => r['_id'] == id).firstOrNull;
+      _projects.where((r) => r['_id'] == id).firstOrNull;
 
   @override
   Future<Map<String, dynamic>> createProject(
@@ -45,7 +44,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
       '_owner': 'demo-owner',
       ...projectData,
     };
-    _data.projects.add(row);
+    _projects.add(row);
     return row;
   }
 
@@ -54,10 +53,10 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     String projectId,
     Map<String, dynamic> fields,
   ) async {
-    final i = _data.projects.indexWhere((r) => r['_id'] == projectId);
+    final i = _projects.indexWhere((r) => r['_id'] == projectId);
     if (i == -1) throw StateError('Proyecto $projectId no existe');
-    _data.projects[i] = {..._data.projects[i], ...fields};
-    return _data.projects[i];
+    _projects[i] = {..._projects[i], ...fields};
+    return _projects[i];
   }
 
   @override
@@ -142,7 +141,8 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     );
     if (existing.isNotEmpty) return existing.first;
     final row = {
-      '_id': 'member-${_projectMembers.length}-${DateTime.now().microsecondsSinceEpoch}',
+      '_id':
+          'member-${_projectMembers.length}-${DateTime.now().microsecondsSinceEpoch}',
       'project_id': projectId,
       'user_id': userId,
       'role': role ?? {'name': 'collaborator'},
@@ -256,7 +256,8 @@ class InMemoryProjectDataSource implements IProjectDataSource {
       );
       if (duplicate) continue;
       final stored = <String, dynamic>{
-        '_id': 'inv-${DateTime.now().microsecondsSinceEpoch}-${_invitations.length}',
+        '_id':
+            'inv-${DateTime.now().microsecondsSinceEpoch}-${_invitations.length}',
         ...row,
       };
       _invitations.add(stored);
@@ -294,7 +295,7 @@ class InMemoryProjectDataSource implements IProjectDataSource {
       for (final m in _projectMembers)
         if (m['user_id'] == userId) m['project_id'],
     };
-    return _data.projects.where((r) => ids.contains(r['_id'])).toList();
+    return _projects.where((r) => ids.contains(r['_id'])).toList();
   }
 
   @override
@@ -302,6 +303,6 @@ class InMemoryProjectDataSource implements IProjectDataSource {
     _invitations.removeWhere((r) => r['project_id'] == projectId);
     _projectMembers.removeWhere((r) => r['project_id'] == projectId);
     _saved.removeWhere((r) => r['project_id'] == projectId);
-    _data.projects.removeWhere((r) => r['_id'] == projectId);
+    _projects.removeWhere((r) => r['_id'] == projectId);
   }
 }

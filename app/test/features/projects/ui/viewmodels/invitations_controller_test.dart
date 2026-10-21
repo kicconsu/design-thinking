@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roble/roble.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
@@ -14,7 +14,7 @@ import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.d
 
 /// Falla las primeras [failures] veces que se responde una invitación.
 class _FlakySource extends InMemoryProjectDataSource {
-  _FlakySource(this.failures) : super(DummyData());
+  _FlakySource(this.failures) : super(DummyData().projects);
 
   int failures;
 
@@ -36,7 +36,7 @@ class _FlakySource extends InMemoryProjectDataSource {
 
 /// Deja en espera la lectura de invitaciones hasta que la prueba lo decida.
 class _GatedSource extends InMemoryProjectDataSource {
-  _GatedSource() : super(DummyData());
+  _GatedSource() : super(DummyData().projects);
 
   Completer<void>? gate;
 
@@ -94,7 +94,7 @@ void main() {
   tearDown(Get.reset);
 
   test('solo lista las invitaciones pendientes dirigidas al usuario', () async {
-    await setUpWith(InMemoryProjectDataSource(DummyData()));
+    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
     final controller = build();
     await controller.fetch();
 
@@ -106,7 +106,7 @@ void main() {
   test(
     'aceptar registra al miembro, marca la invitación y activa el proyecto',
     () async {
-      await setUpWith(InMemoryProjectDataSource(DummyData()));
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
       final controller = build();
       await controller.fetch();
 
@@ -125,7 +125,7 @@ void main() {
   );
 
   test('rechazar no agrega miembros ni activa el proyecto', () async {
-    await setUpWith(InMemoryProjectDataSource(DummyData()));
+    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
     final controller = build();
     await controller.fetch();
 
@@ -164,7 +164,7 @@ void main() {
   );
 
   test('no se puede responder una invitación de otra cuenta', () async {
-    await setUpWith(InMemoryProjectDataSource(DummyData()));
+    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
     final controller = build();
     await controller.fetch();
     final invitation = controller.invitations.single;
@@ -186,7 +186,7 @@ void main() {
   test(
     'getMemberProjectIds excluye los proyectos donde solo soy creador',
     () async {
-      await setUpWith(InMemoryProjectDataSource(DummyData()));
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
       await repository.addProjectMember(
         projectId: projectId,
         userId: 'creador',
@@ -204,7 +204,7 @@ void main() {
   );
 
   test('al aceptar, el proyecto entra en Activos sin recargar', () async {
-    await setUpWith(InMemoryProjectDataSource(DummyData()));
+    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
     Get.put<IProjectRepository>(repository);
     final projects = Get.put(UserProjectsController());
     final controller = InvitationsController(
@@ -219,7 +219,7 @@ void main() {
   });
 
   test('aceptar cancela mi solicitud pendiente al mismo proyecto', () async {
-    await setUpWith(InMemoryProjectDataSource(DummyData()));
+    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
     // Directo al datasource: el repositorio no deja postular con una
     // invitación pendiente, pero la solicitud pudo ser anterior a ella.
     await source.createJoinRequest({
@@ -239,7 +239,7 @@ void main() {
   test(
     'cancelPendingJoinRequests solo toca las pendientes de ese proyecto',
     () async {
-      await setUpWith(InMemoryProjectDataSource(DummyData()));
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
       final other = await repository.createProject(
         title: 'Otro',
         description: 'd',
@@ -275,7 +275,7 @@ void main() {
   test(
     'una invitación a un proyecto donde ya soy miembro no se muestra',
     () async {
-      await setUpWith(InMemoryProjectDataSource(DummyData()));
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
       await repository.addProjectMember(
         projectId: projectId,
         userId: 'ana-id',

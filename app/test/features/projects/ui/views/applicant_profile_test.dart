@@ -15,6 +15,7 @@ import 'package:imker/features/projects/ui/pages/person_profile_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/collaboration_requests_controller.dart';
 import 'package:imker/features/projects/ui/views/applicant_detail_page.dart';
 import 'package:imker/features/projects/ui/widgets/inviter_row.dart';
+import '../../../../support/dummy_data.dart';
 
 class _Profiles implements IProfileRepository {
   final asked = <String>[];
@@ -146,7 +147,7 @@ void main() {
       tester.view.physicalSize = const Size(1080, 3000);
       tester.view.devicePixelRatio = 2.5;
       addTearDown(tester.view.reset);
-      repo = ProjectRepository(InMemoryProjectDataSource());
+      repo = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
       Get.put<IProjectRepository>(repo);
       Get.put(
         CollaborationRequestsController(

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roble/roble.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/core/roble/roble_client.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/datasources/roble_project_data_source.dart';
@@ -53,7 +53,7 @@ void main() {
   setUp(() {
     Get.reset();
     data = DummyData();
-    repo = ProjectRepository(InMemoryProjectDataSource(data));
+    repo = ProjectRepository(InMemoryProjectDataSource(data.projects));
     Get.put<IProjectRepository>(repo);
   });
 

@@ -3,10 +3,11 @@ import 'package:imker/features/discover/data/local_discover_repository.dart';
 import 'package:imker/features/discover/domain/models/project_filter.dart';
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
+import '../../../support/dummy_data.dart';
 
 void main() {
   final repo = LocalDiscoverRepository(
-    ProjectRepository(InMemoryProjectDataSource()),
+    ProjectRepository(InMemoryProjectDataSource(DummyData().projects)),
   );
 
   test('pagina sin filtros y reporta el total', () async {

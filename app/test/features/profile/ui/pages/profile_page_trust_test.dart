@@ -20,6 +20,7 @@ import 'package:imker/features/trust/domain/models/trust_metrics.dart';
 import 'package:imker/features/trust/domain/trust_failure.dart';
 
 import '../../../../support/fake_trust_repository.dart';
+import '../../../../support/dummy_data.dart';
 
 class _Auth implements IAuthRepository {
   @override
@@ -70,7 +71,7 @@ void main() {
     Get.reset();
     trust = FakeTrustRepository();
     Get.put<IProfileRepository>(_Profiles());
-    Get.put<IProjectRepository>(ProjectRepository(InMemoryProjectDataSource()));
+    Get.put<IProjectRepository>(ProjectRepository(InMemoryProjectDataSource(DummyData().projects)));
     Get.put(UserProjectsController(currentUserId: () => 'yo'));
     Get.put(
       ProfileController(

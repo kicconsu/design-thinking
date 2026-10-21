@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 
 import 'package:imker/core/roble/roble_client.dart';
 import 'package:imker/core/roble/roble_config.dart';
-import 'package:imker/core/data/dummy_data.dart';
 
 import '../../domain/models/project.dart';
 import '../../domain/models/project_relation.dart';
@@ -37,13 +36,8 @@ class UserProjectsController extends GetxController {
   // Subcategoría actual de "Otros proyectos" (0: Guardados, 1: Pendientes, 2: Activos)
   final RxInt otherProjectsCategoryIndex = 0.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    // Una sola instancia para toda la app. Quien entra o sale de sesión la
-    // llena con [AuthenticationController] y la vacía con [clear].
-    if (RobleConfig.contractId.isEmpty) _seedActiveCollaborationDemo();
-  }
+  // Una sola instancia para toda la app. Quien entra o sale de sesión la
+  // llena con [AuthenticationController] y la vacía con [clear].
 
   /// Olvida todo lo de la sesión que se va: la siguiente persona no debe ver
   /// ni una lista suya. Las cargas que sigan en vuelo se descartan solas
@@ -57,7 +51,6 @@ class UserProjectsController extends GetxController {
     selectedMainTab.value = 0;
     otherProjectsCategoryIndex.value = 0;
     isLoadingProjects.value = false;
-    if (RobleConfig.contractId.isEmpty) _seedActiveCollaborationDemo();
   }
 
   /// ¿Sigue activa la sesión de [userId]? Una carga que empezó con otra
@@ -162,16 +155,6 @@ class UserProjectsController extends GetxController {
     } finally {
       isLoadingProjects.value = false;
     }
-
-    // Solo mostrar la semilla de demo si el usuario no tiene proyectos propios.
-    final hasUserProjects = coCreatedProjects.any(
-      (p) => userCreatedProjectIds.contains(p.id),
-    );
-    if (RobleConfig.contractId.isEmpty &&
-        !hasUserProjects &&
-        coCreatedProjects.isEmpty) {
-      _seedCoCreatedDemo();
-    }
   }
 
   /// Determina si el usuario actual es el creador/propietario del proyecto.
@@ -211,24 +194,11 @@ class UserProjectsController extends GetxController {
       );
       userCreatedProjectIds.add(newProject.id);
 
-      coCreatedProjects.removeWhere(
-        (p) => p.id == DummyData.kircheId || p.owner == 'demo-owner',
-      );
       coCreatedProjects.insert(0, newProject);
       return newProject;
     } finally {
       isCreating.value = false;
     }
-  }
-
-  // Placeholder mientras no exista el flujo real de creación de proyectos.
-  void _seedCoCreatedDemo() {
-    coCreatedProjects.add(DummyData.kircheProject);
-  }
-
-  // Placeholder de proyecto en el que el usuario ya colabora activamente.
-  void _seedActiveCollaborationDemo() {
-    activeProjects.add(DummyData.solariaProject);
   }
 
   /// Cómo se relaciona la sesión con [project], con una sola respuesta:
@@ -310,8 +280,6 @@ class UserProjectsController extends GetxController {
     // Ya colabora: una postulación pendiente a este proyecto quedó obsoleta.
     appliedProjectIds.remove(project.id);
     if (activeProjects.any((p) => p.id == project.id)) return;
-    // El proyecto de demo (solo existe sin backend) cede su lugar a uno real.
-    activeProjects.removeWhere((p) => p.id == DummyData.solariaId);
     activeProjects.add(project);
   }
 
@@ -433,9 +401,7 @@ class UserProjectsController extends GetxController {
       // Los que dejaron de ser mis proyectos activos salen. Solo si la lectura
       // fue completa y nadie añadió uno a mano mientras tanto.
       if (membersLoaded && manualAddsAtStart == _manualActiveAdds) {
-        activeProjects.removeWhere(
-          (p) => !memberIds.contains(p.id) && p.id != DummyData.solariaId,
-        );
+        activeProjects.removeWhere((p) => !memberIds.contains(p.id));
       }
 
       // 2. Cargar proyectos pendientes en savedProjects (sección "Pendientes")

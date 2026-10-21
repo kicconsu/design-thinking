@@ -8,6 +8,7 @@ import 'package:imker/features/projects/data/repositories/project_repository.dar
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import '../../../../support/dummy_data.dart';
 
 Project _project(String id) => Project(
   id: id,
@@ -37,7 +38,7 @@ void main() {
 
   setUp(() {
     Get.reset();
-    repository = ProjectRepository(InMemoryProjectDataSource());
+    repository = ProjectRepository(InMemoryProjectDataSource(DummyData().projects));
     Get.put<IProjectRepository>(repository);
     controller = UserProjectsController();
   });

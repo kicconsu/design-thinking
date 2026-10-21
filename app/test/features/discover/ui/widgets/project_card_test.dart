@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:imker/core/data/dummy_data.dart';
+import '../../../../support/dummy_data.dart';
 import 'package:imker/features/discover/ui/widgets/project_card.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
