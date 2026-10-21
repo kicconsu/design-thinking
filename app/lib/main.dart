@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
@@ -6,6 +7,7 @@ import 'core/roble/roble_client.dart';
 import 'core/roble/roble_config.dart';
 import 'core/theme/theme.dart';
 import 'core/theme/theme_builder.dart';
+import 'core/utils/log_config.dart';
 import 'features/auth/auth_dependencies.dart';
 import 'features/profile/profile_dependencies.dart';
 import 'features/projects/projects_dependencies.dart';
@@ -16,7 +18,10 @@ import 'routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Loggy.initLoggy(logPrinter: const PrettyPrinter(showColors: true));
+  Loggy.initLoggy(
+    logPrinter: const PrettyPrinter(showColors: true),
+    logOptions: logOptionsFor(release: kReleaseMode),
+  );
 
   // Cliente de Roble con timeout de 10s para evitar bloqueos si el servidor se satura
   if (RobleConfig.contractId.isNotEmpty) {
