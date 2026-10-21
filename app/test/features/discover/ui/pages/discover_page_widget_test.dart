@@ -42,74 +42,82 @@ void main() {
 
   PageController pageController(WidgetTester tester) =>
       tester.widget<PageView>(find.byType(PageView)).controller!;
+  group('DiscoverPage', () {
+    testWidgets('al acercarse al final pide la página siguiente', (
+      tester,
+    ) async {
+      await show(tester);
+      expect(controller.projects.length, 4);
 
-  testWidgets('al acercarse al final pide la página siguiente', (tester) async {
-    await show(tester);
-    expect(controller.projects.length, 4);
+      await swipeUp(tester);
+      await swipeUp(tester);
 
-    await swipeUp(tester);
-    await swipeUp(tester);
+      expect(controller.projects.length, 8);
+    });
 
-    expect(controller.projects.length, 8);
-  });
+    testWidgets('el PageController es el mismo aunque cambie la lista', (
+      tester,
+    ) async {
+      await show(tester);
+      final before = pageController(tester);
 
-  testWidgets('el PageController es el mismo aunque cambie la lista', (
-    tester,
-  ) async {
-    await show(tester);
-    final before = pageController(tester);
+      await swipeUp(tester);
+      await swipeUp(tester);
 
-    await swipeUp(tester);
-    await swipeUp(tester);
+      expect(pageController(tester), same(before));
+      expect(before.page, greaterThan(0));
+    });
 
-    expect(pageController(tester), same(before));
-    expect(before.page, greaterThan(0));
-  });
+    testWidgets('cambiar un filtro vuelve a la primera tarjeta', (
+      tester,
+    ) async {
+      await show(tester);
+      await swipeUp(tester);
+      expect(pageController(tester).page, greaterThan(0));
 
-  testWidgets('cambiar un filtro vuelve a la primera tarjeta', (tester) async {
-    await show(tester);
-    await swipeUp(tester);
-    expect(pageController(tester).page, greaterThan(0));
+      await controller.setCareer('diseno');
+      await tester.pumpAndSettle();
 
-    await controller.setCareer('diseno');
-    await tester.pumpAndSettle();
+      expect(pageController(tester).page, 0);
+      expect(find.text('Proyecto p1'), findsOneWidget);
+    });
 
-    expect(pageController(tester).page, 0);
-    expect(find.text('Proyecto p1'), findsOneWidget);
-  });
+    testWidgets('refrescar con el mismo filtro no mueve la posición', (
+      tester,
+    ) async {
+      await show(tester);
+      await swipeUp(tester);
+      final page = pageController(tester).page;
 
-  testWidgets('refrescar con el mismo filtro no mueve la posición', (
-    tester,
-  ) async {
-    await show(tester);
-    await swipeUp(tester);
-    final page = pageController(tester).page;
+      await controller.loadProjects();
+      await tester.pumpAndSettle();
 
-    await controller.loadProjects();
-    await tester.pumpAndSettle();
+      expect(pageController(tester).page, page);
+    });
 
-    expect(pageController(tester).page, page);
-  });
+    testWidgets('sin coincidencias ofrece limpiar filtros', (tester) async {
+      await show(tester);
+      // Con filtros válidos casi no se llega a cero resultados (las opciones salen
+      // del propio feed); solo si los datos cambian entre las dos peticiones.
+      controller.projects.clear();
+      controller.filter.value = const ProjectFilter(career: 'software');
+      await tester.pumpAndSettle();
 
-  testWidgets('sin coincidencias ofrece limpiar filtros', (tester) async {
-    await show(tester);
-    // Con filtros válidos casi no se llega a cero resultados (las opciones salen
-    // del propio feed); solo si los datos cambian entre las dos peticiones.
-    controller.projects.clear();
-    controller.filter.value = const ProjectFilter(career: 'software');
-    await tester.pumpAndSettle();
+      expect(
+        find.text('Ningún proyecto coincide con Software.'),
+        findsOneWidget,
+      );
+    });
 
-    expect(find.text('Ningún proyecto coincide con Software.'), findsOneWidget);
-  });
+    testWidgets('un aviso del controlador sale como snackbar', (tester) async {
+      await show(tester);
 
-  testWidgets('un aviso del controlador sale como snackbar', (tester) async {
-    await show(tester);
+      controller.notice.value = 'Sin conexión';
+      await tester.pump();
 
-    controller.notice.value = 'Sin conexión';
-    await tester.pump();
-
-    expect(find.text('Sin conexión'), findsOneWidget);
-    expect(controller.notice.value, isNull);
-    await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(find.text('Sin conexión'), findsOneWidget);
+      expect(controller.notice.value, isNull);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+    });
   });
 }

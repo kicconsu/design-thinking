@@ -36,56 +36,94 @@ void main() {
   }
 
   tearDown(Get.reset);
+  group('CollaborationRequestsController', () {
+    test(
+      'aceptar registra al miembro, marca la solicitud y la saca de la lista',
+      () async {
+        await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+        final controller = build();
+        await controller.fetchForProject('p1');
+        expect(controller.pendingCount('p1'), 1);
 
-  test(
-    'aceptar registra al miembro, marca la solicitud y la saca de la lista',
-    () async {
+        final error = await controller.decide(
+          controller.applicants.first,
+          project: _project,
+          accepted: true,
+        );
+
+        expect(error, isNull);
+        expect(controller.pendingCount('p1'), 0);
+        final members = await source.readProjectMembers(projectId: 'p1');
+        expect(
+          members.where((m) => m['user_id'] == 'applicant-1'),
+          hasLength(1),
+        );
+        final requests = await repository.getJoinRequestsForProject('p1');
+        expect(requests.single.statusState, 'accepted');
+        expect(requests.single.reviewedBy, 'owner-1');
+      },
+    );
+
+    test('rechazar no agrega miembros', () async {
       await setUpWith(InMemoryProjectDataSource(DummyData().projects));
       final controller = build();
       await controller.fetchForProject('p1');
-      expect(controller.pendingCount('p1'), 1);
 
       final error = await controller.decide(
         controller.applicants.first,
         project: _project,
-        accepted: true,
+        accepted: false,
       );
 
       expect(error, isNull);
-      expect(controller.pendingCount('p1'), 0);
-      final members = await source.readProjectMembers(projectId: 'p1');
-      expect(members.where((m) => m['user_id'] == 'applicant-1'), hasLength(1));
-      final requests = await repository.getJoinRequestsForProject('p1');
-      expect(requests.single.statusState, 'accepted');
-      expect(requests.single.reviewedBy, 'owner-1');
-    },
-  );
+      expect(await source.readProjectMembers(projectId: 'p1'), isEmpty);
+      expect(
+        (await repository.getJoinRequestsForProject('p1')).single.statusState,
+        'rejected',
+      );
+    });
 
-  test('rechazar no agrega miembros', () async {
-    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
-    final controller = build();
-    await controller.fetchForProject('p1');
+    test(
+      'si el servidor falla, la solicitud sigue y se devuelve el error',
+      () async {
+        await setUpWith(ScriptedProjectDataSource()..joinRequestFailures = 1);
+        final controller = build();
+        await controller.fetchForProject('p1');
 
-    final error = await controller.decide(
-      controller.applicants.first,
-      project: _project,
-      accepted: false,
+        final error = await controller.decide(
+          controller.applicants.first,
+          project: _project,
+          accepted: true,
+        );
+
+        expect(error, isNotNull);
+        expect(controller.pendingCount('p1'), 1);
+      },
     );
 
-    expect(error, isNull);
-    expect(await source.readProjectMembers(projectId: 'p1'), isEmpty);
-    expect(
-      (await repository.getJoinRequestsForProject('p1')).single.statusState,
-      'rejected',
-    );
-  });
-
-  test(
-    'si el servidor falla, la solicitud sigue y se devuelve el error',
-    () async {
+    test('reintentar tras un fallo a medias no duplica al miembro', () async {
       await setUpWith(ScriptedProjectDataSource()..joinRequestFailures = 1);
       final controller = build();
       await controller.fetchForProject('p1');
+      final applicant = controller.applicants.first;
+
+      await controller.decide(applicant, project: _project, accepted: true);
+      final retry = await controller.decide(
+        applicant,
+        project: _project,
+        accepted: true,
+      );
+
+      expect(retry, isNull);
+      final members = await source.readProjectMembers(projectId: 'p1');
+      expect(members.where((m) => m['user_id'] == 'applicant-1'), hasLength(1));
+    });
+
+    test('quien no es dueño no puede decidir', () async {
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+      final controller = build();
+      await controller.fetchForProject('p1');
+      isOwner = false;
 
       final error = await controller.decide(
         controller.applicants.first,
@@ -94,42 +132,8 @@ void main() {
       );
 
       expect(error, isNotNull);
+      expect(await source.readProjectMembers(projectId: 'p1'), isEmpty);
       expect(controller.pendingCount('p1'), 1);
-    },
-  );
-
-  test('reintentar tras un fallo a medias no duplica al miembro', () async {
-    await setUpWith(ScriptedProjectDataSource()..joinRequestFailures = 1);
-    final controller = build();
-    await controller.fetchForProject('p1');
-    final applicant = controller.applicants.first;
-
-    await controller.decide(applicant, project: _project, accepted: true);
-    final retry = await controller.decide(
-      applicant,
-      project: _project,
-      accepted: true,
-    );
-
-    expect(retry, isNull);
-    final members = await source.readProjectMembers(projectId: 'p1');
-    expect(members.where((m) => m['user_id'] == 'applicant-1'), hasLength(1));
-  });
-
-  test('quien no es dueño no puede decidir', () async {
-    await setUpWith(InMemoryProjectDataSource(DummyData().projects));
-    final controller = build();
-    await controller.fetchForProject('p1');
-    isOwner = false;
-
-    final error = await controller.decide(
-      controller.applicants.first,
-      project: _project,
-      accepted: true,
-    );
-
-    expect(error, isNotNull);
-    expect(await source.readProjectMembers(projectId: 'p1'), isEmpty);
-    expect(controller.pendingCount('p1'), 1);
+    });
   });
 }

@@ -37,70 +37,71 @@ void main() {
   }
 
   tearDown(Get.reset);
+  group('ProjectsPage', () {
+    testWidgets('un invitado ve la invitación a completar su cuenta', (
+      tester,
+    ) async {
+      await pumpPage(tester, guest: true);
 
-  testWidgets('un invitado ve la invitación a completar su cuenta', (
-    tester,
-  ) async {
-    await pumpPage(tester, guest: true);
+      expect(find.text('Tus proyectos y colaboraciones'), findsOneWidget);
+      expect(find.textContaining('Mis proyectos ('), findsNothing);
+    });
 
-    expect(find.text('Tus proyectos y colaboraciones'), findsOneWidget);
-    expect(find.textContaining('Mis proyectos ('), findsNothing);
-  });
+    testWidgets('con sesión muestra las dos pestañas con su cuenta', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-  testWidgets('con sesión muestra las dos pestañas con su cuenta', (
-    tester,
-  ) async {
-    await pumpPage(tester);
+      expect(find.text('Mis proyectos (0)'), findsOneWidget);
+      expect(find.text('Otros proyectos (0)'), findsOneWidget);
+    });
 
-    expect(find.text('Mis proyectos (0)'), findsOneWidget);
-    expect(find.text('Otros proyectos (0)'), findsOneWidget);
-  });
+    testWidgets('el número de «Mis proyectos» sube con cada proyecto propio', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-  testWidgets('el número de «Mis proyectos» sube con cada proyecto propio', (
-    tester,
-  ) async {
-    await pumpPage(tester);
+      projects.coCreatedProjects.addAll([
+        aProject(id: 'a', owner: 'yo'),
+        aProject(id: 'b', owner: 'yo'),
+      ]);
+      await tester.pumpAndSettle();
 
-    projects.coCreatedProjects.addAll([
-      aProject(id: 'a', owner: 'yo'),
-      aProject(id: 'b', owner: 'yo'),
-    ]);
-    await tester.pumpAndSettle();
+      expect(find.text('Mis proyectos (2)'), findsOneWidget);
+    });
 
-    expect(find.text('Mis proyectos (2)'), findsOneWidget);
-  });
+    testWidgets('«Otros proyectos» suma guardados, pendientes y activos', (
+      tester,
+    ) async {
+      await pumpPage(tester);
 
-  testWidgets('«Otros proyectos» suma guardados, pendientes y activos', (
-    tester,
-  ) async {
-    await pumpPage(tester);
+      projects.savedProjects.addAll([
+        aProject(id: 's', owner: 'yo'),
+        aProject(id: 'p', owner: 'yo'),
+      ]);
+      projects.appliedProjectIds.add('p');
+      projects.activeProjects.add(aProject(id: 'a', owner: 'yo'));
+      await tester.pumpAndSettle();
 
-    projects.savedProjects.addAll([
-      aProject(id: 's', owner: 'yo'),
-      aProject(id: 'p', owner: 'yo'),
-    ]);
-    projects.appliedProjectIds.add('p');
-    projects.activeProjects.add(aProject(id: 'a', owner: 'yo'));
-    await tester.pumpAndSettle();
+      expect(find.text('Otros proyectos (3)'), findsOneWidget);
+    });
 
-    expect(find.text('Otros proyectos (3)'), findsOneWidget);
-  });
+    testWidgets('arranca en «Mis proyectos» y la otra pestaña la cambia', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      expect(projects.selectedMainTab.value, 0);
 
-  testWidgets('arranca en «Mis proyectos» y la otra pestaña la cambia', (
-    tester,
-  ) async {
-    await pumpPage(tester);
-    expect(projects.selectedMainTab.value, 0);
+      await tester.tap(find.text('Otros proyectos (0)'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Otros proyectos (0)'));
-    await tester.pumpAndSettle();
+      expect(projects.selectedMainTab.value, 1);
+      expect(find.text('Guardados'), findsOneWidget);
 
-    expect(projects.selectedMainTab.value, 1);
-    expect(find.text('Guardados'), findsOneWidget);
+      await tester.tap(find.text('Mis proyectos (0)'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Mis proyectos (0)'));
-    await tester.pumpAndSettle();
-
-    expect(projects.selectedMainTab.value, 0);
+      expect(projects.selectedMainTab.value, 0);
+    });
   });
 }

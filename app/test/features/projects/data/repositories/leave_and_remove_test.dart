@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../support/dummy_data.dart';
+
 import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
 import 'package:imker/features/projects/data/repositories/project_repository.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
@@ -26,7 +27,10 @@ void main() {
   }
 
   setUp(() async {
-    source = InMemoryProjectDataSource(DummyData().projects);
+    source = InMemoryProjectDataSource(
+      DummyData().projects,
+      () => DateTime.utc(2026, 3, 14, 15, 30),
+    );
     repo = ProjectRepository(source);
     pid = (await repo.createProject(
       title: 'P',
@@ -57,7 +61,7 @@ void main() {
 
       final row = (await source.readProjectMembers(projectId: pid))
           .firstWhere((r) => r['user_id'] == 'ana');
-      expect(DateTime.tryParse(row['leftAt'].toString()), isNotNull);
+      expect(row['leftAt'], '2026-03-14T15:30:00.000Z');
     });
 
     test('borra su guardado del proyecto', () async {

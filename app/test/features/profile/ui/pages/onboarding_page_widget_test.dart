@@ -54,96 +54,98 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('guardar envía lo escrito y entra a Home', (tester) async {
-    await open(tester);
+  group('OnboardingPage', () {
+    testWidgets('guardar envía lo escrito y entra a Home', (tester) async {
+      await open(tester);
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'p. ej. Ingeniería de Sistemas'),
-      'Medicina',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Escribe una habilidad'),
-      'Anatomía',
-    );
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-    await tester.ensureVisible(find.text('Guardar y continuar'));
-    await tester.tap(find.text('Guardar y continuar'));
-    await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'p. ej. Ingeniería de Sistemas'),
+        'Medicina',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Escribe una habilidad'),
+        'Anatomía',
+      );
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Guardar y continuar'));
+      await tester.tap(find.text('Guardar y continuar'));
+      await tester.pumpAndSettle();
 
-    expect(profiles.saved.single.program, 'Medicina');
-    expect(profiles.saved.single.skills, ['Anatomía']);
-    expect(find.text('HOME'), findsOneWidget);
-  });
+      expect(profiles.saved.single.program, 'Medicina');
+      expect(profiles.saved.single.skills, ['Anatomía']);
+      expect(find.text('HOME'), findsOneWidget);
+    });
 
-  testWidgets('«Ahora no» entra a Home sin escribir nada', (tester) async {
-    await open(tester);
-
-    await tester.ensureVisible(find.text('Ahora no'));
-    await tester.tap(find.text('Ahora no'));
-    await tester.pumpAndSettle();
-
-    expect(profiles.saved, isEmpty);
-    expect(find.text('HOME'), findsOneWidget);
-  });
-
-  testWidgets('guardar con todo vacío equivale a omitir', (tester) async {
-    await open(tester);
-
-    await tester.ensureVisible(find.text('Guardar y continuar'));
-    await tester.tap(find.text('Guardar y continuar'));
-    await tester.pumpAndSettle();
-
-    expect(profiles.saved, isEmpty);
-    expect(find.text('HOME'), findsOneWidget);
-  });
-
-  testWidgets('si falla el guardado se queda y muestra el error', (
-    tester,
-  ) async {
-    profiles.failure = const ProfileFailure('Sin conexión. Verifica tu red.');
-    await open(tester);
-
-    await tester.enterText(
-      find.widgetWithText(TextField, 'p. ej. Ingeniería de Sistemas'),
-      'Medicina',
-    );
-    await tester.ensureVisible(find.text('Guardar y continuar'));
-    await tester.tap(find.text('Guardar y continuar'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('HOME'), findsNothing);
-    expect(find.text('Sin conexión. Verifica tu red.'), findsOneWidget);
-
-    // Deja que el aviso termine para no dejar temporizadores pendientes.
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets('un invitado que sube de cuenta vuelve a la pestaña Perfil', (
-    tester,
-  ) async {
-    final home = Get.put(HomeViewModel());
-    await open(tester, arguments: const OnboardingArgs(homeTab: 2));
-
-    await tester.ensureVisible(find.text('Ahora no'));
-    await tester.tap(find.text('Ahora no'));
-    await tester.pumpAndSettle();
-
-    expect(home.currentIndex.value, 2);
-  });
-
-  testWidgets(
-    'tras registrarse se abre en Descubrir aunque quedara otra pestaña',
-    (tester) async {
-      final home = Get.put(HomeViewModel())..changePage(2);
+    testWidgets('«Ahora no» entra a Home sin escribir nada', (tester) async {
       await open(tester);
 
       await tester.ensureVisible(find.text('Ahora no'));
       await tester.tap(find.text('Ahora no'));
       await tester.pumpAndSettle();
 
-      expect(home.currentIndex.value, 0);
-    },
-  );
+      expect(profiles.saved, isEmpty);
+      expect(find.text('HOME'), findsOneWidget);
+    });
+
+    testWidgets('guardar con todo vacío equivale a omitir', (tester) async {
+      await open(tester);
+
+      await tester.ensureVisible(find.text('Guardar y continuar'));
+      await tester.tap(find.text('Guardar y continuar'));
+      await tester.pumpAndSettle();
+
+      expect(profiles.saved, isEmpty);
+      expect(find.text('HOME'), findsOneWidget);
+    });
+
+    testWidgets('si falla el guardado se queda y muestra el error', (
+      tester,
+    ) async {
+      profiles.failure = const ProfileFailure('Sin conexión. Verifica tu red.');
+      await open(tester);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'p. ej. Ingeniería de Sistemas'),
+        'Medicina',
+      );
+      await tester.ensureVisible(find.text('Guardar y continuar'));
+      await tester.tap(find.text('Guardar y continuar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('HOME'), findsNothing);
+      expect(find.text('Sin conexión. Verifica tu red.'), findsOneWidget);
+
+      // Deja que el aviso termine para no dejar temporizadores pendientes.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('un invitado que sube de cuenta vuelve a la pestaña Perfil', (
+      tester,
+    ) async {
+      final home = Get.put(HomeViewModel());
+      await open(tester, arguments: const OnboardingArgs(homeTab: 2));
+
+      await tester.ensureVisible(find.text('Ahora no'));
+      await tester.tap(find.text('Ahora no'));
+      await tester.pumpAndSettle();
+
+      expect(home.currentIndex.value, 2);
+    });
+
+    testWidgets(
+      'tras registrarse se abre en Descubrir aunque quedara otra pestaña',
+      (tester) async {
+        final home = Get.put(HomeViewModel())..changePage(2);
+        await open(tester);
+
+        await tester.ensureVisible(find.text('Ahora no'));
+        await tester.tap(find.text('Ahora no'));
+        await tester.pumpAndSettle();
+
+        expect(home.currentIndex.value, 0);
+      },
+    );
+  });
 }
