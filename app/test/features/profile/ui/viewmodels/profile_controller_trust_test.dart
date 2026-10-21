@@ -31,20 +31,33 @@ void main() {
 
   tearDown(Get.reset);
 
+  ProfileController controllerWith({
+    ITrustRepository? repository,
+    String userId = 'yo',
+  }) => ProfileController(
+    FakeProfileRepository(
+      me: const UserProfile(program: 'Medicina'),
+      other: const UserProfile(),
+    ),
+    trust: repository,
+    currentUserId: () => userId,
+  );
+
   group('loadTrust', () {
-    test('calcula los indicadores de quien tiene la sesión', () async {
-      await controller.loadTrust();
+    test('calcula los de quien tiene la sesión, los pone en el perfil y se ve '
+        'cargando mientras tanto', () async {
+      trust.gate = Completer<void>();
+      await controller.loadProfile();
+
+      final loading = controller.loadTrust();
+      expect(controller.isLoadingTrust.value, isTrue);
+      trust.gate!.complete();
+      await loading;
 
       expect(trust.metricsAsked, ['yo']);
       expect(controller.trust.value?.commitment, 72);
       expect(controller.trustError.value, isNull);
       expect(controller.isLoadingTrust.value, isFalse);
-    });
-
-    test('profileWithTrust pone los indicadores en el perfil', () async {
-      await controller.loadProfile();
-      await controller.loadTrust();
-
       final profile = controller.profileWithTrust!;
       expect(profile.program, 'Medicina');
       expect(profile.hasTrustHistory, isTrue);
@@ -54,39 +67,25 @@ void main() {
       expect(profile.completedProjectsScore, 50);
     });
 
-    test('sin calcular, el perfil no trae indicadores ni ceros', () async {
-      await controller.loadProfile();
+    test(
+      'sin calcular o sin historial, el perfil no trae números ni ceros',
+      () async {
+        await controller.loadProfile();
+        expect(controller.profileWithTrust!.hasTrustHistory, isFalse);
+        expect(controller.profileWithTrust!.commitmentScore, isNull);
 
-      final profile = controller.profileWithTrust!;
-      expect(profile.hasTrustHistory, isFalse);
-      expect(profile.commitmentScore, isNull);
-    });
+        trust.metrics = TrustMetrics.none;
+        await controller.loadTrust();
 
-    test('sin historial: hay perfil pero nada que mostrar', () async {
-      trust.metrics = TrustMetrics.none;
-      await controller.loadProfile();
-
-      await controller.loadTrust();
-
-      expect(controller.profileWithTrust!.hasTrustHistory, isFalse);
-      expect(controller.profileWithTrust!.commitmentScore, isNull);
-      expect(controller.trustError.value, isNull);
-    });
-
-    test('mientras calcula se ve cargando', () async {
-      trust.gate = Completer<void>();
-
-      final loading = controller.loadTrust();
-      expect(controller.isLoadingTrust.value, isTrue);
-
-      trust.gate!.complete();
-      await loading;
-      expect(controller.isLoadingTrust.value, isFalse);
-    });
+        expect(controller.profileWithTrust!.hasTrustHistory, isFalse);
+        expect(controller.profileWithTrust!.commitmentScore, isNull);
+        expect(controller.trustError.value, isNull);
+      },
+    );
   });
 
   group('cuando falla', () {
-    test('guarda el motivo y no deja ningún número', () async {
+    test('guarda el motivo sin números y reintentar lo corrige', () async {
       trust.failure = const TrustFailure('Sin conexión. Verifica tu red.');
 
       await controller.loadTrust();
@@ -96,11 +95,6 @@ void main() {
       await controller.loadProfile();
       expect(controller.profileWithTrust!.commitmentScore, isNull);
       expect(controller.isLoadingTrust.value, isFalse);
-    });
-
-    test('reintentar lo corrige y limpia el error', () async {
-      trust.failure = const TrustFailure('Sin conexión.');
-      await controller.loadTrust();
 
       trust.failure = null;
       await controller.loadTrust();
@@ -124,15 +118,7 @@ void main() {
     );
 
     test('un error inesperado también se informa', () async {
-      final broken = _Throwing();
-      final c = ProfileController(
-        FakeProfileRepository(
-          me: const UserProfile(program: 'Medicina'),
-          other: const UserProfile(),
-        ),
-        trust: broken,
-        currentUserId: () => 'yo',
-      );
+      final c = controllerWith(repository: _Throwing());
 
       await c.loadTrust();
 
@@ -142,46 +128,24 @@ void main() {
   });
 
   group('sesión', () {
-    test('sin sesión no consulta nada', () async {
-      final c = ProfileController(
-        FakeProfileRepository(
-          me: const UserProfile(program: 'Medicina'),
-          other: const UserProfile(),
-        ),
-        trust: trust,
-        currentUserId: () => '',
-      );
+    test(
+      'sin sesión o sin repositorio de confianza no consulta nada',
+      () async {
+        final noSession = controllerWith(repository: trust, userId: '');
+        await noSession.loadTrust();
+        expect(trust.metricsAsked, isEmpty);
+        expect(noSession.trust.value, isNull);
 
-      await c.loadTrust();
-
-      expect(trust.metricsAsked, isEmpty);
-      expect(c.trust.value, isNull);
-    });
-
-    test('sin repositorio de confianza no hace nada', () async {
-      final c = ProfileController(
-        FakeProfileRepository(
-          me: const UserProfile(program: 'Medicina'),
-          other: const UserProfile(),
-        ),
-        currentUserId: () => 'yo',
-      );
-
-      await c.loadTrust();
-
-      expect(c.trust.value, isNull);
-      expect(c.trustError.value, isNull);
-    });
+        final noRepository = controllerWith();
+        await noRepository.loadTrust();
+        expect(noRepository.trust.value, isNull);
+        expect(noRepository.trustError.value, isNull);
+      },
+    );
 
     test('usa el repositorio registrado si no se le pasa uno', () async {
       Get.put<ITrustRepository>(trust);
-      final c = ProfileController(
-        FakeProfileRepository(
-          me: const UserProfile(program: 'Medicina'),
-          other: const UserProfile(),
-        ),
-        currentUserId: () => 'yo',
-      );
+      final c = controllerWith();
 
       await c.loadTrust();
 

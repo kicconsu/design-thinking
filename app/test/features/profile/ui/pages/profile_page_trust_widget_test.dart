@@ -79,15 +79,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('al entrar calcula y muestra mis indicadores', (tester) async {
-    await openProfile(tester);
-
-    expect(trust.metricsAsked, ['yo']);
-    expect(find.byType(TrustIndicators), findsOneWidget);
-    expect(find.text('72%'), findsWidgets);
-    expect(find.text('Cumplimiento'), findsOneWidget);
-  });
-
   testWidgets('mientras calcula muestra la carga, sin números', (tester) async {
     tallScreen(tester);
     trust.gate = Completer<void>();
@@ -132,9 +123,13 @@ void main() {
     expect(find.byType(TrustIndicators), findsOneWidget);
   });
 
-  testWidgets('jalar para refrescar recalcula los indicadores', (tester) async {
+  testWidgets('al entrar calcula mis indicadores; jalar los recalcula', (
+    tester,
+  ) async {
     await openProfile(tester);
-    expect(trust.metricsAsked, hasLength(1));
+    expect(trust.metricsAsked, ['yo']);
+    expect(find.byType(TrustIndicators), findsOneWidget);
+    expect(find.text('72%'), findsWidgets);
 
     trust.metrics = const TrustMetrics(
       commitment: 90,
