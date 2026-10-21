@@ -1,6 +1,6 @@
 {
-    "name": "f_clean_template",
-    "short_name": "f_clean_template",
+    "name": "Imker",
+    "short_name": "Imker",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
