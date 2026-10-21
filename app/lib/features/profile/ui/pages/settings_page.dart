@@ -109,13 +109,6 @@ class SettingsPage extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Get.off(() => const EditProfilePage()),
               ),
-              Divider(height: 1, color: cs.outline),
-              const ListTile(
-                leading: Icon(Icons.settings_outlined),
-                title: Text('Configuración'),
-                subtitle: Text('Próximamente'),
-                enabled: false,
-              ),
             ]),
             const SizedBox(height: 20),
             group([

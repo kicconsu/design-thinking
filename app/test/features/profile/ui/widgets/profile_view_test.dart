@@ -197,6 +197,18 @@ void main() {
   group('SettingsPage', () {
     tearDown(Get.reset);
 
+    testWidgets('no muestra filas deshabilitadas con «Próximamente»', (
+      tester,
+    ) async {
+      Get.put(AuthenticationController(_FakeAuth()));
+      await tester.pumpWidget(const GetMaterialApp(home: SettingsPage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Próximamente'), findsNothing);
+      expect(find.text('Configuración'), findsNothing);
+      expect(find.text('Editar perfil'), findsOneWidget);
+    });
+
     testWidgets('cerrar sesión pide confirmación y no cierra si se cancela', (
       tester,
     ) async {
