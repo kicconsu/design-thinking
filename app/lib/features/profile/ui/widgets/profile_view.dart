@@ -210,7 +210,7 @@ class ProfileView extends StatelessWidget {
                         const SizedBox(width: 14),
                         Expanded(
                           child: Text(
-                            'Aparecerán cuando ${isOwn ? 'colabores' : 'colabore'} en proyectos.',
+                            'Todavía no hay indicadores. Aparecen cuando ${isOwn ? 'colabores' : 'colabora'} en un proyecto.',
                             style: muted,
                           ),
                         ),
