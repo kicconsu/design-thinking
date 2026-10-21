@@ -5,8 +5,15 @@ name: Pruebas de integración
 # Ninguna prueba habla con Roble: los datos salen de los dobles de
 # app/integration_test/support.
 on:
-  push:
   pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+# Un push nuevo a la misma rama cancela la corrida anterior.
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   integration:
@@ -24,7 +31,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.47.2
+          flutter-version: 3.47.7
           cache: true
 
       - name: Install dependencies
