@@ -3,30 +3,13 @@ import 'package:get/get.dart';
 
 import 'package:imker/core/widgets/operation_done_page.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
-import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 
 /// Pantalla "Done!" del flujo de Figma: confirma la postulación del usuario
 /// para colaborar en el proyecto usando el componente reutilizable OperationDonePage.
-class CollaborationDonePage extends StatefulWidget {
+class CollaborationDonePage extends StatelessWidget {
   final Project project;
 
   const CollaborationDonePage({super.key, required this.project});
-
-  @override
-  State<CollaborationDonePage> createState() => _CollaborationDonePageState();
-}
-
-class _CollaborationDonePageState extends State<CollaborationDonePage> {
-  @override
-  void initState() {
-    super.initState();
-    // Se marca la postulación después de terminar el build actual: llamarlo
-    // directo en initState dispara el Obx de la página anterior a mitad de
-    // su propio build y Flutter lo rechaza con un error.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.find<UserProjectsController>().applyToProject(widget.project);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {

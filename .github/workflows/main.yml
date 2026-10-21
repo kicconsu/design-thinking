@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  tests:
+    name: Pruebas principales
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - run: flutter pub get
+
+      # Ninguna prueba puede hablar con Roble: solo se admite un cliente que
+      # envuelva una base falsa (RobleClient.withDatabase). Construir el
+      # cliente real o RobleApiDataBase dentro de test/ rompe el CI.
+      - name: Las pruebas no usan Roble real
+        working-directory: .
+        run: |
+          if grep -rnE "RobleApiDataBase\(|RobleClient\(" app/test; then
+            echo "::error::Una prueba construye un cliente real de Roble. Usa un fake en app/test/support."
+            exit 1
+          fi
+
+      - name: Análisis estático
+        run: flutter analyze
+
+      # test/ replica las capas de lib/; los dobles compartidos van en
+      # test/support/. Una carpeta de pruebas sin homóloga en lib/, o una
+      # prueba suelta en la raíz de un feature, es un archivo mal ubicado.
+      - name: La estructura de test/ replica lib/
+        run: |
+          status=0
+          for dir in $(find test -mindepth 1 -type d ! -path 'test/support*'); do
+            [ -d "lib/${dir#test/}" ] || { echo "::error::$dir no tiene homóloga en lib/"; status=1; }
+          done
+          for file in $(find test -maxdepth 3 -name '*_test.dart' | grep -E '^test/[^/]+_test.dart$|^test/features/[^/]+/[^/]+_test.dart$'); do
+            echo "::error::$file queda suelta; muévela a la capa que prueba"; status=1
+          done
+          exit $status
+
+      # Unitarias y de widget no se mezclan: los archivos *_widget_test.dart
+      # solo tienen testWidgets() y el resto solo test().
+      - name: Unitarias y de widget en archivos distintos
+        run: |
+          status=0
+          for file in $(find test -name '*_widget_test.dart'); do
+            grep -qE '(^|[^A-Za-z])test\(' "$file" && { echo "::error::$file mezcla test() con testWidgets()"; status=1; }
+          done
+          for file in $(find test -name '*_test.dart' ! -name '*_widget_test.dart'); do
+            grep -q 'testWidgets(' "$file" && { echo "::error::$file usa testWidgets(); renómbralo a *_widget_test.dart"; status=1; }
+          done
+          exit $status
+
+      - name: Unit tests
+        run: flutter test $(find test -name '*_test.dart' ! -name '*_widget_test.dart')
+
+      - name: Widget tests
+        run: flutter test $(find test -name '*_widget_test.dart')

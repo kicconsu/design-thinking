@@ -1,63 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:imker/features/auth/ui/viewmodels/authentication_controller.dart';
 import 'package:imker/features/projects/ui/pages/co_created_projects_page.dart';
 import 'package:imker/features/projects/ui/pages/other_projects_page.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'package:imker/features/projects/ui/widgets/projects_guest_gate.dart';
 import 'package:imker/core/widgets/segmented_tab_switch.dart';
 
 /// Página principal del feature Proyectos:
-/// Coordina la alternancia entre "Proyectos Co-creados" y "Otros Proyectos"
+/// Coordina la alternancia entre "Mis proyectos" y "Otros Proyectos"
 /// mediante un selector segmented tipo píldora inspirado en el diseño Imker.
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final auth = Get.find<AuthenticationController>();
     final controller = Get.find<UserProjectsController>();
     final cs = Theme.of(context).colorScheme;
 
     return ColoredBox(
       color: cs.primaryContainer,
       child: SafeArea(
-        child: Column(
-          children: [
-            // Selector segmented de pestañas principales (estilo imagen adjunta)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Obx(() {
-                final coCreatedCount = controller.coCreatedProjects.length;
-                final othersCount = controller.savedProjects.length +
-                    controller.activeProjects.length;
+        child: Obx(() {
+          if (auth.isAnonymous) {
+            return const ProjectsGuestGate();
+          }
 
-                return SegmentedTabSwitch(
-                  selectedIndex: controller.selectedMainTab.value,
-                  tabs: [
-                    'Co-creados ($coCreatedCount)',
-                    'Otros proyectos ($othersCount)',
-                  ],
-                  onTabSelected: (index) {
-                    controller.selectedMainTab.value = index;
-                  },
-                );
-              }),
-            ),
+          return Column(
+            children: [
+              // Selector segmented de pestañas principales (estilo imagen adjunta)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Obx(() {
+                  final coCreatedCount = controller.coCreatedProjects.length;
+                  // Las tres secciones de "Otros proyectos" sin repetir ninguno.
+                  final othersCount =
+                      controller.unappliedSavedProjects.length +
+                      controller.pendingProjects.length +
+                      controller.activeProjects.length;
 
-            // Contenido alternable
-            Expanded(
-              child: Obx(() {
-                final selectedTab = controller.selectedMainTab.value;
-                return IndexedStack(
-                  index: selectedTab,
-                  children: const [
-                    CoCreatedProjectsPage(),
-                    OtherProjectsPage(),
-                  ],
-                );
-              }),
-            ),
-          ],
-        ),
+                  return SegmentedTabSwitch(
+                    selectedIndex: controller.selectedMainTab.value,
+                    tabs: [
+                      'Mis proyectos ($coCreatedCount)',
+                      'Otros proyectos ($othersCount)',
+                    ],
+                    onTabSelected: (index) {
+                      controller.selectedMainTab.value = index;
+                    },
+                  );
+                }),
+              ),
+
+              // Contenido alternable
+              Expanded(
+                child: Obx(() {
+                  final selectedTab = controller.selectedMainTab.value;
+                  return IndexedStack(
+                    index: selectedTab,
+                    children: const [
+                      CoCreatedProjectsPage(),
+                      OtherProjectsPage(),
+                    ],
+                  );
+                }),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }

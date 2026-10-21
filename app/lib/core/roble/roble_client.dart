@@ -6,33 +6,53 @@ import 'package:roble/roble.dart';
 /// pantalla le daría a cada copia su propia sesión. Los repositorios lo
 /// reciben inyectado a través de sus datasources.
 class RobleClient {
-  RobleClient({required String baseUrl, required String contractId})
-    : db = RobleApiDataBase(
-        config: RobleApiConfig.fromContract(
-          baseUrl: baseUrl,
-          contractId: contractId,
-        ),
-      );
+  RobleClient({
+    required String baseUrl,
+    required String contractId,
+    Duration timeout = const Duration(seconds: 10),
+  }) : db = RobleApiDataBase(
+         config: RobleApiConfig.fromContract(
+           baseUrl: baseUrl,
+           contractId: contractId,
+           timeout: timeout,
+         ),
+       );
 
   /// Constructor alternativo para pruebas.
   RobleClient.withDatabase(this.db);
 
   final RobleApiDataBase db;
 
-  /// El [userId] de la sesión activa, cacheado.
+  /// El `userId` de la sesión activa: el `sub` del JWT, que es exactamente lo
+  /// que el servidor escribe en `_owner` de cada fila.
   ///
-  /// El paquete guarda los tokens pero no el perfil, y [currentUser()] hace
-  /// un viaje al servidor. Varias lecturas dependen de quién mira, así que
-  /// preguntarlo en cada una sería una llamada de más. Lo escribe el
-  /// repositorio de auth al entrar y lo borra al salir.
-  String? currentUserId;
+  /// No hay caché propio: el paquete lo saca del token en memoria sin ir al
+  /// servidor.
+  String? get currentUserId => db.currentUserId;
+
+  /// ¿Esta fila es del que está dentro?
+  ///
+  /// `_owner` es un uuid de usuario; a veces viene vacío (filas antiguas o
+  /// creadas con clave publicable) y eso nunca es nadie.
+  bool matchesUser(String? owner) {
+    final userId = currentUserId;
+    if (userId == null || userId.isEmpty) return false;
+    if (owner == null || owner.trim().isEmpty) return false;
+    return owner.trim() == userId;
+  }
 
   // ─── Nombres de tablas en un solo sitio ─────────────────────────────────
   // Un typo aquí es un 404 y no un error de compilación.
   // Centralizar evita que se repitan por toda la app.
 
-  /// Tabla de proyectos del feed.
   static const projects = 'project';
+  static const profileTable = 'profile';
+  static const projectJoinRequests = 'project_join_request';
+  static const projectMembers = 'project_member';
+  static const projectSaved = 'project_saved';
+  static const projectInvitation = 'project_invitation';
+  static const tasks = 'task';
+  static const contributions = 'contribution';
 
   // ─── Lectura pública vs. autenticada ─────────────────────────────────────
 

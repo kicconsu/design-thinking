@@ -3,19 +3,32 @@ import 'package:get/get.dart';
 
 import '../../domain/models/project.dart';
 import '../../domain/models/applicant.dart';
-import '../viewmodels/user_projects_controller.dart';
+import '../viewmodels/collaboration_requests_controller.dart';
 import 'applicant_detail_page.dart';
 
 /// Pantalla "Requests" del flujo de Figma: lista las solicitudes de
 /// colaboración recibidas para un proyecto co-creado.
-class CollaborationRequestsPage extends StatelessWidget {
+class CollaborationRequestsPage extends StatefulWidget {
   final Project project;
 
   const CollaborationRequestsPage({super.key, required this.project});
 
   @override
+  State<CollaborationRequestsPage> createState() =>
+      _CollaborationRequestsPageState();
+}
+
+class _CollaborationRequestsPageState extends State<CollaborationRequestsPage> {
+  @override
+  void initState() {
+    super.initState();
+    final controller = Get.find<CollaborationRequestsController>();
+    controller.fetchForProject(widget.project.id);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.find<UserProjectsController>();
+    final controller = Get.find<CollaborationRequestsController>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -28,52 +41,54 @@ class CollaborationRequestsPage extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Obx(() {
-          final applicants = controller.applicantsFor(project.id);
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(
-                'Solicitudes de colaboración',
-                style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                project.title,
-                style: tt.titleMedium,
-              ),
-              Text(
-                'Revisa cada perfil antes de decidir',
-                style: tt.bodySmall,
-              ),
-              const SizedBox(height: 8),
-              Divider(color: cs.outline),
-              const SizedBox(height: 8),
-              if (applicants.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    'No hay solicitudes pendientes por revisar.',
-                    style: tt.bodyMedium,
-                  ),
-                )
-              else
-                ...applicants.map(
-                  (applicant) => _ApplicantTile(
-                    applicant: applicant,
-                    onTap: () {
-                      Get.to(
-                        () => ApplicantDetailPage(
-                          project: project,
-                          applicant: applicant,
-                        ),
-                      );
-                    },
+        child: RefreshIndicator(
+          onRefresh: () => controller.fetchForProject(widget.project.id),
+          child: Obx(() {
+            final applicants = controller.applicantsFor(widget.project.id);
+            return ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  'Solicitudes de colaboración',
+                  style: tt.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-            ],
-          );
-        }),
+                const SizedBox(height: 4),
+                Text(widget.project.title, style: tt.titleMedium),
+                Text(
+                  'Revisa cada perfil antes de decidir',
+                  style: tt.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                Divider(color: cs.outline),
+                const SizedBox(height: 8),
+                if (applicants.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'No hay solicitudes pendientes por revisar.',
+                      style: tt.bodyMedium,
+                    ),
+                  )
+                else
+                  ...applicants.map(
+                    (applicant) => _ApplicantTile(
+                      applicant: applicant,
+                      onTap: () {
+                        Get.to(
+                          () => ApplicantDetailPage(
+                            project: widget.project,
+                            applicant: applicant,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }
@@ -107,54 +122,32 @@ class _ApplicantTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     applicant.name,
-                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Text(applicant.appliedAgo, style: tt.bodySmall),
               ],
             ),
-            Text(applicant.academicInfo, style: tt.bodySmall),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(color: cs.secondaryContainer),
-                  child: Text(
-                    applicant.requestedRole,
-                    style: TextStyle(
-                      color: cs.onSecondaryContainer,
-                      fontSize: 12,
-                    ),
-                  ),
+            if (applicant.academicInfo.isNotEmpty)
+              Text(applicant.academicInfo, style: tt.bodySmall),
+            if (applicant.commitmentScore case final score?) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                child: LinearProgressIndicator(
+                  value: score / 100,
+                  minHeight: 6,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  color: cs.primary,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${applicant.commonProjects} en común',
-                  style: tt.bodySmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              child: LinearProgressIndicator(
-                value: applicant.commitmentScore / 100,
-                minHeight: 8,
-                backgroundColor: cs.surfaceContainerHighest,
-                color: cs.primary,
               ),
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'Compromiso ${applicant.commitmentScore}%',
+              const SizedBox(height: 4),
+              Text(
+                'Compromiso $score%',
                 style: tt.bodySmall,
               ),
-            ),
+            ],
           ],
         ),
       ),

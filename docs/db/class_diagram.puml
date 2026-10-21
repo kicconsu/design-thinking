@@ -1,5 +1,5 @@
-@startuml v1
-title Imker - UML v1
+@startuml v4
+title Imker - UML v4
 
 hide circle
 skinparam shadowing false
@@ -30,8 +30,8 @@ entity profile {
 --
   _owner : text <<FK user_system>>
 * name : text
-* career : json
-  skills : json
+* career : jsonb
+  skills : jsonb
   profilePicture : varchar
   description : text
 }
@@ -43,10 +43,19 @@ entity project {
 * title : text
 * imageUrl : varchar
 * description : text
-* jobs : json
-* skills : json
+* jobs : jsonb
+* skills : jsonb
 * status : open | closed
+* total_tasks: int
+* progress: int
 }
+
+note bottom of project
+  Las columnas jsonb que guardan listas
+  (jobs y skills de project, skills de profile)
+  llevan el array en la raíz de la columna:
+  ["a", "b"] y nunca {"values": [...]}.
+end note
 
 entity project_saved  {
 * user_id : uuid <<PK, FK>>
@@ -60,7 +69,7 @@ entity project_join_request {
 --
 * user_id : uuid <<FK>>
 * project_id : uuid <<FK>>
-* status : pending | approved | denied | cancelled
+* status : json {state: pending | accepted | rejected | cancelled}
 * createdAt : timestamptz
 * updatedAt : timestamptz
   reviewed_by : uuid <<FK user_system>>
@@ -68,10 +77,28 @@ entity project_join_request {
 }
 
 entity project_member {
-* user_id : uuid <<PK, FK>>
-* project_id : uuid <<PK, FK>>
+* _id : uuid <<PK>>
 --
-* role : owner | member
+* user_id : uuid <<FK>>
+* project_id : uuid <<FK>>
+* role : json {name: owner | collaborator}
+* status : active | left | removed
+* joinedAt : timestamptz
+  leftAt : timestamptz
+* tasks_finished: int
+* tasks_taken: int
+}
+
+entity project_invitation {
+* _id : uuid <<PK>>
+--
+  _owner : text
+* project_id : uuid <<FK project>>
+* email : text
+* user_id : uuid <<FK user_system>>
+* status : pending | accepted | declined | cancelled
+* createdAt : timestamptz
+  respondedAt : timestamptz
 }
 
 entity task {
@@ -81,6 +108,10 @@ entity task {
 * title : text
   description : text
 * status : todo | doing | done
+ deadline: timestamptz
+ finished_at: timestamptz
+ asignee_id: uuid <<FK>>
+ checklist: json
 }
 
 entity contribution  {
@@ -106,9 +137,13 @@ project ||--o{ project_join_request
 user_system ||--o{ project_member
 project ||--o{ project_member
 
+user_system ||--o{ project_invitation : "invitado"
+project ||--o{ project_invitation : invita
+
 project ||--o{ task
 
 project_member ||--o{ contribution : "(user_id, project_id)"
+user_system ||--o{ task: "user_id"
 task ||--o{ contribution
 
 ' ───────── Notas ─────────
@@ -125,10 +160,29 @@ Las denied/cancelled quedan de historial.
 end note
 
 note bottom of project_member
-PK (user_id, project_id): una membresía
-  por usuario y proyecto.
+Cada estancia es una fila y nunca se borra ni
+  se reabre: salir o ser echado la marca left o
+  removed (con leftAt) y volver crea una fila nueva.
+  Activo = fila con status active. ROBLE no
+  garantiza unicidad: addProjectMember no inserta
+  si ya hay una activa.
+Las solicitudes e invitaciones accepted son
+  historia; solo project_member dice quién
+  colabora hoy.
 Pendiente: qué pasa cuando alguien se va
 (status o left_at).
+end note
+
+note bottom of project_invitation
+  El cliente verifica TODOS los correos
+  (consulta guardada usuario_por_correo)
+  ANTES de crear el proyecto.
+  Si alguno no tiene cuenta, no se escribe
+  nada: la creación se aborta por completo.
+  Si la inserción falla después de crear el
+  proyecto, se borra el proyecto con sus
+  miembros e invitaciones (rollback).
+  Una sola pending por (project_id, email).
 end note
 
 @enduml

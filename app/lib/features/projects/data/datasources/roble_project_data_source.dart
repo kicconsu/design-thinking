@@ -1,21 +1,682 @@
+import 'dart:convert';
+
+import 'package:loggy/loggy.dart';
 import 'package:imker/core/roble/roble_client.dart';
+import 'package:roble/roble.dart';
 
 import 'i_project_data_source.dart';
+import 'package:imker/core/utils/clock.dart';
 
-class RobleProjectDataSource implements IProjectDataSource {
-  RobleProjectDataSource(this._client);
+class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
+  RobleProjectDataSource(this._client, {this.clock = systemClock});
 
   final RobleClient _client;
+
+  /// Hora de las marcas de tiempo que escribe esta fuente.
+  final Clock clock;
+
+  @override
+  String get currentUserId => _client.currentUserId ?? '';
 
   @override
   Future<List<Map<String, dynamic>>> readProjects() =>
       _client.readPublicOrPrivate(RobleClient.projects);
 
   @override
+  Future<List<Map<String, dynamic>>> readProjectsByOwner(String ownerId) async {
+    if (_client.readsPublicly) {
+      return _client.db.publicRead(
+        RobleClient.projects,
+        filters: {'_owner': ownerId},
+      );
+    }
+    try {
+      // Intento 1: filtro en el servidor por _owner exacto.
+      if (ownerId.isNotEmpty) {
+        final filtered = await _client.db.read(
+          RobleClient.projects,
+          filters: {'_owner': ownerId},
+        );
+        if (filtered.isNotEmpty) return filtered;
+      }
+
+      // Intento 2: leer todos y filtrar del lado cliente con matchesUser.
+      // Necesario cuando Roble guarda el _owner en un formato distinto al ownerId cacheado.
+      final all = await _client.db.read(RobleClient.projects);
+      final matched = all
+          .where((r) => _client.matchesUser(r['_owner']?.toString()))
+          .toList();
+      return matched;
+    } catch (_) {}
+    return [];
+  }
+
+  @override
   Future<Map<String, dynamic>?> readProjectById(String id) async {
     // getById no está disponible en lectura pública; publicRead filtra por _id.
-    if (!_client.readsPublicly) return _client.db.getById(RobleClient.projects, id);
-    final rows = await _client.db.publicRead(RobleClient.projects, filters: {'_id': id});
+    if (!_client.readsPublicly) {
+      return _client.db.getById(RobleClient.projects, id);
+    }
+    final rows = await _client.db.publicRead(
+      RobleClient.projects,
+      filters: {'_id': id},
+    );
     return rows.firstOrNull;
+  }
+
+  @override
+  Future<Map<String, dynamic>> createProject(
+    Map<String, dynamic> projectData,
+  ) async {
+    // Sanitize: Roble DB acepta Maps en columnas jsonb, pero rechaza Lists
+    // directamente. Serializamos jobs y skills como strings JSON para que
+    // PostgreSQL los acepte sin error de conversión.
+    final sanitized = Map<String, dynamic>.from(projectData);
+    for (final key in ['jobs', 'skills']) {
+      sanitized[key] = _encodeJsonList(sanitized[key]);
+    }
+    if (sanitized['status'] is Map) {
+      sanitized['status'] =
+          (sanitized['status'] as Map)['state']?.toString() ?? 'open';
+    }
+    sanitized['status'] ??= 'open';
+
+    loggy.debug('createProject payload: $sanitized');
+
+    late Map<String, dynamic> result;
+    try {
+      result = await _client.db.create(RobleClient.projects, sanitized);
+    } on RobleApiHttpException catch (e) {
+      loggy.error('createProject HTTP ${e.statusCode}: ${e.message}');
+      rethrow;
+    } catch (e) {
+      loggy.error('createProject error: $e');
+      rethrow;
+    }
+
+    final String createdId = (result['_id'] ?? result['id'] ?? '').toString();
+    final String ownerId = _client.currentUserId ?? '';
+
+    if (createdId.isNotEmpty && ownerId.isNotEmpty) {
+      try {
+        await addProjectMember(
+          projectId: createdId,
+          userId: ownerId,
+          role: {'name': 'owner'},
+        );
+      } catch (e) {
+        loggy.warning(
+          'No se pudo insertar el miembro creador en project_member: $e',
+        );
+      }
+    }
+    return result;
+  }
+
+  /// Una columna jsonb que guarda una lista de textos, como texto JSON.
+  /// Roble rechaza una List nativa; lo que no sea lista (ni texto JSON de una
+  /// lista) se guarda como lista vacía.
+  String _encodeJsonList(Object? raw) {
+    List<String> asList;
+    if (raw is List) {
+      asList = raw.map((e) => e.toString()).toList();
+    } else if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        asList = (decoded is List)
+            ? decoded.map((e) => e.toString()).toList()
+            : <String>[];
+      } catch (_) {
+        asList = <String>[];
+      }
+    } else {
+      asList = <String>[];
+    }
+    return jsonEncode(asList);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateProject(
+    String projectId,
+    Map<String, dynamic> fields,
+  ) async {
+    // Solo se codifican las listas que vienen: editar el título no debe
+    // vaciar `jobs` ni `skills`.
+    final payload = Map<String, dynamic>.from(fields);
+    for (final key in ['jobs', 'skills']) {
+      if (payload.containsKey(key)) {
+        payload[key] = _encodeJsonList(payload[key]);
+      }
+    }
+    loggy.debug('updateProject id=$projectId payload: $payload');
+    try {
+      await _client.db.update(RobleClient.projects, projectId, payload);
+    } on RobleApiHttpException catch (e) {
+      loggy.error('updateProject HTTP ${e.statusCode}: ${e.message}');
+      rethrow;
+    }
+    return {'_id': projectId, ...fields};
+  }
+
+  @override
+  Future<Map<String, dynamic>> createJoinRequest(
+    Map<String, dynamic> joinRequestData,
+  ) async {
+    final payload = Map<String, dynamic>.from(joinRequestData);
+    final String currentUserId = _client.currentUserId ?? '';
+    final String nowIso = clock().toUtc().toIso8601String();
+
+    final String rawProjectId =
+        (payload['project_id'] ?? payload['projectId'] ?? '').toString();
+    String rawUserId =
+        (payload['user_id'] ?? payload['userId'] ?? currentUserId).toString();
+    if (rawUserId.isEmpty && currentUserId.isNotEmpty) {
+      rawUserId = currentUserId;
+    }
+
+    final bool isProjectUuid = _isValidUuid(rawProjectId);
+    final bool isUserUuid = _isValidUuid(rawUserId);
+
+    // Formatear status como mapa/JSON objeto según la columna `status (json)` de Roble DB
+    Map<String, dynamic> statusMap = {'state': 'pending'};
+    final rawStatus = payload['status'];
+    if (rawStatus is Map<String, dynamic>) {
+      statusMap = rawStatus;
+    } else if (rawStatus is Map) {
+      statusMap = Map<String, dynamic>.from(rawStatus);
+    } else if (rawStatus is String && rawStatus.isNotEmpty) {
+      statusMap = {'state': rawStatus};
+    }
+
+    // Si project_id o user_id no son UUIDs válidos (p. ej. proyectos demo como '1' o 'solaria-active'),
+    // la base de datos de Roble rechazará la inserción con error de tipo UUID.
+    if (!isProjectUuid || !isUserUuid) {
+      return {
+        '_id': 'local-req-${DateTime.now().millisecondsSinceEpoch}',
+        '_owner': rawUserId,
+        'user_id': rawUserId,
+        'project_id': rawProjectId,
+        'status': statusMap,
+        'createdAt': nowIso,
+        'updatedAt': nowIso,
+      };
+    }
+
+    final exactPayload = <String, dynamic>{
+      'user_id': rawUserId,
+      'project_id': rawProjectId,
+      'status': statusMap,
+      'createdAt': nowIso,
+      'updatedAt': nowIso,
+    };
+
+    try {
+      loggy.debug('createJoinRequest payload: $exactPayload');
+      return await _client.db.create(
+        RobleClient.projectJoinRequests,
+        exactPayload,
+      );
+    } catch (e) {
+      loggy.error('createJoinRequest falló: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readJoinRequestsByUser(
+    String userId,
+  ) async {
+    if (_client.readsPublicly) {
+      if (_isValidUuid(userId)) {
+        try {
+          return await _client.db.publicRead(
+            RobleClient.projectJoinRequests,
+            filters: {'user_id': userId},
+          );
+        } catch (_) {}
+      }
+      return [];
+    }
+    try {
+      if (_isValidUuid(userId)) {
+        final filtered = await _client.db.read(
+          RobleClient.projectJoinRequests,
+          filters: {'user_id': userId},
+        );
+        if (filtered.isNotEmpty) return filtered;
+      }
+      final all = await _client.db.read(RobleClient.projectJoinRequests);
+      return all
+          .where(
+            (r) =>
+                r['user_id']?.toString() == userId ||
+                r['userId']?.toString() == userId ||
+                _client.matchesUser(r['_owner']?.toString()),
+          )
+          .toList();
+    } catch (_) {}
+    return [];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readJoinRequestsForProject(
+    String projectId,
+  ) async {
+    try {
+      if (_isValidUuid(projectId)) {
+        final filtered = await _client.db.read(
+          RobleClient.projectJoinRequests,
+          filters: {'project_id': projectId},
+        );
+        if (filtered.isNotEmpty) return filtered;
+      }
+      final all = await _client.db.read(RobleClient.projectJoinRequests);
+      return all
+          .where((r) => r['project_id']?.toString() == projectId)
+          .toList();
+    } catch (_) {
+      try {
+        final all = await _client.db.read(RobleClient.projectJoinRequests);
+        return all
+            .where((r) => r['project_id']?.toString() == projectId)
+            .toList();
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateJoinRequestStatus({
+    required String requestId,
+    required String status,
+    required String reviewedBy,
+    String? reviewNote,
+  }) async {
+    final nowIso = clock().toUtc().toIso8601String();
+    // `_id` viaja en la URL: es inmutable y no va en el cuerpo.
+    final payload = <String, dynamic>{
+      'status': {'state': status},
+      'reviewed_by': reviewedBy,
+      'updatedAt': nowIso,
+      if (reviewNote != null && reviewNote.isNotEmpty) 'reviewNote': reviewNote,
+    };
+
+    try {
+      loggy.debug('updateJoinRequestStatus id=$requestId payload: $payload');
+      await _client.db.update(
+        RobleClient.projectJoinRequests,
+        requestId,
+        payload,
+      );
+      return {'_id': requestId, ...payload};
+    } on RobleApiHttpException catch (e) {
+      loggy.error('updateJoinRequestStatus HTTP ${e.statusCode}: ${e.message}');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> readUserProfile(String userId) async {
+    if (userId.isEmpty) return null;
+    final rows = await _client.readPublicOrPrivate(
+      RobleClient.profileTable,
+      filters: {'_owner': userId},
+    );
+    // Nunca se devuelve "la primera fila": solo la que es de esa persona.
+    return rows.where((r) => r['_owner']?.toString() == userId).firstOrNull;
+  }
+
+  @override
+  Future<Map<String, dynamic>> addProjectMember({
+    required String projectId,
+    required String userId,
+    Map<String, dynamic>? role,
+  }) async {
+    final String rawUserId = userId.isNotEmpty
+        ? userId
+        : (_client.currentUserId ?? '');
+    final roleMap = role ?? {'name': 'collaborator'};
+
+    if (!_isValidUuid(projectId) || !_isValidUuid(rawUserId)) {
+      loggy.warning(
+        'addProjectMember omitido: projectId ($projectId) o userId ($rawUserId) no son UUIDs válidos',
+      );
+      return {
+        '_id': 'local-member-${DateTime.now().millisecondsSinceEpoch}',
+        'project_id': projectId,
+        'user_id': rawUserId,
+        'role': roleMap,
+      };
+    }
+
+    // ROBLE no tiene unicidad: si ya hay una estancia activa no se inserta
+    // otra, así reintentar una aceptación que falló a medias no duplica a
+    // nadie. Una estancia terminada (`left`/`removed`) no se reabre: es
+    // historial, el reingreso crea una fila nueva.
+    // Lectura estricta: si falla, la excepción sube y no se inserta a ciegas.
+    final current = await _client.db.read(
+      RobleClient.projectMembers,
+      filters: {'project_id': projectId},
+    );
+    final existing = current
+        .where(
+          (r) =>
+              r['user_id']?.toString() == rawUserId &&
+              (r['status']?.toString() ?? 'active') == 'active',
+        )
+        .firstOrNull;
+    if (existing != null) return existing;
+
+    final payload = <String, dynamic>{
+      'project_id': projectId,
+      'user_id': rawUserId,
+      'role': roleMap,
+      'status': 'active',
+      'joinedAt': clock().toUtc().toIso8601String(),
+    };
+
+    try {
+      loggy.debug('addProjectMember payload: $payload');
+      return await _client.db.create(RobleClient.projectMembers, payload);
+    } catch (e) {
+      loggy.error('addProjectMember falló: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readProjectMembers({
+    String? projectId,
+  }) async {
+    if (_client.readsPublicly) {
+      if (projectId != null &&
+          projectId.isNotEmpty &&
+          _isValidUuid(projectId)) {
+        try {
+          return await _client.db.publicRead(
+            RobleClient.projectMembers,
+            filters: {'project_id': projectId},
+          );
+        } catch (_) {}
+      }
+      try {
+        return await _client.db.publicRead(RobleClient.projectMembers);
+      } catch (_) {}
+      return [];
+    }
+    try {
+      if (projectId != null &&
+          projectId.isNotEmpty &&
+          _isValidUuid(projectId)) {
+        final filtered = await _client.db.read(
+          RobleClient.projectMembers,
+          filters: {'project_id': projectId},
+        );
+        if (filtered.isNotEmpty) return filtered;
+      }
+      final all = await _client.db.read(RobleClient.projectMembers);
+      if (projectId != null && projectId.isNotEmpty) {
+        return all
+            .where((r) => r['project_id']?.toString() == projectId)
+            .toList();
+      }
+      return all;
+    } catch (_) {}
+    return [];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readSavedByUser(String userId) async {
+    if (userId.isEmpty) return [];
+    try {
+      final filtered = await _client.db.read(
+        RobleClient.projectSaved,
+        filters: {'user_id': userId},
+      );
+      if (filtered.isNotEmpty) return filtered;
+    } catch (_) {}
+    try {
+      final all = await _client.db.read(RobleClient.projectSaved);
+      return all
+          .where(
+            (r) =>
+                r['user_id']?.toString() == userId ||
+                _client.matchesUser(r['_owner']?.toString()),
+          )
+          .toList();
+    } catch (_) {}
+    return [];
+  }
+
+  @override
+  Future<Map<String, dynamic>> createSaved({
+    required String userId,
+    required String projectId,
+  }) async {
+    final existing = await readSavedByUser(userId);
+    final already = existing.firstWhere(
+      (r) => r['project_id']?.toString() == projectId,
+      orElse: () => const <String, dynamic>{},
+    );
+    if (already.isNotEmpty) return already;
+
+    final nowIso = clock().toUtc().toIso8601String();
+    final payload = <String, dynamic>{
+      'user_id': userId,
+      'project_id': projectId,
+      'createdAt': nowIso,
+    };
+
+    // Igual que con las postulaciones: un id que no es UUID (proyectos demo)
+    // lo rechazaría la columna, así que no se va al servidor.
+    if (!_isValidUuid(userId) || !_isValidUuid(projectId)) {
+      loggy.warning(
+        'createSaved omitido: userId ($userId) o projectId ($projectId) no son UUIDs válidos',
+      );
+      return {
+        '_id': 'local-saved-${DateTime.now().microsecondsSinceEpoch}',
+        ...payload,
+      };
+    }
+
+    try {
+      loggy.debug('createSaved payload: $payload');
+      return await _client.db.create(RobleClient.projectSaved, payload);
+    } catch (e) {
+      loggy.error('createSaved falló: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteSaved({
+    required String userId,
+    required String projectId,
+  }) async {
+    final rows = await readSavedByUser(userId);
+    final matches = rows
+        .where((r) => r['project_id']?.toString() == projectId)
+        .toList();
+    if (matches.isEmpty) return;
+
+    for (final row in matches) {
+      final id = (row['_id'] ?? row['id'])?.toString() ?? '';
+      if (id.isEmpty || id.startsWith('local-saved-')) continue;
+      loggy.debug('deleteSaved id=$id');
+      await _client.db.delete(RobleClient.projectSaved, id);
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> findUsersByEmails(
+    List<String> emails,
+  ) async {
+    final found = <Map<String, dynamic>>[];
+    for (final email in emails) {
+      // Consulta guardada en la consola de Roble (IMPLEMENTATION_PLAN §4):
+      //   SELECT user_id, email FROM user_system
+      //   WHERE lower(email) = lower($1)
+      // Si no existe o está apagada, la excepción se propaga: mejor abortar
+      // la operación entera que dar un "no existe" falso.
+      final result = await _client.db.executeQueryByName(
+        'usuario_por_correo',
+        params: [email.trim()],
+      );
+      for (final row in result.rows) {
+        if (row is! Map) continue;
+        found.add(Map<String, dynamic>.from(row));
+      }
+    }
+    return found;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> createInvitations(
+    List<Map<String, dynamic>> invitations,
+  ) async {
+    if (invitations.isEmpty) return [];
+    final result = await _client.db.createMany(
+      RobleClient.projectInvitation,
+      invitations,
+    );
+    if (result.hasSkipped) {
+      loggy.warning(
+        'createInvitations: ${result.skipped.length} de ${invitations.length} '
+        'rechazadas por el servidor: ${result.skipped.join(', ')}',
+      );
+    }
+    return result.inserted;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readInvitationsForUser(
+    String userId,
+  ) async {
+    if (!_isValidUuid(userId)) return [];
+    return _client.db.read(
+      RobleClient.projectInvitation,
+      filters: {'user_id': userId},
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateInvitationStatus({
+    required String invitationId,
+    required String status,
+  }) async {
+    final payload = <String, dynamic>{
+      'status': status,
+      'respondedAt': clock().toUtc().toIso8601String(),
+    };
+    loggy.debug('updateInvitationStatus id=$invitationId payload: $payload');
+    await _client.db.update(
+      RobleClient.projectInvitation,
+      invitationId,
+      payload,
+    );
+    return {'_id': invitationId, ...payload};
+  }
+
+  @override
+  Future<int> endMembership(
+    String projectId,
+    String userId,
+    String status,
+  ) async {
+    if (!_isValidUuid(projectId) || !_isValidUuid(userId)) return 0;
+    // Lectura estricta (no `readProjectMembers`, que traga errores): si no se
+    // puede leer no se sabe qué cerrar y la operación tiene que fallar.
+    final rows = await _client.db.read(
+      RobleClient.projectMembers,
+      filters: {'project_id': projectId},
+    );
+    final active = rows.where(
+      (r) =>
+          r['user_id']?.toString() == userId &&
+          (r['status']?.toString() ?? 'active') == 'active',
+    );
+    final leftAt = clock().toUtc().toIso8601String();
+    var ended = 0;
+    for (final row in active) {
+      final id = (row['_id'] ?? row['id'])?.toString() ?? '';
+      if (id.isEmpty || id.startsWith('local-')) continue;
+      loggy.debug('endMembership id=$id status=$status');
+      await _client.db.update(RobleClient.projectMembers, id, {
+        'status': status,
+        'leftAt': leftAt,
+      });
+      ended++;
+    }
+    return ended;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readMembershipsByUser(
+    String userId,
+  ) async {
+    if (!_isValidUuid(userId)) return [];
+    return _client.db.read(
+      RobleClient.projectMembers,
+      filters: {'user_id': userId},
+    );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> readProjectsParticipatedBy(
+    String userId,
+  ) async {
+    if (!_isValidUuid(userId)) return [];
+    // Consulta guardada en la consola de Roble:
+    //   SELECT DISTINCT p.* FROM project p
+    //   JOIN project_member m ON m.project_id = p._id
+    //   WHERE m.user_id = $1::uuid
+    // Si no existe o está apagada, la excepción se propaga.
+    final result = await _client.db.executeQueryByName(
+      'proyectos_de_usuario',
+      params: [userId],
+    );
+    return [
+      for (final row in result.rows)
+        if (row is Map) Map<String, dynamic>.from(row),
+    ];
+  }
+
+  @override
+  Future<void> deleteProjectCascade(String projectId) async {
+    if (!_isValidUuid(projectId)) return;
+
+    // Las tres fases son best effort salvo la última: sin borrar el proyecto
+    // el rollback no sirve, así que ese error se propaga.
+    await _deleteRowsWhere(RobleClient.projectInvitation, projectId);
+    await _deleteRowsWhere(RobleClient.projectMembers, projectId);
+
+    loggy.debug('deleteProjectCascade: borrando proyecto $projectId');
+    await _client.db.delete(RobleClient.projects, projectId);
+  }
+
+  /// Borra todas las filas de [table] que apunten a [projectId].
+  /// Un fallo aquí deja costras, pero no impide deshacer la creación.
+  Future<void> _deleteRowsWhere(String table, String projectId) async {
+    try {
+      final rows = await _client.db.read(
+        table,
+        filters: {'project_id': projectId},
+      );
+      for (final row in rows) {
+        final id = (row['_id'] ?? row['id'])?.toString() ?? '';
+        if (id.isEmpty) continue;
+        await _client.db.delete(table, id);
+      }
+    } catch (e) {
+      loggy.warning('deleteProjectCascade($table): $e');
+    }
+  }
+
+  bool _isValidUuid(String value) {
+    if (value.trim().isEmpty) return false;
+    final uuidRegExp = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidRegExp.hasMatch(value.trim());
   }
 }

@@ -1,5 +1,6 @@
 class AuthenticationUser {
-  int? id;
+  /// `userId` de Roble: el `sub` del token y el `_owner` de sus filas.
+  String? id;
   final String email;
   final String name;
   final String password;
@@ -13,7 +14,7 @@ class AuthenticationUser {
 
   factory AuthenticationUser.fromJson(Map<String, dynamic> json) {
     return AuthenticationUser(
-      id: json['id'],
+      id: json['id']?.toString(),
       email: json['email'],
       name: json['name'],
       password: json['password'],

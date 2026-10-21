@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_status.dart';
+import 'package:imker/features/projects/ui/widgets/project_status_label.dart';
 
 /// Tarjeta reutilizable para mostrar un proyecto en las listas de proyectos.
 class ProjectTile extends StatelessWidget {
   final Project project;
   final Widget? trailing;
+
+  /// Fila propia bajo la información, para acciones que no caben en [trailing].
+  final Widget? bottom;
   final VoidCallback? onTap;
 
   const ProjectTile({
     super.key,
     required this.project,
     this.trailing,
+    this.bottom,
     this.onTap,
   });
 
@@ -33,33 +39,44 @@ class ProjectTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      project.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    project.status,
-                    style: tt.labelMedium?.copyWith(color: cs.primary),
-                  ),
-                ],
+              Text(
+                project.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.people_outline, size: 18, color: cs.onSurfaceVariant),
+                  Icon(
+                    Icons.people_outline,
+                    size: 18,
+                    color: cs.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 4),
-                  Text('${project.members.length} miembros', style: tt.bodySmall),
-                  const Spacer(),
-                  ?trailing,
+                  Text(
+                    project.memberCount == 1
+                        ? '1 miembro'
+                        : '${project.memberCount} miembros',
+                    style: tt.bodySmall,
+                  ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          child: ProjectStatusLabel(
+                            status: ProjectStatus.fromName(project.status),
+                          ),
+                        ),
+                        if (trailing != null) const SizedBox(width: 8),
+                        ?trailing,
+                      ],
+                    ),
+                  ),
                 ],
               ),
+              if (bottom != null) ...[const SizedBox(height: 10), bottom!],
             ],
           ),
         ),

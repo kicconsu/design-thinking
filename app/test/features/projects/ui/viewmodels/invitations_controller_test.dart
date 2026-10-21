@@ -1,0 +1,224 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+
+import '../../../../support/dummy_data.dart';
+
+import 'package:imker/features/projects/data/datasources/in_memory_project_data_source.dart';
+import 'package:imker/features/projects/data/repositories/project_repository.dart';
+import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/repositories/i_project_repository.dart';
+import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
+import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
+
+import '../../../../support/scripted_project_data_source.dart';
+
+void main() {
+  late InMemoryProjectDataSource source;
+  late IProjectRepository repository;
+  late String projectId;
+  var accepted = <Project>[];
+
+  InvitationsController build({String me = 'ana-id'}) => InvitationsController(
+    repository: repository,
+    currentUserId: () => me,
+    onAccepted: accepted.add,
+  );
+
+  Future<void> setUpWith(InMemoryProjectDataSource ds) async {
+    Get.reset();
+    accepted = [];
+    source = ds;
+    repository = ProjectRepository(source);
+    final project = await repository.createProject(
+      title: 'Proyecto',
+      description: 'd',
+      jobs: const [],
+      skills: const [],
+    );
+    projectId = project.id;
+    await source.createInvitations([
+      {
+        'project_id': projectId,
+        'email': 'ana@correo.com',
+        'user_id': 'ana-id',
+        'status': 'pending',
+        'createdAt': DateTime.now().toIso8601String(),
+      },
+      {
+        'project_id': projectId,
+        'email': 'otro@correo.com',
+        'user_id': 'otro-id',
+        'status': 'pending',
+        'createdAt': DateTime.now().toIso8601String(),
+      },
+    ]);
+  }
+
+  tearDown(Get.reset);
+  group('InvitationsController', () {
+    test(
+      'solo lista las invitaciones pendientes dirigidas al usuario',
+      () async {
+        await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+        final controller = build();
+        await controller.fetch();
+
+        expect(controller.invitations, hasLength(1));
+        expect(controller.invitations.single.email, 'ana@correo.com');
+        expect(controller.projects[projectId]?.title, 'Proyecto');
+      },
+    );
+
+    test(
+      'aceptar registra al miembro, marca la invitación y activa el proyecto',
+      () async {
+        await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+        final controller = build();
+        await controller.fetch();
+
+        final error = await controller.respond(
+          controller.invitations.single,
+          accept: true,
+        );
+
+        expect(error, isNull);
+        expect(controller.invitations, isEmpty);
+        expect(accepted.single.id, projectId);
+        final members = await source.readProjectMembers(projectId: projectId);
+        expect(members.where((m) => m['user_id'] == 'ana-id'), hasLength(1));
+        expect(await repository.getPendingInvitations('ana-id'), isEmpty);
+      },
+    );
+
+    test('rechazar no agrega miembros ni activa el proyecto', () async {
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+      final controller = build();
+      await controller.fetch();
+
+      final error = await controller.respond(
+        controller.invitations.single,
+        accept: false,
+      );
+
+      expect(error, isNull);
+      expect(accepted, isEmpty);
+      expect(
+        (await source.readProjectMembers(projectId: projectId))
+            .where((m) => m['user_id'] == 'ana-id'),
+        isEmpty,
+      );
+      expect(await repository.getPendingInvitations('ana-id'), isEmpty);
+    });
+
+    test(
+      'si el servidor falla la invitación sigue y reintentar no duplica',
+      () async {
+        await setUpWith(
+          ScriptedProjectDataSource(DummyData().projects)
+            ..invitationFailures = 1,
+        );
+        final controller = build();
+        await controller.fetch();
+        final invitation = controller.invitations.single;
+
+        final first = await controller.respond(invitation, accept: true);
+        expect(first, isNotNull);
+        expect(controller.invitations, hasLength(1));
+
+        final retry = await controller.respond(invitation, accept: true);
+        expect(retry, isNull);
+        final members = await source.readProjectMembers(projectId: projectId);
+        expect(members.where((m) => m['user_id'] == 'ana-id'), hasLength(1));
+      },
+    );
+
+    test('no se puede responder una invitación de otra cuenta', () async {
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+      final controller = build();
+      await controller.fetch();
+      final invitation = controller.invitations.single;
+
+      final other = build(me: 'intruso-id');
+      final error = await other.respond(invitation, accept: true);
+
+      expect(error, isNotNull);
+      expect(
+        await source.readProjectMembers(projectId: projectId),
+        isNot(
+          contains(
+            predicate<Map<String, dynamic>>(
+              (m) => m['user_id'] == 'intruso-id',
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('al aceptar, el proyecto entra en Activos sin recargar', () async {
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+      Get.put<IProjectRepository>(repository);
+      final projects = Get.put(UserProjectsController());
+      final controller = InvitationsController(
+        repository: repository,
+        currentUserId: () => 'ana-id',
+      );
+      await controller.fetch();
+
+      await controller.respond(controller.invitations.single, accept: true);
+
+      expect(projects.activeProjects.map((p) => p.id), contains(projectId));
+    });
+
+    test('aceptar cancela mi solicitud pendiente al mismo proyecto', () async {
+      await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+      // Directo al datasource: el repositorio no deja postular con una
+      // invitación pendiente, pero la solicitud pudo ser anterior a ella.
+      await source.createJoinRequest({
+        'project_id': projectId,
+        'user_id': 'ana-id',
+        'status': 'pending',
+      });
+      final controller = build();
+      await controller.fetch();
+
+      await controller.respond(controller.invitations.single, accept: true);
+
+      final mine = await repository.getJoinRequestsByUser('ana-id');
+      expect(mine.single.statusState, 'cancelled');
+    });
+
+    test(
+      'una invitación a un proyecto donde ya soy miembro no se muestra',
+      () async {
+        await setUpWith(InMemoryProjectDataSource(DummyData().projects));
+        await repository.addProjectMember(
+          projectId: projectId,
+          userId: 'ana-id',
+          role: {'name': 'member'},
+        );
+        final controller = build();
+
+        await controller.fetch();
+
+        expect(controller.invitations, isEmpty);
+      },
+    );
+
+    test('clear descarta una carga que sigue en vuelo', () async {
+      final slow = ScriptedProjectDataSource(DummyData().projects);
+      await setUpWith(slow);
+      final controller = build();
+      slow.invitationsGate = Completer<void>();
+
+      final loading = controller.fetch();
+      controller.clear();
+      slow.invitationsGate!.complete();
+      await loading;
+
+      expect(controller.invitations, isEmpty);
+      expect(controller.projects, isEmpty);
+    });
+  });
+}

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:imker/features/projects/domain/models/project.dart';
+import 'package:imker/features/projects/domain/models/project_invitation.dart';
 import 'package:imker/features/projects/ui/pages/project_detail_page.dart';
+import 'package:imker/features/projects/ui/pages/project_info_page.dart';
+import 'package:imker/features/projects/ui/viewmodels/invitations_controller.dart';
+import 'package:imker/features/projects/ui/widgets/inviter_row.dart';
 import 'package:imker/features/projects/ui/viewmodels/user_projects_controller.dart';
 import 'package:imker/features/projects/ui/widgets/confirm_application_dialog.dart';
 import 'package:imker/features/projects/ui/widgets/project_tile.dart';
@@ -20,7 +24,33 @@ class OtherProjectsPage extends StatefulWidget {
 class _OtherProjectsPageState extends State<OtherProjectsPage> {
   late final PageController _pageController;
   final UserProjectsController _controller = Get.find<UserProjectsController>();
+  final InvitationsController _invitations = Get.find<InvitationsController>();
   bool _isAnimatingPage = false;
+
+  /// Invitaciones con una respuesta en vuelo: evita el doble toque.
+  final Set<String> _responding = {};
+
+  static const _invitationsIndex = 3;
+
+  /// Recarga lo que muestran las cuatro secciones.
+  Future<void> _refresh() async {
+    await Future.wait([
+      _controller.fetchUserApplications(),
+      _controller.fetchSavedProjects(),
+      _invitations.fetch(),
+    ]);
+  }
+
+  Future<void> _respond(ProjectInvitation invitation, bool accept) async {
+    if (!_responding.add(invitation.id)) return;
+    setState(() {});
+    final error = await _invitations.respond(invitation, accept: accept);
+    _responding.remove(invitation.id);
+    if (mounted) setState(() {});
+    if (error != null) {
+      Get.snackbar('Error', error, snackPosition: SnackPosition.BOTTOM);
+    }
+  }
 
   @override
   void initState() {
@@ -43,6 +73,7 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
       return;
     }
     _controller.otherProjectsCategoryIndex.value = index;
+    if (index == _invitationsIndex) _invitations.fetch();
     if (_pageController.hasClients) {
       _isAnimatingPage = true;
       _pageController
@@ -55,6 +86,29 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
             if (mounted) _isAnimatingPage = false;
           });
     }
+  }
+
+  /// Chevron lateral de la cabecera: con [icon] en `null` devuelve un
+  /// placeholder del mismo ancho, para que el título quede siempre centrado
+  /// en la primera y en la última sección.
+  Widget _headerChevron(
+    BuildContext context, {
+    required IconData? icon,
+    String? tooltip,
+    VoidCallback? onTap,
+  }) {
+    if (icon == null) return const SizedBox(width: 44);
+    final button = IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 34, color: Theme.of(context).colorScheme.primary),
+      padding: EdgeInsets.zero,
+    );
+    return SizedBox(
+      width: 44,
+      child: (tooltip == null || tooltip.isEmpty)
+          ? button
+          : Tooltip(message: tooltip, child: button),
+    );
   }
 
   @override
@@ -75,85 +129,96 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
         _controller.activeCollaborationProjects,
       );
 
+      // Snapshots no reactivos de las invitaciones y de su proyecto.
+      final invitations = List<ProjectInvitation>.from(
+        _invitations.invitations,
+      );
+      final invitedProjects = <Project>[
+        for (final inv in invitations)
+          if (_invitations.projects[inv.projectId] != null)
+            _invitations.projects[inv.projectId]!,
+      ];
+
+      final labels = ['Guardados', 'Pendientes', 'Activos', 'Invitaciones'];
+      final counts = [
+        saved.length,
+        pending.length,
+        active.length,
+        invitedProjects.length,
+      ];
+
       return Column(
         children: [
-          // Cabecera: Dropdown a la izquierda + dots de swipe a la derecha.
+          // Cabecera: el nombre de la sección gigante + chevrons a los lados.
           // Todo vive dentro del Obx superior — FUERA del PageView — así es seguro.
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+            child: Column(
               children: [
-                // PopupMenuButton: siempre abre hacia abajo desde el botón,
-                // sin el comportamiento de "subir" del DropdownButton estándar
-                Builder(
-                  builder: (btnContext) {
-                    final labels = [
-                      'Guardados (${saved.length})',
-                      'Pendientes (${pending.length})',
-                      'Activos (${active.length})',
-                    ];
-                    return PopupMenuButton<int>(
-                      // offset positivo en Y = abre justo debajo del botón
-                      offset: const Offset(0, 42),
-                      onSelected: _onCategorySelected,
-                      itemBuilder: (_) => [
-                        for (int i = 0; i < labels.length; i++)
-                          PopupMenuItem<int>(
-                            value: i,
-                            child: Text(
-                              labels[i],
-                              style: TextStyle(
-                                fontWeight: i == currentIndex
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                      ],
-                      child: SizedBox(
-                        width: 160,
-                        child: Container(
-                          height: 38,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(btnContext).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.black, width: 1.2),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  labels[currentIndex],
-                                  style: Theme.of(btnContext)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const Icon(Icons.arrow_drop_down, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Dots: feedback visual del swipe + toque directo
                 Row(
                   children: [
-                    Text(
-                      'Desliza',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.7),
+                    _headerChevron(
+                      context,
+                      icon: currentIndex > 0 ? Icons.chevron_left : null,
+                      tooltip: currentIndex > 0
+                          ? 'Sección anterior: ${labels[currentIndex - 1]}'
+                          : null,
+                      onTap: currentIndex > 0
+                          ? () => _onCategorySelected(currentIndex - 1)
+                          : null,
+                    ),
+                    Expanded(
+                      // El título cambia con la página: es la sección que se
+                      // está mirando, no un menú que haya que abrir.
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (child, animation) =>
+                            FadeTransition(opacity: animation, child: child),
+                        child: Column(
+                          key: ValueKey<int>(currentIndex),
+                          children: [
+                            Text(
+                              labels[currentIndex],
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                            Text(
+                              counts[currentIndex] == 1
+                                  ? '1 proyecto'
+                                  : '${counts[currentIndex]} proyectos',
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    ...List.generate(3, (dotIndex) {
+                    _headerChevron(
+                      context,
+                      icon: currentIndex < labels.length - 1
+                          ? Icons.chevron_right
+                          : null,
+                      tooltip: currentIndex < labels.length - 1
+                          ? 'Sección siguiente: ${labels[currentIndex + 1]}'
+                          : null,
+                      onTap: currentIndex < labels.length - 1
+                          ? () => _onCategorySelected(currentIndex + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Dots: feedback visual del swipe + toque directo
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ...List.generate(labels.length, (dotIndex) {
                       final isActive = dotIndex == currentIndex;
                       return GestureDetector(
                         onTap: () => _onCategorySelected(dotIndex),
@@ -184,36 +249,65 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
               onPageChanged: (index) {
                 if (!_isAnimatingPage) {
                   _controller.otherProjectsCategoryIndex.value = index;
+                  if (index == _invitationsIndex) _invitations.fetch();
                 }
               },
               // Los children NO tienen Obx — reciben datos planos y son widgets puros.
               children: [
                 _ProjectsCategoryList(
                   key: const ValueKey('saved'),
+                  onRefresh: _refresh,
                   projects: saved,
                   emptyText:
                       'No tienes proyectos guardados sin postular.\n'
                       'Explora y guarda proyectos desde la pestaña Descubrir.',
                   emptyIcon: Icons.bookmark_border,
-                  buildTrailing: (project) => FilledButton(
-                    onPressed: () => showConfirmApplicationDialog(
-                      context: context,
-                      project: project,
-                    ),
-                    style: FilledButton.styleFrom(
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                  buildTrailing: (project) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Desguardar sin salir de la lista.
+                      IconButton(
+                        onPressed: () async {
+                          await _controller.toggleSaveProject(project);
+                        },
+                        tooltip: 'Quitar de guardados',
+                        icon: const Icon(
+                          Icons.bookmark_remove_outlined,
+                          size: 20,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                      const SizedBox(width: 4),
+                      FilledButton(
+                        // Un proyecto cerrado ya no recibe solicitudes.
+                        onPressed: project.isOpen
+                            ? () => showConfirmApplicationDialog(
+                                context: context,
+                                project: project,
+                              )
+                            : null,
+                        style: FilledButton.styleFrom(
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                        ),
+                        child: Text(project.isOpen ? 'Aplicar' : 'Cerrado'),
                       ),
-                    ),
-                    child: const Text('Aplicar'),
+                    ],
                   ),
                 ),
                 _ProjectsCategoryList(
                   key: const ValueKey('pending'),
+                  onRefresh: _refresh,
                   projects: pending,
                   emptyText:
                       'No tienes postulaciones pendientes de validación.\n'
@@ -231,7 +325,9 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                 ),
                 _ProjectsCategoryList(
                   key: const ValueKey('active'),
+                  onRefresh: _refresh,
                   projects: active,
+                  pageBuilder: (project) => ProjectInfoPage(project: project),
                   emptyText:
                       'Aún no tienes colaboraciones activas.\n'
                       'Cuando un líder acepte tu solicitud, el proyecto aparecerá aquí.',
@@ -245,6 +341,68 @@ class _OtherProjectsPageState extends State<OtherProjectsPage> {
                         .onSecondaryContainer,
                     borderColor: Theme.of(context).colorScheme.outline,
                   ),
+                ),
+                _ProjectsCategoryList(
+                  key: const ValueKey('invitations'),
+                  onRefresh: _refresh,
+                  projects: invitedProjects,
+                  emptyText:
+                      'No tienes invitaciones pendientes.\n'
+                      'Cuando alguien te invite a su proyecto, aparecerá aquí.',
+                  emptyIcon: Icons.mail_outline,
+                  buildBottom: (project) {
+                    final invitation = invitations.firstWhere(
+                      (i) => i.projectId == project.id,
+                    );
+                    final busy = _responding.contains(invitation.id);
+                    final inviter = invitation.invitedBy;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (inviter != null && inviter.isNotEmpty)
+                          InviterRow(inviterId: inviter),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: busy
+                                    ? null
+                                    : () => _respond(invitation, false),
+                                style: OutlinedButton.styleFrom(
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                ),
+                                child: const Text('Rechazar'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: busy
+                                    ? null
+                                    : () => _respond(invitation, true),
+                                style: FilledButton.styleFrom(
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                ),
+                                child: const Text('Aceptar'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -263,14 +421,22 @@ class _ProjectsCategoryList extends StatelessWidget {
   final List<Project> projects;
   final String emptyText;
   final IconData emptyIcon;
-  final Widget Function(Project project) buildTrailing;
+  final Widget Function(Project project)? buildTrailing;
+  final Widget Function(Project project)? buildBottom;
+  final Future<void> Function() onRefresh;
+
+  /// Qué pantalla abre cada proyecto. Sin él abre la ficha de postulación.
+  final Widget Function(Project project)? pageBuilder;
 
   const _ProjectsCategoryList({
     super.key,
     required this.projects,
     required this.emptyText,
     required this.emptyIcon,
-    required this.buildTrailing,
+    required this.onRefresh,
+    this.buildTrailing,
+    this.buildBottom,
+    this.pageBuilder,
   });
 
   @override
@@ -278,41 +444,46 @@ class _ProjectsCategoryList extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    if (projects.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                emptyIcon,
-                size: 56,
-                color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                emptyText,
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: projects.length,
-      itemBuilder: (context, index) {
-        final project = projects[index];
-        return ProjectTile(
-          project: project,
-          onTap: () => Get.to(() => ProjectDetailPage(project: project)),
-          trailing: buildTrailing(project),
-        );
-      },
+    // Siempre desplazable, también vacía: es lo que permite recargar.
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: projects.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(32),
+              children: [
+                const SizedBox(height: 48),
+                Icon(
+                  emptyIcon,
+                  size: 56,
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  emptyText,
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            )
+          : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: projects.length,
+              itemBuilder: (context, index) {
+                final project = projects[index];
+                return ProjectTile(
+                  project: project,
+                  onTap: () => Get.to(
+                    () =>
+                        pageBuilder?.call(project) ??
+                        ProjectDetailPage(project: project),
+                  ),
+                  trailing: buildTrailing?.call(project),
+                  bottom: buildBottom?.call(project),
+                );
+              },
+            ),
     );
   }
 }

@@ -1,49 +1,46 @@
-import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
-import 'package:imker/features/home/ui/pages/home_page.dart';
-import 'package:imker/core/theme/theme.dart';
-import 'package:imker/core/theme/theme_builder.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
-import 'core/preferences/i_local_preferences.dart';
-import 'core/preferences/local_preferences_secured.dart';
-import 'core/preferences/local_preferences_shared.dart';
 import 'core/roble/roble_client.dart';
 import 'core/roble/roble_config.dart';
-
+import 'core/theme/theme.dart';
+import 'core/theme/theme_builder.dart';
+import 'core/utils/log_config.dart';
 import 'features/auth/auth_dependencies.dart';
-import 'features/discover/discover_dependencies.dart';
-import 'features/product/product_dependencies.dart';
+import 'features/profile/profile_dependencies.dart';
 import 'features/projects/projects_dependencies.dart';
-import 'features/projects/ui/viewmodels/user_projects_controller.dart';
+import 'features/tasks/tasks_dependencies.dart';
+import 'features/trust/trust_dependencies.dart';
+import 'routes/app_pages.dart';
+import 'routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Loggy.initLoggy(logPrinter: const PrettyPrinter(showColors: true));
+  Loggy.initLoggy(
+    logPrinter: const PrettyPrinter(showColors: true),
+    logOptions: logOptionsFor(release: kReleaseMode),
+  );
 
-  final ILocalPreferences preferences = kIsWeb
-      ? LocalPreferencesShared()
-      : LocalPreferencesSecured();
-  Get.put<ILocalPreferences>(preferences, permanent: true);
-
-  // Iniciar cliente de Roble si se tienen las credenciales
-  // De lo contrario, se trabaja con datos mockeados.
+  // Cliente de Roble con timeout de 10s para evitar bloqueos si el servidor se satura
   if (RobleConfig.contractId.isNotEmpty) {
     final robleClient = RobleClient(
       baseUrl: RobleConfig.baseUrl,
       contractId: RobleConfig.contractId,
+      timeout: const Duration(seconds: 10),
     );
     Get.put(robleClient, permanent: true);
   }
 
+  // Infraestructura permanente. El perfil va antes que auth: al restaurar la
+  // sesión, auth garantiza que la fila de `profile` exista.
+  registerProfileData();
   registerAuth();
-  registerProduct();
   registerProjects();
-  registerDiscover();
-  Get.put(HomeViewModel());
-  Get.put(UserProjectsController(), permanent: true);
+  registerTasks();
+  registerTrust();
+
   runApp(const MyApp());
 }
 
@@ -53,13 +50,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = View.of(context).platformDispatcher.platformBrightness;
-    TextTheme textTheme = createTextTheme(context, "Inter", "DM Serif Display");
+    TextTheme textTheme = createTextTheme(context, 'Inter', 'DM Serif Display');
     MaterialTheme theme = MaterialTheme(textTheme);
+
     return GetMaterialApp(
       title: 'Imker',
       theme: brightness == Brightness.light ? theme.light() : theme.dark(),
       debugShowCheckedModeBanner: false,
-      home: const HomePage(),
+      initialRoute: AppRoutes.splash,
+      getPages: AppPages.routes,
     );
   }
 }

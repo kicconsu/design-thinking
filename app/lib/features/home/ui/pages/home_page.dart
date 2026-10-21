@@ -2,7 +2,7 @@ import 'package:imker/features/home/ui/viewmodels/home_view_model.dart';
 import 'package:imker/core/widgets/imker_bottom_nav_bar.dart';
 import 'package:imker/core/widgets/imker_app_bar.dart';
 import 'package:imker/features/discover/ui/pages/discover_page.dart';
-import 'package:imker/features/profile/pages/profile_page.dart';
+import 'package:imker/features/profile/ui/pages/profile_page.dart';
 import 'package:imker/features/projects/ui/pages/projects_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

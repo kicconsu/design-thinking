@@ -1,50 +1,65 @@
-# Figma
-https://www.figma.com/proto/CVBZOge5bDmRP2VcDNHdW8/Untitled--Copy---Copy-?t=yuyHZqRw259mUMnM-1&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&node-id=6-152&starting-point-node-id=6%3A152
+# Imker
 
+App móvil (Flutter, Android) para que estudiantes de la Universidad del Norte
+descubran proyectos colaborativos, se postulen, formen equipo y gestionen
+tareas. El backend es [Roble](https://roble.openlab.uninorte.edu.co); el estado
+se maneja con GetX.
 
-# Flutter Pragmatic Clean Architecture Template 🚀
+## Ejecutar
 
-This repository provides a professional, scalable, and simplified architecture for Flutter applications using **GetX**. It follows a **Pragmatic Clean / MVVM** approach, striking a balance between strict separation of concerns and development speed.
+```bash
+cd app
+flutter pub get
+flutter run
+```
 
-## 🏗 Why "Pragmatic" Clean?
+Acceso rápido para desarrollo (solo en debug; las credenciales no viven en el
+código):
 
-Traditional Clean Architecture often introduces "Use Cases" for every single action, which can feel like unnecessary boilerplate for many projects. This template simplifies the flow:
+```bash
+flutter run --dart-define=DEV_LOGIN=true \
+  --dart-define=DEV_EMAIL=<correo> --dart-define=DEV_PASSWORD=<clave>
+```
 
-* **Strict Clean:** View → Controller → **UseCase** → Repository
-* **Pragmatic Clean:** View → Controller (ViewModel) → Repository
+## Pruebas y análisis
 
+```bash
+flutter analyze
+flutter test                          # unitarias y de widget
+flutter test integration_test/app_test.dart -d <dispositivo>   # flujos completos
+```
 
-By consolidating logic into the **Controller**, we reduce file counts while maintaining high testability and clear boundaries.
+| Qué | Dónde | Detalle |
+|-----|-------|---------|
+| Unitarias y de widget | `test/` | [test/README.md](test/README.md) |
+| Integración (6 flujos) | `integration_test/` | [integration_test/README.md](integration_test/README.md) |
 
----
+Ninguna prueba toca Roble: usan fuentes de datos en memoria y dobles. El CI
+(`.github/workflows/`) corre el análisis y todas las pruebas en cada push y
+pull request.
 
-## 📂 Project Structure
+## Estructura
 
-The project is organized into layers that mirror modern software industry standards. This makes the code predictable and easy to maintain.
+```text
+lib/
+  core/      Roble, tema, utilidades y widgets compartidos
+  features/  auth, discover, home, profile, projects, tasks, trust
+    <feature>/
+      domain/  modelos y contratos de repositorio
+      data/    fuentes de datos (Roble o memoria) y repositorios
+      ui/      páginas, widgets y controladores (viewmodels)
+  routes/    rutas de navegación
+test/              replica las capas de lib/
+integration_test/  flujos completos con dobles de datos
+```
 
-### 1. Domain Layer (`lib/domain`)
-The "Rules" of the app. It is independent of any framework or data source.
-* **Entities:** Simple Dart classes representing core objects (e.g., `User`, `Product`).
-* **Repositories (Interfaces):** Abstract contracts that define what data operations are possible.
+Cada feature registra sus dependencias en su `*_dependencies.dart`; la vista
+habla con un controlador y este con un repositorio (interfaz en `domain`).
+[CODEBASE_INDEX.md](CODEBASE_INDEX.md) describe cada feature.
 
-### 2. Data Layer (`lib/data`)
-The "Implementation." It handles where data comes from.
-* **Models:** DTOs (Data Transfer Objects) with JSON serialization logic (`fromJson`, `toJson`).
-* **Sources:** Direct connections to external services (APIs via Dio, Local DBs via Hive/SharedPrefs).
-* **Repositories (Implementations):** The logic that fulfills the domain contracts by calling Data Sources and mapping Models to Entities.
+## Entrega
 
-### 3. UI Layer (`lib/ui`)
-The "Presentation."
-* **Views:** Widgets and Screens. They are "dumb" and only react to state changes.
-* **Viewmodels (Controllers):** GetX Controllers that manage state, handle user input, and call Repositories directly.
-
----
-
-## 🛠 Dependency Injection (`main.dart`)
-
-Dependency Injection (DI) is handled centrally in `main.dart` or via specific **Bindings**. This decouples the creation of objects from their usage, making the app modular and easy to test.
-
-```dart
-// Example of the DI flow in main.dart or Bindings
-Get.lazyPut<IUserRepository>(() => UserRepositoryImpl(Get.find()));
-Get.lazyPut(() => UserController(Get.find()));
+- Identificador de la app: `co.edu.uninorte.imker`; versión en `pubspec.yaml`.
+- `flutter build apk --release` genera el APK. Hoy el release se firma con la
+  llave de debug; la firma definitiva está pendiente.
+- Consultas guardadas de Roble y modelo de datos: [`../docs/db`](../docs/db).

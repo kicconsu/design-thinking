@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:imker/core/utils/app_keys.dart';
 
 class ImkerBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -15,16 +16,19 @@ class ImkerBottomNavBar extends StatelessWidget {
       icon: Icons.bolt_outlined,
       activeIcon: Icons.bolt,
       label: 'DESCUBRIR',
+      name: 'discover',
     ),
     _NavItem(
       icon: Icons.language_outlined,
       activeIcon: Icons.language,
       label: 'PROYECTOS',
+      name: 'projects',
     ),
     _NavItem(
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       label: 'PERFIL',
+      name: 'profile',
     ),
   ];
 
@@ -47,6 +51,7 @@ class ImkerBottomNavBar extends StatelessWidget {
             final isSelected = currentIndex == index;
             return Expanded(
               child: _NavCell(
+                key: AppKeys.navTab(item.name),
                 icon: isSelected ? item.activeIcon : item.icon,
                 label: item.label,
                 isSelected: isSelected,
@@ -69,11 +74,13 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final String name;
 
   const _NavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
+    required this.name,
   });
 }
 
@@ -89,6 +96,7 @@ class _NavCell extends StatelessWidget {
   final Color contentColor;
 
   const _NavCell({
+    super.key,
     required this.icon,
     required this.label,
     required this.isSelected,

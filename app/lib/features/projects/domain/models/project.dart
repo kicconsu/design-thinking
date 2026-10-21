@@ -9,8 +9,8 @@ class Project {
     required this.jobs,
     required this.skills,
     this.status = 'open',
-    this.members = const [],
-    this.applicantsCount = 0,
+    this.memberCount = 0,
+    this.progress = 0,
   });
 
   final String id;
@@ -21,11 +21,41 @@ class Project {
   final List<String> jobs;
   final List<String> skills;
   final String status;
-  final List<String> members;
-  final int applicantsCount;
+  /// Miembros activos del proyecto, el creador incluido.
+  final int memberCount;
+
+  /// Porcentaje (0–100) de tareas terminadas, calculado al cambiar una tarea.
+  final double progress;
 
   bool get isOpen => status == 'open';
+
+  Project copyWith({
+    String? id,
+    String? owner,
+    String? title,
+    String? imageUrl,
+    String? description,
+    List<String>? jobs,
+    List<String>? skills,
+    String? status,
+    int? memberCount,
+    double? progress,
+  }) {
+    return Project(
+      id: id ?? this.id,
+      owner: owner ?? this.owner,
+      title: title ?? this.title,
+      imageUrl: imageUrl ?? this.imageUrl,
+      description: description ?? this.description,
+      jobs: jobs ?? this.jobs,
+      skills: skills ?? this.skills,
+      status: status ?? this.status,
+      memberCount: memberCount ?? this.memberCount,
+      progress: progress ?? this.progress,
+    );
+  }
 
   @override
   String toString() => 'Project(id: $id, title: $title, status: $status)';
 }
+
