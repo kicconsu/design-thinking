@@ -11,6 +11,7 @@ import '../../domain/models/project_join_request.dart';
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
 import 'user_projects_controller.dart';
+import 'package:imker/core/utils/clock.dart';
 
 /// Solicitudes de colaboración recibidas en los proyectos del usuario y la
 /// decisión (aceptar / rechazar) sobre cada una.
@@ -20,6 +21,7 @@ class CollaborationRequestsController extends GetxController {
     String Function()? currentUserId,
     bool Function(Project)? isOwner,
     ITrustRepository? trust,
+    this.clock = systemClock,
   }) : _repository = repository ?? Get.find<IProjectRepository>(),
        _trust =
            trust ??
@@ -175,9 +177,11 @@ class CollaborationRequestsController extends GetxController {
     );
   }
 
+  final Clock clock;
+
   String _formatAgo(DateTime? date) {
     if (date == null) return 'Recientemente';
-    final diff = DateTime.now().difference(date);
+    final diff = clock().difference(date);
     if (diff.inMinutes < 1) return 'hace un momento';
     if (diff.inMinutes < 60) return 'hace ${diff.inMinutes}m';
     if (diff.inHours < 24) return 'hace ${diff.inHours}h';

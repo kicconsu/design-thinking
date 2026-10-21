@@ -13,11 +13,15 @@ import 'package:imker/features/projects/domain/models/project_join_request.dart'
 import '../../domain/project_failure.dart';
 import '../../domain/repositories/i_project_repository.dart';
 import '../datasources/i_project_data_source.dart';
+import 'package:imker/core/utils/clock.dart';
 
 class ProjectRepository with UiLoggy implements IProjectRepository {
-  ProjectRepository(this._source);
+  ProjectRepository(this._source, {this.clock = systemClock});
 
   final IProjectDataSource _source;
+
+  /// Hora de las invitaciones y demás marcas que escribe el repositorio.
+  final Clock clock;
 
   @override
   Future<List<Project>> getProjects() async {
@@ -95,7 +99,7 @@ class ProjectRepository with UiLoggy implements IProjectRepository {
     if (emails.isEmpty) return project;
 
     // 3. Invitaciones, todas en una sola petición.
-    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final nowIso = clock().toUtc().toIso8601String();
     final rows = [
       for (final email in emails)
         <String, dynamic>{

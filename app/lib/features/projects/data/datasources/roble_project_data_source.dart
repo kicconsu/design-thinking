@@ -5,11 +5,15 @@ import 'package:imker/core/roble/roble_client.dart';
 import 'package:roble/roble.dart';
 
 import 'i_project_data_source.dart';
+import 'package:imker/core/utils/clock.dart';
 
 class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
-  RobleProjectDataSource(this._client);
+  RobleProjectDataSource(this._client, {this.clock = systemClock});
 
   final RobleClient _client;
+
+  /// Hora de las marcas de tiempo que escribe esta fuente.
+  final Clock clock;
 
   @override
   String get currentUserId => _client.currentUserId ?? '';
@@ -160,7 +164,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   ) async {
     final payload = Map<String, dynamic>.from(joinRequestData);
     final String currentUserId = _client.currentUserId ?? '';
-    final String nowIso = DateTime.now().toUtc().toIso8601String();
+    final String nowIso = clock().toUtc().toIso8601String();
 
     final String rawProjectId =
         (payload['project_id'] ?? payload['projectId'] ?? '').toString();
@@ -288,7 +292,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
     required String reviewedBy,
     String? reviewNote,
   }) async {
-    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final nowIso = clock().toUtc().toIso8601String();
     // `_id` viaja en la URL: es inmutable y no va en el cuerpo.
     final payload = <String, dynamic>{
       'status': {'state': status},
@@ -368,7 +372,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
       'user_id': rawUserId,
       'role': roleMap,
       'status': 'active',
-      'joinedAt': DateTime.now().toUtc().toIso8601String(),
+      'joinedAt': clock().toUtc().toIso8601String(),
     };
 
     try {
@@ -456,7 +460,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
     );
     if (already.isNotEmpty) return already;
 
-    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final nowIso = clock().toUtc().toIso8601String();
     final payload = <String, dynamic>{
       'user_id': userId,
       'project_id': projectId,
@@ -562,7 +566,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
   }) async {
     final payload = <String, dynamic>{
       'status': status,
-      'respondedAt': DateTime.now().toUtc().toIso8601String(),
+      'respondedAt': clock().toUtc().toIso8601String(),
     };
     loggy.debug('updateInvitationStatus id=$invitationId payload: $payload');
     await _client.db.update(
@@ -591,7 +595,7 @@ class RobleProjectDataSource with UiLoggy implements IProjectDataSource {
           r['user_id']?.toString() == userId &&
           (r['status']?.toString() ?? 'active') == 'active',
     );
-    final leftAt = DateTime.now().toUtc().toIso8601String();
+    final leftAt = clock().toUtc().toIso8601String();
     var ended = 0;
     for (final row in active) {
       final id = (row['_id'] ?? row['id'])?.toString() ?? '';
