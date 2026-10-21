@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import 'package:imker/features/discover/domain/models/filter_option.dart';
 import 'package:imker/features/discover/domain/models/project_filter.dart';
+import 'package:imker/features/discover/domain/models/project_page.dart';
 import 'package:imker/features/discover/domain/repositories/i_discover_repository.dart';
 import 'package:imker/features/projects/domain/models/project.dart';
 import 'package:imker/features/projects/domain/project_failure.dart';
@@ -51,6 +52,17 @@ class DiscoverController extends GetxController {
   /// Carga desde cero conservando el filtro; si una opción elegida ya no
   /// existe, la descarta con un aviso. También sirve para refrescar.
   Future<void> loadProjects() => _load(filter.value);
+
+  /// Aplica un filtro completo (el de la hoja de filtros).
+  Future<void> applyFilter(ProjectFilter wanted) => _load(wanted);
+
+  /// Opciones y cantidad de resultados que daría [candidate], sin aplicarlo.
+  /// Alimentan la hoja de filtros; un fallo lanza [ProjectFailure].
+  Future<FilterOptions> previewOptions(ProjectFilter candidate) =>
+      _repository.getOptions(candidate);
+
+  Future<int> previewCount(ProjectFilter candidate) async =>
+      (await _repository.getPage(filter: candidate, offset: 0, limit: 1)).total;
 
   Future<void> setCareer(String? key) => _load(filter.value.withCareer(key));
 

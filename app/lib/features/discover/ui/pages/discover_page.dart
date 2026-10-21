@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../viewmodels/discover_controller.dart';
+import '../widgets/discover_filter_bar.dart';
+import '../widgets/filter_sheet.dart';
 import '../widgets/project_card.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -49,8 +51,43 @@ class _DiscoverPageState extends State<DiscoverPage> {
     super.dispose();
   }
 
+  /// La barra solo aparece cuando hay algo que filtrar: no durante la primera
+  /// carga, ni con error o feed vacío sin filtros.
+  bool get _showBar {
+    final noProjects = controller.projects.isEmpty;
+    final hasFilter = !controller.filter.value.isEmpty;
+    if (noProjects && !hasFilter) return false;
+    if (noProjects && controller.error.value != null) return false;
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Obx(
+          () => _showBar
+              ? DiscoverFilterBar(controller: controller)
+              : const SizedBox.shrink(),
+        ),
+        Expanded(child: _feed(context)),
+      ],
+    );
+  }
+
+  String _noMatchText() {
+    final filter = controller.filter.value;
+    final parts = [
+      if (filter.career != null)
+        optionLabel(controller.careerOptions, filter.career!),
+      if (filter.skill != null)
+        optionLabel(controller.skillOptions, filter.skill!),
+      if (filter.onlyOpen) 'Solo abiertos',
+    ];
+    return 'Ningún proyecto coincide con ${parts.join(' + ')}.';
+  }
+
+  Widget _feed(BuildContext context) {
     return Obx(() {
       if (controller.isLoading.value && controller.projects.isEmpty) {
         return const Center(child: CircularProgressIndicator());
@@ -89,7 +126,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
             children: [
               const Icon(Icons.filter_alt_off, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              const Text('Ningún proyecto coincide con los filtros.'),
+              Text(_noMatchText(), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               OutlinedButton(
                 onPressed: controller.clearFilters,
